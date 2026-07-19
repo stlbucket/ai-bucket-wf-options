@@ -3,7 +3,7 @@
 ## Status
 Removed / superseded — the standalone debug page, its `GET /api/current-profile-claims` Nitro
 route, and the `useCurrentProfileClaims` composable no longer exist (auth-app pages are now
-`index`, `login`, `ping`, `profile`; the composable file is empty).
+`index`, `login`, `profile`; the composable file is empty).
 
 ## Where claims live now
 The current profile's claims are held in **localStorage** by `useAuth().user`

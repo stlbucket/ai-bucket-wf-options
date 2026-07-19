@@ -11,6 +11,7 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
+    "@iconify-json/lucide": "catalog:",
     "@nuxt/ui": "catalog:",
     "@function-bucket/fnb-msg-layer": "workspace:*",
     "@function-bucket/fnb-graphql-client-api": "workspace:*",

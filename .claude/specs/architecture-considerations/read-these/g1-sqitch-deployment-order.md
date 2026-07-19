@@ -8,9 +8,9 @@ The order in which sqitch packages must be deployed. Critical for declaring corr
 ```
 fnb-auth
   ├── extensions     (pgcrypto, uuid-ossp, citext, pg_trgm)
-  ├── auth schema    (auth.user table, JWT helpers: auth.uid(), auth.jwt(), etc.)
+  ├── jwt schema     (JWT helpers: jwt.uid(), jwt.tenant_id(), jwt.has_permission(), etc.)
   ├── roles          (authenticator, authenticated, anon, service_role — NOINHERIT config)
-  └── auth policies  (RLS on auth.user)
+  └── (auth.user + its policies are dropped at the ZITADEL cutover — `auth.session` remains)
         ↓
 fnb-app
   ├── app schema     (app.tenant, app.profile, app.resident, app.license, etc.)
@@ -19,10 +19,12 @@ fnb-app
   ├── app_fn_support  (become_support, exit_support_mode)
   ├── app policies   (RLS on all app.* tables)
   └── app bootstrap  (anchor tenant seed, install_basic_application, base license pack)
-        ↓ (all parallel after fnb-app)
-  ┌────────────────────────────────────────────┐
-  │              │              │              │
-fnb-msg       fnb-todo        fnb-wf       fnb-my-app
+        ↓
+fnb-agent → fnb-n8n → fnb-res (URN registry — business modules depend on it)
+        ↓ (parallel after those)
+fnb-msg · fnb-todo · fnb-loc · fnb-storage · fnb-location-datasets · fnb-airports
+(authoritative ordered list: `DEPLOY_PACKAGES` in `.env`; `fnb-agent` must precede
+fnb-storage/fnb-location-datasets/fnb-airports — `agent_worker` grants + `agent_fn` refs)
 ```
 
 ## Declaring Dependencies in `sqitch.plan`

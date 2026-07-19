@@ -225,7 +225,7 @@ Always enforce these. If a spec or implementation violates them, call it out.
 **R19** — Shared types go in `_shared.data.md`, not duplicated across page specs.
 **R20** — Draft specs use `[FILL IN]` markers. All must be resolved before implementation starts.
 **R21** — Architecture changes update `global-rules.md` + the affected pattern file + both skills in the same change.
-**R23** — Issue/plan artifacts under `.claude/issues/` follow the 4-dir lifecycle (`identified` → `in-flight` → `addressed`, plus `recurring`) and the fixed-width naming convention `[####]__[category]__[title-slug]__[SEV]__.plan.md` (widths 4/8/30/3, `_`-padded so columns align; SEV ∈ `CRT · HI · MED · LOW`; recurring is `recur__[title-slug].plan.md`) with a self-referential Execution Directive. See global-rules R23.
+**R23** — Issue/plan artifacts under `.claude/issues/` follow the 4-dir lifecycle (`identified` → `in-flight` → `addressed`, plus `recurring`) and the fixed-width naming convention `[####]__[category]__[title-slug]__[SEV]__.plan.md` (widths 4/8/30/3, `_`-padded so columns align; SEV ∈ `CRT · HI · MED · LOW`; recurring is `[####]_recur__[title-slug].plan.md` — the `####` prefix is execution order for a housekeeping pass, gapped by 10) with a self-referential Execution Directive. See global-rules R23.
 
 See `.claude/specs/ui-components-rules.md` for the full UI rules (UC1–UC12):
 **UC3** — Always use Nuxt UI components before raw HTML or custom CSS.

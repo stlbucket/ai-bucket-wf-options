@@ -76,10 +76,10 @@ names an entity type.
 - `src/index.ts` — re-exports
 - `src/use-pg-client.ts` — exports `pool`, `doQuery`, and `useFnbPgClient` (raw `pg` access from a
   connection string)
-- `src/ping.ts` — health check helper
 
-**Used by:** `worker-app` (its graphile-worker task handlers use `useFnbPgClient` — the stack's
-single worker process; graphql-api-app no longer runs a worker).
+**Used by:** nothing — its last consumers (worker-app's graphile-worker handlers, then the
+auth-app ping scaffolding) are retired. Candidate for removal: see
+`identified/0350__infra_____retire-auth-server-package______LOW__.plan.md`.
 
 ---
 

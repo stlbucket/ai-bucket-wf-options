@@ -96,8 +96,8 @@ memory `rebuild-wipes-db`).
 - [x] Scaffold via `/new-db-package`; changes `10700` (schemas + enum + table), `10710` (`_fn`
       types + `upsert_breweries` + `brewery_sync_status`), `10715` (`_api` fns), `10720`
       (grants + RLS). Cross-project deps on `fnb-loc:00000000010340` + `fnb-app:00000000010250`.
-- [x] Append to `DEPLOY_PACKAGES` in `.env` (+ `.env.example` if listed there) and
-      `db/db-config.ts` if package lists exist there.
+- [x] Append to `DEPLOY_PACKAGES` in `.env` (+ `.env.example` if listed there).
+      (`db/db-config.ts` since removed — `.env` is the single deploy list.)
 
 ### Phase 3 — PostGraphile exposure
 - [x] Add `location_datasets` + `location_datasets_api` to `graphile.config.ts` `schemas`

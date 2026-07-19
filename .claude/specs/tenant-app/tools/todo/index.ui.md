@@ -1,7 +1,7 @@
 # tools/todo/index — Todo List UI
 
 ## Status
-Draft — fill in all [FILL IN] sections before implementing.
+Implemented — GraphQL (status trued up 2026-07-19 by the recurring spec/code reconciliation; no [FILL IN] markers remained and the pages/composables exist as specified).
 
 ## Route
 `/tenant/tools/todo` → `apps/tenant-app/app/pages/tenant/tools/todo/index.vue`

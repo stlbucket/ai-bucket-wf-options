@@ -17,9 +17,6 @@ export type SubscribedTopicSummary = {
   participantNames: string[]
 }
 
-/** @deprecated use SubscribedTopicSummary */
-export type TopicSummary = SubscribedTopicSummary
-
 export type MsgResidentItem = {
   residentId: string
   urn: string // the reference value modules store (subscriber.residentUrn, ...)

@@ -184,7 +184,7 @@ Step-by-step build order. Each phase is independently verifiable before moving o
 ### Phase 1 — DB module `fnb-storage` (`_shared.data.md`)  ✅ COMPLETE (deployed & verified 2026-07-03; re-verified vs. code 2026-07-06)
 - [x] Sqitch package `db/fnb-storage/` — schema, enums, shadow tables, `storage.asset` + indexes,
       `asset_info` (with app-side `id`), `insert_asset`, `storage_api` gate, public read fns,
-      grants + RLS. Registered in `DEPLOY_PACKAGES` and `db/db-config.ts`.
+      grants + RLS. Registered in `DEPLOY_PACKAGES` (`.env`; `db/db-config.ts` since removed).
 
 ### Phase 2 — DB additions for the workflow (`_shared.data.md`)  ✅ COMPLETE (deployed 2026-07-06)
 - [x] New sqitch change: `storage_fn.resolve_asset_scan(...)` (idempotent verdict writer:

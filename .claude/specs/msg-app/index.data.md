@@ -29,7 +29,7 @@ holds only the WebSocket carve-out.
 
 **Source**: `packages/graphql-client-api/src/composables/useMsgTopics.ts` (`useMsgTopics`)
 **Re-export**: `packages/msg-layer/app/composables/useMsgTopics.ts`
-(`export { useMsgTopics, type TopicSummary } from '@function-bucket/fnb-graphql-client-api'`)
+(`export { useMsgTopics } from '@function-bucket/fnb-graphql-client-api'`)
 
 Returns `{ topics: SubscribedTopicSummary[], fetching, error, createTopic, executeQuery }`.
 `createTopic(name, participantIds?, initialMessage?, domain?)` runs `UpsertTopic` then re-runs the

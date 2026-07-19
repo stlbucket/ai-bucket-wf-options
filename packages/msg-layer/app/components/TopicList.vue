@@ -1,7 +1,7 @@
 <script lang="ts" setup>
-import type { TopicSummary } from '@function-bucket/fnb-graphql-client-api'
+import type { SubscribedTopicSummary } from '@function-bucket/fnb-graphql-client-api'
 
-defineProps<{ topics: TopicSummary[] }>()
+defineProps<{ topics: SubscribedTopicSummary[] }>()
 </script>
 
 <template>

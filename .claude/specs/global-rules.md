@@ -244,7 +244,9 @@ every filename is the same length up to `.plan.md` and columns line up in a plai
 (`-`) within a field, so a slug's own hyphens stay visually distinct from the `_` padding.
 - one-shot: `[####]__[category]__[title-slug]__[SEV]__.plan.md`
   — field widths **4 / 8 / 30 / 3** (rank / category / slug / severity).
-- recurring: `recur__[title-slug].plan.md` (no rank, no severity — never prioritized or closed).
+- recurring: `[####]_recur__[title-slug].plan.md` — the `####` prefix (width 4, gapped by 10,
+  starting at `0010_`) is the **execution order** for a housekeeping pass, not a priority rank;
+  no severity — recurring playbooks are never closed.
 
 - `####` = **priority rank** (lower = higher priority), width 4, gapped by 10 so items can be
   inserted between ranks. It is reassignable, so it is **not** a stable identifier — the `title-slug`

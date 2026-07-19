@@ -12,7 +12,6 @@ volumes:
   node_modules_home_app:
   node_modules_msg_app:
   node_modules_graphql_api_app:
-  node_modules_wf_app:
   node_modules_storage_app:
   node_modules_agent_app:
   agent-transcripts:                 # per-run JSONL transcripts — the agent engine's step-level record

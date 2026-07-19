@@ -1,1 +1,1 @@
-export { useMsgTopics, type TopicSummary } from '@function-bucket/fnb-graphql-client-api'
+export { useMsgTopics } from '@function-bucket/fnb-graphql-client-api'

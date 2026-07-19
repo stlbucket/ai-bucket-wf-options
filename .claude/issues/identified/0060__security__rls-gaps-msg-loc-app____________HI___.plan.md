@@ -8,6 +8,13 @@
 
 ## Details
 
+> **Scope narrowed 2026-07-19 (recurring RLS audit):** findings 1 and 2 are **obsolete** — the
+> URN-registry migration removed every `<module>_tenant`/`<module>_resident` mirror table
+> (`msg.msg_tenant`, `msg.msg_resident`, `loc.loc_tenant`, `loc.loc_resident` no longer exist;
+> msg now has only `topic`/`message`/`subscriber`, loc only `location`, all RLS-enabled).
+> Finding 3 (`app.module`/`app.tool`/`app.app_settings` without RLS under grant-all) was
+> re-verified and is **still real** — it is the remaining work in this plan.
+
 Three separate RLS coverage gaps, all combined with `grant all ... to anon, authenticated`:
 
 1. **`msg.msg_tenant` — policies exist but RLS is never enabled (copy-paste bug).**

@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@function-bucket/fnb-auth-layer": "workspace:*",
-    "@function-bucket/fnb-auth-server": "workspace:*",
     "@function-bucket/fnb-db-access": "workspace:*",
     "@function-bucket/fnb-graphql-client-api": "workspace:*",
     "@function-bucket/fnb-types": "workspace:*",

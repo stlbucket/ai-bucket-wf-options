@@ -167,7 +167,7 @@ skill rather than inventing a frontend registry.
 apps/
   auth-app/        — auth root of trust: OIDC login/callback/logout H3 routes + profile pages
   graphql-api-app/ — PostGraphile 5 GraphQL server
-  worker-app/      — headless graphile-worker runner
+  agent-app/       — headless agentic workflow engine (Claude Agent SDK harness, R22)
   tenant-app/      — Main tenant workspace app (todos, discussions, maps, workflows live here)
   msg-app/         — Discussions app (extends msg-layer; WebSocket)
   storage-app/     — Uploads/assets app (extends storage-layer)
@@ -182,8 +182,8 @@ packages/
   auth-ui/         — Vue 3 auth UI + useAuth() (claims in localStorage via GraphQL)
   db-access/       — Pre-claims root of trust (raw pg), 2-arg withClaims, hand-written types
   graphql-client-api/ — urql GraphQL codegen hooks + composables (the default data layer)
-db/                — nine sqitch packages, all deployed:
-  fnb-auth, fnb-app, fnb-msg, fnb-todo, fnb-loc, fnb-wf, fnb-storage, fnb-location-datasets, fnb-airports
+db/                — eleven sqitch packages, all deployed:
+  fnb-auth, fnb-app, fnb-agent, fnb-n8n, fnb-res, fnb-msg, fnb-todo, fnb-loc, fnb-storage, fnb-location-datasets, fnb-airports
 ```
 
 **Where each module's UI lands:**

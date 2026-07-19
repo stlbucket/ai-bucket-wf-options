@@ -36,7 +36,6 @@ packages are in the workspace — those are sqitch only.
     "db-psql": "tsx scripts/db-psql.ts",
     "db-exec": "tsx scripts/db-exec.ts",
     "db-status": "tsx scripts/db-status.ts",
-    "db-generate": "tsx scripts/db-generate.ts",
     "env-build": "tsx scripts/env-build.ts",
     "env-destroy": "tsx scripts/env-destroy.ts",
     "env-rebuild": "tsx scripts/env-destroy.ts && tsx scripts/env-build.ts"
@@ -150,10 +149,11 @@ pnpm-install    ├→ packages-watch → [all apps]
 - Runs all sqitch deploy commands and exits (`restart: "no"`)
 - `DEPLOY_PACKAGES` (required, `${DEPLOY_PACKAGES:?}`) controls which packages to deploy — it lives
   in `.env` as the single source of truth and carries the full ordered list (`fnb-auth fnb-app
-  fnb-msg fnb-todo fnb-loc fnb-wf fnb-storage fnb-location-datasets fnb-airports`; `fnb-wf` must precede `fnb-storage`). PostGraphile
-  exposes msg/todo/loc/location_datasets/airports schemas, so all nine must deploy or it fails at boot. `.env.example` ships
-  the full list pre-filled (not a comment). `db/db-config.ts`'s `deployOnBuild` flags are no longer
-  consulted for the deploy list.
+  fnb-agent fnb-n8n fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets
+  fnb-airports`; `fnb-agent` must precede `fnb-storage`/`fnb-location-datasets`/`fnb-airports` —
+  `agent_worker` grants + `agent_fn` refs). PostGraphile exposes the module schemas
+  (`graphile.config.ts` `pgServices.schemas`), so all eleven must deploy or it fails at boot.
+  `.env.example` ships the full list pre-filled (not a comment).
 - `depends_on: db: condition: service_healthy`
 
 **`pnpm-install`** — One-shot pnpm install:

@@ -38,8 +38,7 @@ service role; spec: `.claude/specs/agentic-workflow-engine/`). `fnb-n8n` is the 
 per-workflow engine assignment in the `triggerWorkflow` registry; engine state in the separate
 `n8n_engine` DB, definitions in the repo `n8n/` dir; spec: `.claude/specs/n8n-parallel-engine/`). `fnb-res` is the URN registry (`res.resource` — business + identity objects
 register via `res_fn.register_resource`, enforced by deferred FKs; module resident references
-are `*_resident_urn` FKs into it; spec: `.claude/specs/urn-registry/`). `db/my-app` is cruft,
-not deployed.
+are `*_resident_urn` FKs into it; spec: `.claude/specs/urn-registry/`).
 Full RLS/permission model. Infra + deploy config: `.claude/specs/monorepo-bootstrap-pattern.md`.
 
 ## Data stack

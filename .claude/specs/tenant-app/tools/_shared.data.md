@@ -13,7 +13,7 @@
 Referenced by all `tools/todo/*.data.md` files.
 
 ## Status
-Draft — fill in all [FILL IN] sections before implementing.
+Implemented — GraphQL (status trued up 2026-07-19 by the recurring spec/code reconciliation; no [FILL IN] markers remained and the pages/composables exist as specified).
 
 ## Navigation
 ```sql

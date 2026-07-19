@@ -3,7 +3,7 @@ import { resolve } from 'path'
 import { DB_URL, PG_URL, REPO_ROOT, requiredEnv } from './_env'
 
 // Ordered sqitch deploy list from .env (single source of truth — same var compose passes to
-// db-migrate). Paths are db/<name>; db/db-config.ts's deployOnBuild flags are no longer consulted.
+// db-migrate). Paths are db/<name>.
 const deployPackages = requiredEnv('DEPLOY_PACKAGES').split(/\s+/).filter(Boolean)
 
 // fnb-agent's policies change creates the agent_worker login role with this password

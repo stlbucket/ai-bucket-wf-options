@@ -10,7 +10,7 @@ async function doQuery(sql: string, params?: unknown[]) {
   try {
     return await client.query(sql, params)
   } catch (e: unknown) {
-    console.log('PG CLIENT ERROR:', (e as Error).message, sql.slice(0, 50))
+    console.error('PG CLIENT ERROR:', (e as Error).message, sql.slice(0, 50))
     throw e
   } finally {
     client.release()

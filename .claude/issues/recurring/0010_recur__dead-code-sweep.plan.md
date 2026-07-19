@@ -1,8 +1,8 @@
 # Plan: Dead code / cruft sweep — dead scripts, my-app, empty dirs, stale volumes/locks, console.logs, stale comments
 
-> **Execution Directive:** Implement via the `fnb-stack-implementor` skill.
-> Invoke: `/fnb-stack-implementor .claude/issues/identified/dead-code-sweep.plan.md`
-> Gate is `pnpm build`. Never run `git`; never rebuild Docker yourself — ask the user, then verify read-only.
+> **Execution Directive:** Implement via the `fnb-stack-implementor` skill — invoke it on *this*
+> plan file. Gate is `pnpm build`. Never run `git`; never rebuild Docker yourself — ask the user,
+> then verify read-only.
 
 **Severity: LOW** (individually minor; collectively noise + traps) · Workstream: WS4 · Identified: 2026-07-05
 

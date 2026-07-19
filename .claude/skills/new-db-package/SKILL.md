@@ -86,8 +86,9 @@ both `scripts/db-deploy.ts` and docker-compose's db-migrate service. Append the 
 - `.env.example`: same line
 
 Order matters: the new package must come after every package it depends on (`fnb-app` at
-minimum; note `fnb-wf` must precede `fnb-storage`). Do **not** touch `db/db-config.ts` — its
-`deployOnBuild` flags are no longer consulted.
+minimum; note `fnb-agent` must precede `fnb-storage`/`fnb-location-datasets`/`fnb-airports`,
+and `fnb-res` precedes every URN-registering module). `.env` is the only registration point
+(the old `db/db-config.ts` has been removed).
 
 **Step 5 — Confirm**
 Tell the user what was created: the full path, the migration slug/number used, and that

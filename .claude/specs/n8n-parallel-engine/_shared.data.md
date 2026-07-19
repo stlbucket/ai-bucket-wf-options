@@ -14,6 +14,11 @@ via tags); the generated names are digit-aware-camelCase — type `N8NWorkflowRu
 convert to the `fnb-types` shapes below, R3). The n8n_worker grant checks, webhook 403, RLS
 gate (positive + negative under simulated `pgSettings`) are all verified live.
 
+**Extension implemented 2026-07-19** (`dataset-sync.workflow.data.md`): two parallel
+dataset-sync twins `n8n-sync-breweries` / `n8n-sync-airports` — registry entries, the
+`n8n_worker` grant expansion in the owning packages, and the `n8n_fn.dataset_sync_busy` guard
+helper are all live.
+
 > Coexistence spec: the agentic engine (`.claude/specs/agentic-workflow-engine/`, implemented)
 > is **not modified** except where explicitly named here (the `triggerWorkflow` plugin's
 > allow-map becomes an engine registry). The superseded full-replacement spec
@@ -151,6 +156,11 @@ CREATE ROLE n8n_worker LOGIN NOINHERIT;  -- inside the DO guard; password via AL
 Rule: n8n reaches fnb data exclusively through granted functions. Future production moves extend
 this inventory in the owning module's package (house pattern), e.g. `location_datasets_fn.upsert_breweries`.
 
+The dataset-sync twins expand the inventory exactly that way — `n8n_worker` grants in
+`fnb-location-datasets` / `fnb-airports` (upsert fns, `sync_source` etag read) plus the
+`n8n_fn.dataset_sync_busy` helper for the cross-engine guard (NOT an `agent_fn` grant — schema
+USAGE must not widen); full table in `dataset-sync.workflow.data.md` → DB changes.
+
 ---
 
 ## `triggerWorkflow` — the engine registry (the one agentic-side change)
@@ -163,9 +173,11 @@ this inventory in the owning module's package (house pattern), e.g. `location_da
 type Engine = 'agent' | 'n8n'
 const WORKFLOW_REGISTRY: Record<string, { engine: Engine; permission: string | null }> = {
   'sync-breweries': { engine: 'agent', permission: null },
-  'sync-airports': { engine: 'agent', permission: null },
+  'sync-airports': { engine: 'n8n', permission: null }, // moved 2026-07-20 (dataset-sync §Status)
   exerciser: { engine: 'agent', permission: 'p:app-admin-super' },
-  'n8n-exerciser': { engine: 'n8n', permission: 'p:app-admin-super' }
+  'n8n-exerciser': { engine: 'n8n', permission: 'p:app-admin-super' },
+  // breweries twin (dataset-sync.workflow.data.md)
+  'n8n-sync-breweries': { engine: 'n8n', permission: 'p:app-admin-super' }
 }
 ```
 

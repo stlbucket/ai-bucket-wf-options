@@ -12,7 +12,7 @@ const editorUrl = useRuntimeConfig().public.n8nEditorUrl
 
 // Mirrors the n8n-engine entries of the trigger plugin's WORKFLOW_REGISTRY — grows as
 // workflows move between engines.
-const triggerableKeys = ['n8n-exerciser']
+const triggerableKeys = ['n8n-exerciser', 'n8n-sync-breweries', 'sync-airports']
 const selectedKey = ref('n8n-exerciser')
 const inputJson = ref('')
 

@@ -98,7 +98,7 @@ apps/tenant-app        → nginx /tenant       (port 3000 in Docker)   extends t
 apps/msg-app           → nginx /msg          (port 3000 in Docker)   extends msg-layer
 apps/storage-app       → nginx /storage      (port 3000 in Docker)   extends storage-layer
 apps/graphql-api-app   → nginx /graphql-api  (port 3000 in Docker)   PostGraphile 5 + extendSchema plugins (triggerWorkflow, downloadUrl)
-apps/agent-app         → HEADLESS (no nginx)                         primary workflow engine — Claude Agent SDK harness (exerciser, sync-breweries, sync-airports, asset-scan + reaper); the PARALLEL n8n engine (R22 dual engines) is a compose service trio, not an app — n8n-parallel-engine spec, skill n8n-cli
+apps/agent-app         → HEADLESS (no nginx)                         primary workflow engine — Claude Agent SDK harness (exerciser, sync-breweries, asset-scan + reaper; sync-airports moved to n8n 2026-07-20); the PARALLEL n8n engine (R22 dual engines) is a compose service trio, not an app — n8n-parallel-engine spec, skill n8n-cli
 packages/auth-layer      Nuxt layer: layout, AppNav, LoginForm, UserProfile, useAuth; server/utils claims+cookies
 packages/tenant-layer    Nuxt layer: extends auth-layer; server/middleware/auth.ts (applyEventClaims)
 packages/msg-layer       Nuxt layer: extends tenant-layer; WebSocket carve-out server/

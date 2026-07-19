@@ -161,6 +161,11 @@ Nothing removed — all agent/`AGENT_*` vars stay exactly as they are.
 - `n8n-cli` (operator skill) targets the same instance: `N8N_URL=http://localhost:${N8N_HOST_PORT}`
   + an API key generated in the editor. Used for the export-to-repo loop
   (`n8n-cli workflow get <id> --json > n8n/workflows/<key>.json`), never by app code.
+- **A full rebuild wipes `n8n_engine`** — owner account AND editor-issued API keys are gone
+  (the import one-shot re-migrates from scratch; a stale `N8N_API_KEY` in `.env` then 401s
+  even though its JWT hasn't expired). After each full rebuild: redo owner setup, mint a new
+  key, update `.env`. Repo-JSON edits + rebuild are therefore the reliable workflow-change
+  path; the live API is a convenience that dies with the volume (lesson 2026-07-20).
 - nginx: **no location block**.
 
 ---

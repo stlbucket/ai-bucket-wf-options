@@ -1,0 +1,1093 @@
+{
+  "id": "WtqOWVl92HLwWcrJ",
+  "name": "sync-airports",
+  "active": true,
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        460
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sync-airports",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnbwebhooksecr01",
+          "name": "fnb-webhook-secret"
+        }
+      },
+      "id": "cbb2dbf2-f114-40e7-b639-5e5fed7509ff",
+      "webhookId": "569192a5-852f-4f30-9ba9-2db24392a96d"
+    },
+    {
+      "name": "Check Busy",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        400,
+        460
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select n8n_fn.dataset_sync_busy('sync-airports'::citext, 'sync-airports'::citext) as busy",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "b63e5876-0a0d-433b-b7d6-2095608411ad"
+    },
+    {
+      "name": "If Busy",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        460
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.busy }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7eb0edd6-5f01-4879-a67a-ec1bbec59e84"
+    },
+    {
+      "name": "Already Running",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        800,
+        320
+      ],
+      "parameters": {},
+      "id": "9226c32c-6b84-44d3-9f2c-d64dcea74d26"
+    },
+    {
+      "name": "Begin Run",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        800,
+        580
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select n8n_fn.begin_run('sync-airports'::citext, $1, $2::jsonb, nullif($3, '')::uuid) as run_id",
+        "options": {
+          "queryReplacement": "={{ [ $execution.id, JSON.stringify($('Webhook').item.json.body ?? {}), $('Webhook').item.json.body?.tenantId ?? '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "d7f0e10b-1849-4b06-b87f-8f542bf76237"
+    },
+    {
+      "name": "Build File List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        580
+      ],
+      "parameters": {
+        "jsCode": "$getWorkflowStaticData('global').abort = false\nconst files = [\n  { file: 'countries.csv', isParent: true },\n  { file: 'regions.csv', isParent: true },\n  { file: 'airports.csv', isParent: true },\n  { file: 'runways.csv', isParent: false },\n  { file: 'airport-frequencies.csv', isParent: false },\n  { file: 'navaids.csv', isParent: false }\n]\nreturn files.map((f) => ({ json: f }))"
+      },
+      "id": "25ff43d2-0552-49e9-a966-8b3c6f829c33"
+    },
+    {
+      "name": "Loop Files",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1220,
+        580
+      ],
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "25ec416f-c815-4019-a5fb-5af1a50c241d"
+    },
+    {
+      "name": "Abort Gate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        700
+      ],
+      "parameters": {
+        "jsCode": "const sd = $getWorkflowStaticData('global')\nconst item = $input.first().json\nif (sd.abort) return [{ json: { file: item.file, failed: 'not run (earlier parent file failed)', notRun: true } }]\nreturn [{ json: item }]"
+      },
+      "id": "97a0cdcc-a970-4b1f-9a3f-6b83cc54f0d5"
+    },
+    {
+      "name": "If Not Run",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1640,
+        700
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.notRun }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "da0f6f1f-e645-4c13-89ab-4e1bfce531b4"
+    },
+    {
+      "name": "Read Etag",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1840,
+        780
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select coalesce((select etag from airports.sync_source where file = $1::citext), '') as etag",
+        "options": {
+          "queryReplacement": "={{ [ $('Loop Files').first().json.file ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "3e70a38a-ab00-4a36-b74a-5ade9023f71d"
+    },
+    {
+      "name": "Fetch File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2040,
+        780
+      ],
+      "parameters": {
+        "url": "=https://davidmegginson.github.io/ourairports-data/{{ $('Loop Files').first().json.file }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "If-None-Match",
+              "value": "={{ $json.etag }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput",
+      "id": "915f0cb8-d52c-4557-abea-54deb39a055d"
+    },
+    {
+      "name": "If Not Modified",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2260,
+        780
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 304,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b4e4ab82-2f73-451f-8f71-378344d0075a"
+    },
+    {
+      "name": "Mark Skipped",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2460,
+        640
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { file: $('Loop Files').first().json.file, skipped: true } }]"
+      },
+      "id": "9abdec7d-4bad-4ef9-8b1c-bb0bdd444495"
+    },
+    {
+      "name": "Extract CSV",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        2460,
+        900
+      ],
+      "parameters": {
+        "operation": "csv",
+        "options": {}
+      },
+      "onError": "continueErrorOutput",
+      "id": "bc7eb5e4-f663-41b2-8ef8-27caaa3e5d9a"
+    },
+    {
+      "name": "Map And Chunk",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2660,
+        900
+      ],
+      "parameters": {
+        "jsCode": "const file = $('Loop Files').first().json.file\nconst clean = (obj) => { const out = {}; for (const k of Object.keys(obj)) out[k.replace(/^\\uFEFF/, '')] = obj[k]; return out }\nconst s = (v) => { const t = v == null ? '' : String(v).trim(); return t ? t : null }\nconst int = (v) => { const t = v == null ? '' : String(v).trim(); if (!t) return null; const n = Number.parseInt(t, 10); return Number.isNaN(n) ? null : n }\nconst num = (v) => { const t = v == null ? '' : String(v).trim(); if (!t) return null; const n = Number.parseFloat(t); return Number.isNaN(n) ? null : n }\n// same coercion maps as apps/agent-app/server/lib/agent-tools/airports.ts (incl. the\n// le/he_heading_degT and usageType header quirks)\nconst MAPS = {\n  'countries.csv': (r) => ({ id: int(r.id), code: s(r.code), name: s(r.name), continent: s(r.continent), wikipedia_link: s(r.wikipedia_link), keywords: s(r.keywords) }),\n  'regions.csv': (r) => ({ id: int(r.id), code: s(r.code), local_code: s(r.local_code), name: s(r.name), continent: s(r.continent), iso_country: s(r.iso_country), wikipedia_link: s(r.wikipedia_link), keywords: s(r.keywords) }),\n  'airports.csv': (r) => ({ id: int(r.id), ident: s(r.ident), type: s(r.type), name: s(r.name), latitude_deg: s(r.latitude_deg), longitude_deg: s(r.longitude_deg), elevation_ft: int(r.elevation_ft), continent: s(r.continent), iso_country: s(r.iso_country), iso_region: s(r.iso_region), municipality: s(r.municipality), scheduled_service: String(r.scheduled_service ?? '').trim().toLowerCase() === 'yes', icao_code: s(r.icao_code), iata_code: s(r.iata_code), gps_code: s(r.gps_code), local_code: s(r.local_code), home_link: s(r.home_link), wikipedia_link: s(r.wikipedia_link), keywords: s(r.keywords) }),\n  'runways.csv': (r) => ({ id: int(r.id), airport_ref: int(r.airport_ref), length_ft: int(r.length_ft), width_ft: int(r.width_ft), surface: s(r.surface), lighted: String(r.lighted ?? '').trim() === '1', closed: String(r.closed ?? '').trim() === '1', le_ident: s(r.le_ident), le_latitude_deg: s(r.le_latitude_deg), le_longitude_deg: s(r.le_longitude_deg), le_elevation_ft: int(r.le_elevation_ft), le_heading_deg_t: num(r.le_heading_degT), le_displaced_threshold_ft: int(r.le_displaced_threshold_ft), he_ident: s(r.he_ident), he_latitude_deg: s(r.he_latitude_deg), he_longitude_deg: s(r.he_longitude_deg), he_elevation_ft: int(r.he_elevation_ft), he_heading_deg_t: num(r.he_heading_degT), he_displaced_threshold_ft: int(r.he_displaced_threshold_ft) }),\n  'airport-frequencies.csv': (r) => ({ id: int(r.id), airport_ref: int(r.airport_ref), type: s(r.type), description: s(r.description), frequency_mhz: num(r.frequency_mhz) }),\n  'navaids.csv': (r) => ({ id: int(r.id), ident: s(r.ident), name: s(r.name), type: s(r.type), frequency_khz: num(r.frequency_khz), latitude_deg: s(r.latitude_deg), longitude_deg: s(r.longitude_deg), elevation_ft: int(r.elevation_ft), iso_country: s(r.iso_country), dme_frequency_khz: num(r.dme_frequency_khz), dme_channel: s(r.dme_channel), dme_latitude_deg: s(r.dme_latitude_deg), dme_longitude_deg: s(r.dme_longitude_deg), dme_elevation_ft: int(r.dme_elevation_ft), slaved_variation_deg: num(r.slaved_variation_deg), magnetic_variation_deg: num(r.magnetic_variation_deg), usage_type: s(r.usageType), power: s(r.power), associated_airport: s(r.associated_airport) })\n}\nconst map = MAPS[file]\nconst rows = $input.all().map((i) => map(clean(i.json)))\nconst chunks = []\nfor (let o = 0; o < rows.length; o += 1000) chunks.push(rows.slice(o, o + 1000))\nreturn chunks.map((chunk) => ({ json: { file, chunk, rowCount: rows.length } }))"
+      },
+      "id": "0aaaf27a-8acd-4117-82f9-26c5407c069a"
+    },
+    {
+      "name": "Switch File",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2860,
+        900
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "r0",
+                    "leftValue": "={{ $json.file }}",
+                    "rightValue": "countries.csv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "countries"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "r1",
+                    "leftValue": "={{ $json.file }}",
+                    "rightValue": "regions.csv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "regions"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "r2",
+                    "leftValue": "={{ $json.file }}",
+                    "rightValue": "airports.csv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "airports"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "r3",
+                    "leftValue": "={{ $json.file }}",
+                    "rightValue": "runways.csv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "runways"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "r4",
+                    "leftValue": "={{ $json.file }}",
+                    "rightValue": "airport-frequencies.csv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "airport_frequencies"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "r5",
+                    "leftValue": "={{ $json.file }}",
+                    "rightValue": "navaids.csv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "navaids"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "06916375-8385-42d3-9fed-ca18d770581f"
+    },
+    {
+      "name": "Upsert countries",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3120,
+        560
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select to_jsonb(airports_fn.upsert_countries($1::jsonb)) as result",
+        "options": {
+          "queryReplacement": "={{ [ JSON.stringify($json.chunk) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "3e524f6d-fcc3-4887-8726-9e39a2459b58"
+    },
+    {
+      "name": "Upsert regions",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3120,
+        700
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select to_jsonb(airports_fn.upsert_regions($1::jsonb)) as result",
+        "options": {
+          "queryReplacement": "={{ [ JSON.stringify($json.chunk) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "4b2640e3-853c-444f-aa63-4ef7ebf2f4a0"
+    },
+    {
+      "name": "Upsert airports",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3120,
+        840
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select to_jsonb(airports_fn.upsert_airports($1::jsonb)) as result",
+        "options": {
+          "queryReplacement": "={{ [ JSON.stringify($json.chunk) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "4b501038-5049-4c9c-b72a-9141758d6096"
+    },
+    {
+      "name": "Upsert runways",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3120,
+        980
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select to_jsonb(airports_fn.upsert_runways($1::jsonb)) as result",
+        "options": {
+          "queryReplacement": "={{ [ JSON.stringify($json.chunk) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "187b791b-8278-493c-be37-12da0d9333f6"
+    },
+    {
+      "name": "Upsert airport_frequencies",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3120,
+        1120
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select to_jsonb(airports_fn.upsert_airport_frequencies($1::jsonb)) as result",
+        "options": {
+          "queryReplacement": "={{ [ JSON.stringify($json.chunk) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "3fd2a807-119d-4c3b-b9a2-c0f2c86ec171"
+    },
+    {
+      "name": "Upsert navaids",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3120,
+        1260
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select to_jsonb(airports_fn.upsert_navaids($1::jsonb)) as result",
+        "options": {
+          "queryReplacement": "={{ [ JSON.stringify($json.chunk) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "2f4aecaa-4cc1-44f6-85bb-05ebef23519b"
+    },
+    {
+      "name": "Collect File Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3360,
+        900
+      ],
+      "parameters": {
+        "jsCode": "const results = $input.all().map((i) => i.json.result)\nconst inserted = results.reduce((s, r) => s + (r?.inserted ?? 0), 0)\nconst updated = results.reduce((s, r) => s + (r?.updated ?? 0), 0)\nconst skippedRows = results.reduce((s, r) => s + (r?.skipped ?? 0), 0)\nreturn [{ json: { file: $('Loop Files').first().json.file, rowCount: $('Map And Chunk').first().json.rowCount, inserted, updated, skippedRows } }]"
+      },
+      "id": "40463e10-4945-4368-a84a-ea0e76ebe3bf"
+    },
+    {
+      "name": "Record Sync Source",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3560,
+        900
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select airports_fn.record_sync_source($1::citext, nullif($2, $5), nullif($3, $5), $4::int) is null as recorded",
+        "options": {
+          "queryReplacement": "={{ [ $json.file, $('Fetch File').first().json.headers?.etag ?? '', $('Fetch File').first().json.headers?.['last-modified'] ?? '', $json.rowCount, '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "ac54bdda-9a3d-43c2-a41e-69bb2ee7fe7d"
+    },
+    {
+      "name": "File Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3760,
+        900
+      ],
+      "parameters": {
+        "jsCode": "const c = $('Collect File Result').first().json\nreturn [{ json: { file: c.file, rowCount: c.rowCount, inserted: c.inserted, updated: c.updated, skippedRows: c.skippedRows } }]"
+      },
+      "id": "4385c9dc-2816-4faa-bac0-40eef2f91845"
+    },
+    {
+      "name": "File Failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2660,
+        1120
+      ],
+      "parameters": {
+        "jsCode": "const sd = $getWorkflowStaticData('global')\nconst lf = $('Loop Files').first().json\nif (lf.isParent) sd.abort = true\nconst msg = $json.error?.message ?? $json.error ?? 'unknown failure'\nreturn [{ json: { file: lf.file, failed: String(typeof msg === 'object' ? JSON.stringify(msg) : msg) } }]"
+      },
+      "id": "afefcc93-3fc8-4093-a44c-f3eb01c2ecf0"
+    },
+    {
+      "name": "Assemble Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        440
+      ],
+      "parameters": {
+        "jsCode": "const files = {}\nfor (const i of $input.all()) {\n  const j = i.json\n  if (j.skipped) files[j.file] = { skipped: true }\n  else if (j.failed) files[j.file] = { failed: j.failed }\n  else files[j.file] = { rowCount: j.rowCount, inserted: j.inserted, updated: j.updated, skippedRows: j.skippedRows }\n}\nreturn [{ json: { files } }]"
+      },
+      "id": "7bffd7ee-9a06-418d-8c7c-5a90fc1e9df5"
+    },
+    {
+      "name": "Complete Run",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1640,
+        440
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select (n8n_fn.complete_run($1::uuid, $2::jsonb)).id as run_id",
+        "options": {
+          "queryReplacement": "={{ [ $('Begin Run').first().json.run_id, JSON.stringify($json) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "3a530c8d-1ffa-491d-8f2d-5a2ff9129e29"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Busy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Busy": {
+      "main": [
+        [
+          {
+            "node": "If Busy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Busy": {
+      "main": [
+        [
+          {
+            "node": "Already Running",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Begin Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Begin Run": {
+      "main": [
+        [
+          {
+            "node": "Build File List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build File List": {
+      "main": [
+        [
+          {
+            "node": "Loop Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Files": {
+      "main": [
+        [
+          {
+            "node": "Assemble Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Abort Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Abort Gate": {
+      "main": [
+        [
+          {
+            "node": "If Not Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Not Run": {
+      "main": [
+        [
+          {
+            "node": "Loop Files",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Etag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Etag": {
+      "main": [
+        [
+          {
+            "node": "Fetch File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch File": {
+      "main": [
+        [
+          {
+            "node": "If Not Modified",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "File Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Not Modified": {
+      "main": [
+        [
+          {
+            "node": "Mark Skipped",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Skipped": {
+      "main": [
+        [
+          {
+            "node": "Loop Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract CSV": {
+      "main": [
+        [
+          {
+            "node": "Map And Chunk",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "File Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map And Chunk": {
+      "main": [
+        [
+          {
+            "node": "Switch File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch File": {
+      "main": [
+        [
+          {
+            "node": "Upsert countries",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert regions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert airports",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert runways",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert airport_frequencies",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upsert navaids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert countries": {
+      "main": [
+        [
+          {
+            "node": "Collect File Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert regions": {
+      "main": [
+        [
+          {
+            "node": "Collect File Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert airports": {
+      "main": [
+        [
+          {
+            "node": "Collect File Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert runways": {
+      "main": [
+        [
+          {
+            "node": "Collect File Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert airport_frequencies": {
+      "main": [
+        [
+          {
+            "node": "Collect File Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert navaids": {
+      "main": [
+        [
+          {
+            "node": "Collect File Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect File Result": {
+      "main": [
+        [
+          {
+            "node": "Record Sync Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Sync Source": {
+      "main": [
+        [
+          {
+            "node": "File Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File Result": {
+      "main": [
+        [
+          {
+            "node": "Loop Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "File Failed": {
+      "main": [
+        [
+          {
+            "node": "Loop Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Results": {
+      "main": [
+        [
+          {
+            "node": "Complete Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "errorWorkflow": "0E8QFQyYGSyHHq0g",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {}
+}

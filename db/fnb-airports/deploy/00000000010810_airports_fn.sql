@@ -546,7 +546,10 @@ CREATE OR REPLACE FUNCTION airports_fn.airport_sync_status()
     select count(*)::int into _retval.country_count from airports.country;
     select count(*)::int into _retval.region_count from airports.region;
 
-    _retval.in_progress := agent_fn.running_count('sync-airports') > 0;
+    -- either engine syncing this dataset counts (n8n-parallel-engine/dataset-sync.workflow.data.md;
+    -- the key runs on n8n since the 2026-07-20 engine move, agent side kept for the dormant rollback)
+    _retval.in_progress := agent_fn.running_count('sync-airports') > 0
+      or n8n_fn.running_count('sync-airports') > 0;
 
     return _retval;
   end;
@@ -565,5 +568,20 @@ grant execute on function airports_fn.upsert_airport_frequencies(jsonb) to agent
 grant execute on function airports_fn.upsert_navaids(jsonb) to agent_worker;
 grant execute on function airports_fn.record_sync_source(citext, text, text, int) to agent_worker;
 grant select on airports.sync_source to agent_worker;
+
+---------------------------------------------- n8n_worker grants (n8n dataset-sync twin)
+-- The n8n-sync-airports workflow's Postgres nodes connect as n8n_worker: per-file chunked
+-- upserts, sync bookkeeping, and the etag conditional-GET read of airports.sync_source
+-- (n8n-parallel-engine/dataset-sync.workflow.data.md).
+grant usage on schema airports to n8n_worker;
+grant usage on schema airports_fn to n8n_worker;
+grant execute on function airports_fn.upsert_countries(jsonb) to n8n_worker;
+grant execute on function airports_fn.upsert_regions(jsonb) to n8n_worker;
+grant execute on function airports_fn.upsert_airports(jsonb) to n8n_worker;
+grant execute on function airports_fn.upsert_runways(jsonb) to n8n_worker;
+grant execute on function airports_fn.upsert_airport_frequencies(jsonb) to n8n_worker;
+grant execute on function airports_fn.upsert_navaids(jsonb) to n8n_worker;
+grant execute on function airports_fn.record_sync_source(citext, text, text, int) to n8n_worker;
+grant select on airports.sync_source to n8n_worker;
 
 commit;

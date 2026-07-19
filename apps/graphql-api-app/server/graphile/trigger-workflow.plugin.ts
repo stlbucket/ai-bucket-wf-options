@@ -15,11 +15,16 @@ import { requiredEnv } from '../lib/required-env.js'
 // exercisers are diagnostic tools — super-admin only). Moving a workflow between engines is
 // a one-line edit here (plus whatever DB grants the workflow needs on the target side).
 type WorkflowEngine = 'agent' | 'n8n'
-const WORKFLOW_REGISTRY: Record<string, { engine: WorkflowEngine; permission: string | null }> = {
+const WORKFLOW_REGISTRY: Record<string, { engine: WorkflowEngine, permission: string | null }> = {
   'sync-breweries': { engine: 'agent', permission: null },
-  'sync-airports': { engine: 'agent', permission: null },
-  exerciser: { engine: 'agent', permission: 'p:app-admin-super' },
-  'n8n-exerciser': { engine: 'n8n', permission: 'p:app-admin-super' }
+  // moved to n8n 2026-07-20 (dataset-sync.workflow.data.md §Engine move); the agentic
+  // definition stays in the tree dormant as the rollback
+  'sync-airports': { engine: 'n8n', permission: null },
+  'exerciser': { engine: 'agent', permission: 'p:app-admin-super' },
+  'n8n-exerciser': { engine: 'n8n', permission: 'p:app-admin-super' },
+  // Parallel n8n twin of the agentic breweries sync — operator-triggered (the datasets UI
+  // keeps the agentic key above); n8n-parallel-engine/dataset-sync.workflow.data.md.
+  'n8n-sync-breweries': { engine: 'n8n', permission: 'p:app-admin-super' }
 }
 
 interface TriggerClaims {
@@ -67,8 +72,8 @@ export const TriggerWorkflowPlugin = makeExtendSchemaPlugin(() => ({
               tenantId: claims.tenantId,
               profileId: claims.profileId
             })
-            const response =
-              entry.engine === 'n8n'
+            const response
+              = entry.engine === 'n8n'
                 ? await fetch(`${requiredEnv('N8N_INTERNAL_URL')}/webhook/${workflowKey}`, {
                     method: 'POST',
                     headers: {
@@ -92,7 +97,7 @@ export const TriggerWorkflowPlugin = makeExtendSchemaPlugin(() => ({
               // respond-immediately webhook: 200 = accepted, no runId in the response
               return { accepted: response.ok, runId: null }
             }
-            const result = (await response.json()) as { accepted?: boolean; runId?: string }
+            const result = (await response.json()) as { accepted?: boolean, runId?: string }
             return { accepted: result.accepted === true, runId: result.runId ?? null }
           }
         )

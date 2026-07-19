@@ -20,8 +20,9 @@ Nav: site-admin module tool `tenant-site-admin-wf-n8n`, label **n8n Workflows**,
    **"Open n8n editor"** (icon `i-lucide-external-link`, variant outline,
    `:to="editorUrl" target="_blank"`, rendered only when `editorUrl` is non-empty —
    `runtimeConfig.public.n8nEditorUrl`)
-   - `USelect` of triggerable keys: `n8n-exerciser` (static list mirroring the registry's
-     n8n-engine entries — grows as workflows move engines)
+   - `USelect` of triggerable keys: `n8n-exerciser`, `n8n-sync-breweries`, `sync-airports`
+     (static list mirroring the registry's n8n-engine entries —
+     `dataset-sync.workflow.data.md`; `sync-airports` moved engines 2026-07-20)
    - `UTextarea` "Input data (JSON, optional)" — client-side parse, error toast on failure
    - `UButton` "Trigger" (icon `i-lucide-play`, `:loading`)
 2. **Runs card** — header "Recent runs" + ghost refresh `UButton` (`i-lucide-refresh-cw`)

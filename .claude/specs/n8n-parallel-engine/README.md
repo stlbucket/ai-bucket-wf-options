@@ -20,6 +20,12 @@ file's Status block; the load-bearing ones:
   named `n8n_workflow_run_status` in SQL; generated names came out `N8NWorkflowRun` /
   `n8NWorkflowRunsList` (digit-aware camelCase), absorbed by codegen + mappers.
 
+**Extension: dataset-sync twins — Implemented 2026-07-19** (Phases 7–8 below, same-day plan
+`0015__wf________n8n-dataset-sync-twins__________`): parallel `n8n-sync-breweries` /
+`n8n-sync-airports` workflows under their own keys — the agentic syncs stay live and
+untouched. Spec + build corrections (`dataset_sync_busy` helper instead of an `agent_fn`
+grant; `saveDataSuccessExecution: 'none'`; 5 s retry cap): `dataset-sync.workflow.data.md`.
+
 ## Purpose
 
 Stand up a self-hosted **n8n** engine **in parallel with** the live agentic engine
@@ -28,7 +34,9 @@ future workflows can be assigned per-workflow to whichever engine fits (fixed se
 n8n; judgment-bearing orchestration → agentic). Initial n8n inventory is **demo only**: an
 `n8n-exerciser` workflow (mirroring the agentic exerciser's error/wait paths, plus n8n's durable
 Wait node) and the shared `error-handler`. All four production workflows (`asset-scan` + reaper,
-`sync-breweries`, `sync-airports`, `exerciser`) **stay agentic and untouched**.
+`sync-breweries`, `sync-airports`, `exerciser`) **stay agentic and untouched**. *(Since
+2026-07-20 `sync-airports` runs on n8n — the engine move in `dataset-sync.workflow.data.md`
+§Status; the agentic definition is dormant.)*
 
 Two new UI tools land under the **site-admin** menu (`p:app-admin-super`), one per engine:
 **Agentic Workflows** and **n8n Workflows** — each a runs panel over that engine's run log
@@ -64,6 +72,14 @@ historical record; this spec **carries over its still-sound infra decisions** (s
 | Tenancy | n8n workflows are global singletons; tenant travels in the webhook payload, recorded on `n8n.workflow_run.tenant_id` | Carried; matches the agentic model |
 | Nav | Two DB-registered tool rows (R14) in the site-admin module: `i-lucide-bot` (agentic) + `i-lucide-workflow` (n8n) | Nav lives in `app_fn.sql`; both icons verified in lucide |
 | R22 rewrite | At implementation, R22 becomes "two engines, per-workflow assignment via the plugin registry"; agentic invariants unchanged, n8n invariants added | R21: architecture change propagates to global-rules + pattern files + skills in the same change |
+| Dataset-sync twins: parallel keys | **`n8n-sync-breweries` / `n8n-sync-airports` added alongside the live agentic keys** — not an engine move; agentic definitions untouched | User decision 2026-07-19. Both engines can sync the same dataset (idempotent upserts); zero agentic blast radius |
+| `sync-airports` engine move | **The production `sync-airports` key flipped to n8n 2026-07-20** (twin rekeyed; `n8n-sync-airports` retired; agentic definition dormant as rollback). Breweries unchanged | User decision 2026-07-20 — the deferred "Move to n8n" option, airports only. UI untouched (the key is the abstraction) |
+| Dataset-sync twins: scheduling | **Manual trigger only** — no Schedule Trigger node | User decision 2026-07-19. Parity with today; scheduling stays a deferred open question |
+| Dataset-sync twins: trigger gate | `p:app-admin-super` on both registry entries | Spec default: the datasets UI keeps triggering the agentic keys (any-authenticated); the twins are operator tools on the wf-n8n page. One-line loosening later |
+| Dataset-sync twins: concurrency | Cross-engine dataset guard in the n8n workflows (`agent_fn.running_count + n8n_fn.running_count` before `begin_run`); agentic harness not modified | Prevents interleaved double-syncs without touching the agentic engine; guard races are harmless (idempotent) |
+| Dataset-sync twins: `in_progress` | Both sync-status fns become dual-engine ORs (edit-in-place in the owning packages); GraphQL shape unchanged | `in_progress` means "either engine is syncing"; no codegen or UI change |
+| Dataset-sync twins: grants placement | `n8n_worker` grants in `fnb-location-datasets` / `fnb-airports` (deploy order puts `fnb-n8n` first); `agent_fn.running_count` grant in `fnb-n8n` policies | House pattern — grants live in the owning module's package, mirroring the `agent_worker` blocks |
+| Dataset-sync twins: airports mechanics | Extract From File for CSV parse; Switch → six static Postgres upsert nodes; parent-stop/child-continue as fixed error routing | No Code-node csv lib in the official image (no custom image — locked); no expression-built SQL identifiers |
 
 ## Files in this spec
 
@@ -73,6 +89,7 @@ historical record; this spec **carries over its still-sound infra decisions** (s
 | `_shared.data.md` | Integration architecture: `db/fnb-n8n` package, `n8n_worker` grants, webhook auth, the engine registry in `triggerWorkflow`, smart tags, fnb-types + mappers + composables, security model |
 | `infrastructure.md` | Compose services (`n8n-db-init`, `n8n-import`, `n8n`), env vars, boot order, editor access, infra verification |
 | `exerciser.workflow.data.md` | The `n8n-exerciser` demo workflow + the shared `error-handler` |
+| `dataset-sync.workflow.data.md` | The `n8n-sync-breweries` / `n8n-sync-airports` twins (Draft): node graphs, cross-engine guard, `n8n_worker` grant expansion, dual-engine `in_progress` rework |
 | `wf-agentic.ui.md` / `wf-agentic.data.md` | Site-admin **Agentic Workflows** page (runs panel + trigger over `agent_api.workflow_runs`) |
 | `wf-n8n.ui.md` / `wf-n8n.data.md` | Site-admin **n8n Workflows** page (runs panel + trigger + editor link over `n8n_api.workflow_runs`) |
 
@@ -109,12 +126,27 @@ historical record; this spec **carries over its still-sound infra decisions** (s
       skill-map (`n8n-cli` routing), memory sweep; superseded-spec cross-pointer; verification
       checklist per `infrastructure.md` + both UI pages
 
+**Extension — dataset-sync twins** (`dataset-sync.workflow.data.md`, Draft 2026-07-19):
+
+- [x] **Phase 7 — DB + registry**: edit-in-place grants + dual-engine `in_progress` ORs in
+      `fnb-location-datasets` / `fnb-airports`; the `n8n_fn.dataset_sync_busy` guard helper
+      (build correction — replaced the planned `agent_fn.running_count` grant) + sqitch deps;
+      the two registry entries in `trigger-workflow.plugin.ts`; wf-n8n trigger-card key list.
+      ✔ USER GATE passed: rebuild + read-only verification (granted fns executable as
+      `n8n_worker`, table/schema SELECTs denied)
+- [x] **Phase 8 — Workflows**: both twins built via the public API/`n8n-cli`, exported
+      **active** to `n8n/workflows/*.json`; verified: clean runs (11,750 breweries / 85,758
+      airports), etag all-skip second run, cross-engine guard, dual-engine `in_progress`,
+      kill-path → error-handler; boot-import reproduction rides the next rebuild (final
+      sign-off)
+
 ## Remaining Open Questions (deferred — none block implementation)
 
 - [ ] n8n version pin — resolved procedurally: pin latest stable at Phase-1 implementation time
-- [ ] Moving a production workflow to n8n (syncs would need `n8n_worker` grants on the upsert
-      fns + sync-status dual-engine reads; asset-scan would resurrect the custom image) — per-
-      workflow product calls, out of scope
+- [ ] Moving a production workflow to n8n — partially resolved 2026-07-19: the syncs got
+      **parallel twins** instead (`dataset-sync.workflow.data.md` — the agentic keys stay the
+      production path); a true engine move remains a future per-workflow call, and asset-scan
+      would still resurrect the custom image
 - [ ] Per-run detail pages (`[id].vue` with input/result/error/usage JSON) — deferred with the
       runs-list decision
 - [ ] Pagination beyond the latest 50 runs — no house pagination convention yet (global-rules

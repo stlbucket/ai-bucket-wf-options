@@ -15,6 +15,14 @@ from the build:
   and went hunting for a Bash tool; the run row's `finished_at` is the timing record. This is
   also what surfaced the `tools: []` toolbox-closure requirement (`_shared.data.md`).
 
+Cross-reference 2026-07-19: parallel n8n twins were specced in
+`.claude/specs/n8n-parallel-engine/dataset-sync.workflow.data.md`; the one shared surface is
+the sync-status fns' `in_progress`, which became a dual-engine OR there.
+**2026-07-20: `sync-airports` moved to the n8n engine** (registry flip; that spec's §Status).
+The agentic `sync-airports` definition + `sync_airport_file` tool below remain in the tree but
+are **dormant** — unreachable via the registry, kept as the one-line rollback. The agentic
+`sync-breweries` stays live on the UI path.
+
 ---
 
 ## Trigger path (both)

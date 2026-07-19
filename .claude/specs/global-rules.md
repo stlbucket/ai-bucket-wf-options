@@ -156,8 +156,9 @@ target side. Per-engine run logs (`agent.workflow_run` / `n8n.workflow_run`) bac
 site-admin tools (Agentic Workflows / n8n Workflows, both `p:app-admin-super`).
 
 **The agentic engine** is `apps/agent-app` (headless: no nginx route, no layers, no UI) — the
-Claude Agent SDK harness running all four production workflows (asset-scan + reaper,
-sync-breweries, sync-airports, exerciser). Spec: `.claude/specs/agentic-workflow-engine/`.
+Claude Agent SDK harness running asset-scan + reaper, sync-breweries, and exerciser
+(sync-airports moved to n8n 2026-07-20; its agentic definition is dormant in the tree as the
+registry-flip rollback). Spec: `.claude/specs/agentic-workflow-engine/`.
 The invariants:
 - **fnb → agent is trigger-endpoint-only**: HTTP POST `${AGENT_INTERNAL_URL}/api/trigger/<key>`
   with the `X-Fnb-Trigger-Secret` header (callers: the `triggerWorkflow` extendSchema plugin in
@@ -177,8 +178,9 @@ The invariants:
   the harness; begin/attach/complete/error/sweep DB writes happen only in harness code.
 
 **The n8n engine** is a parallel container (official pinned image, own host port, state in the
-separate `n8n_engine` DB in the existing cluster; initial inventory: `n8n-exerciser` +
-`error-handler`). Spec: `.claude/specs/n8n-parallel-engine/`. Its invariants mirror the
+separate `n8n_engine` DB in the existing cluster; inventory: `n8n-exerciser`, `error-handler`,
+the `n8n-sync-breweries` twin, and the production `sync-airports` — moved 2026-07-20).
+Spec: `.claude/specs/n8n-parallel-engine/`. Its invariants mirror the
 agentic ones: **fnb → n8n is webhook-only** (`${N8N_INTERNAL_URL}/webhook/<key>` with
 `X-Fnb-Webhook-Secret`, respond-immediately, no runId); **n8n → fnb is the `n8n_worker` PG
 role calling granted functions only** (never PostGraphile, never authenticator); workflow

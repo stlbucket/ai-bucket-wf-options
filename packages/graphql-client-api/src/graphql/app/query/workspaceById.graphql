@@ -1,0 +1,16 @@
+query WorkspaceById(
+  $tenantId: UUID!
+) {
+  tenant(id: $tenantId) {
+    ...Tenant
+    residents: residentsList {
+      ...Resident
+      licenses: licensesList {
+        ...License
+      }
+    }
+    tenantSubscriptions: tenantSubscriptionsList {
+      ...TenantSubscription
+    }
+  }
+}

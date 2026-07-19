@@ -1,0 +1,13 @@
+query DiscussionById(
+  $topicId: UUID!
+) {
+  topic(id: $topicId) {
+    ...Topic
+    subscribers: subscribersList {
+      ...Subscriber
+    }
+    messages: messagesList(orderBy: [CREATED_AT_ASC]) {
+      ...Message
+    }
+  }
+}

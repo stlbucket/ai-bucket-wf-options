@@ -1,0 +1,25 @@
+mutation UpdateUser(
+  $id: UUID!
+  $firstName: String
+  $lastName: String
+  $displayName: String
+  $phone: String
+  $identifier: String
+  $isPublic: Boolean
+) {
+  updateUser(input: {
+    _input: {
+      id: $id
+      firstName: $firstName
+      lastName: $lastName
+      displayName: $displayName
+      phone: $phone
+      identifier: $identifier
+      isPublic: $isPublic
+    }
+  }) {
+    profile {
+      ...Profile
+    }
+  }
+}

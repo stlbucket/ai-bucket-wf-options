@@ -1,0 +1,11 @@
+mutation DeactivateTenantSubscription(
+  $tenantSubscriptionId: UUID!
+) {
+  deactivateTenantSubscription(input: {
+    _tenantSubscriptionId: $tenantSubscriptionId
+  }) {
+    tenantSubscription {
+      ...TenantSubscription
+    }
+  }
+}

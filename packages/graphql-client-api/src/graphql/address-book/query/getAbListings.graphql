@@ -1,0 +1,10 @@
+query GetAbListings {
+  getAbListings: getAbListingsList {
+    profileId
+    fullName
+    email
+    phone
+    displayName
+    canInvite
+  }
+}

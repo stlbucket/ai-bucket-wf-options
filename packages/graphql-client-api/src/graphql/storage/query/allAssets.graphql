@@ -1,0 +1,11 @@
+# Site-admin, cross-tenant (RLS returns all rows for super-admin; own-tenant otherwise).
+# `tenant` is the app.tenant relation (urn-registry: storage mirrors removed).
+# `parentAssetId: null` → originals only; explicit null compiles to `IS NULL` (verified via explain).
+query AllAssets {
+  assets: assetsList(condition: { parentAssetId: null }, orderBy: CREATED_AT_DESC) {
+    ...Asset
+    tenant {
+      name
+    }
+  }
+}

@@ -1,0 +1,7 @@
+fragment BreweryMapPoint on BreweryMapPoint {
+  id
+  name
+  breweryType
+  lat
+  lon
+}

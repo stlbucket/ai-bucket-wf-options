@@ -1,0 +1,7 @@
+query BrewerySyncStatus {
+  brewerySyncStatus {
+    lastSyncedAt
+    breweryCount
+    inProgress
+  }
+}

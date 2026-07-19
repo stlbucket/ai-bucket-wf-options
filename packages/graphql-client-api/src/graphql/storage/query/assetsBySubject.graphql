@@ -1,0 +1,17 @@
+# Authed per-subject use (todo / support-ticket pages); own-tenant via RLS. urn-registry
+# stacking v2: subject_urn replaced the context/owning_entity_id loose-ref pair.
+# assetStatus: ACTIVE — the W3 split (option a): entity pages never show soft-deleted rows
+# (infected uploads are auto-soft-deleted by the scan workflow); the site-admin AllAssets
+# deliberately stays unfiltered so operators see infected attempts. See _shared.data.md.
+query AssetsBySubject($subjectUrn: String!) {
+  assets: assetsList(
+    condition: {
+      subjectUrn: $subjectUrn
+      parentAssetId: null
+      assetStatus: ACTIVE
+    }
+    orderBy: CREATED_AT_DESC
+  ) {
+    ...Asset
+  }
+}

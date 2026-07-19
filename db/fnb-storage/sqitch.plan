@@ -1,0 +1,11 @@
+%syntax-version=1.0.0
+%project=fnb-storage
+
+00000000010600_storage [fnb-app:00000000010220_app fnb-res:00000000011000_res] 2026-07-03T00:00:00Z Developer <dev@example.com> # Create storage schema, enums, and tables
+00000000010608_storage_fn_types [00000000010600_storage] 2026-07-03T00:00:00Z Developer <dev@example.com> # Create storage_fn and storage_api schemas and asset_info type
+00000000010610_storage_fn [00000000010608_storage_fn_types] 2026-07-03T00:00:00Z Developer <dev@example.com> # Create storage_fn functions (insert_asset)
+00000000010615_storage_api [00000000010610_storage_fn] 2026-07-03T00:00:00Z Developer <dev@example.com> # Create storage_api.insert_asset gate and public read functions
+00000000010620_storage_policies [00000000010615_storage_api] 2026-07-03T00:00:00Z Developer <dev@example.com> # Apply grants and RLS policies for storage schemas
+00000000010625_storage_resolve_asset_scan [00000000010620_storage_policies] 2026-07-06T00:00:00Z Developer <dev@example.com> # Add storage_fn.resolve_asset_scan idempotent verdict writer
+00000000010635_storage_public_reads_clean [00000000010625_storage_resolve_asset_scan] 2026-07-06T00:00:00Z Developer <dev@example.com> # Public read fns add scan_status = clean gate (quarantine-first)
+00000000010640_storage_agent_worker [00000000010635_storage_public_reads_clean fnb-agent:00000000011130_agent_policies] 2026-07-17T00:00:00Z Developer <dev@example.com> # agent_worker grants + asset_for_scan + stuck_pending_assets (agentic workflow engine)

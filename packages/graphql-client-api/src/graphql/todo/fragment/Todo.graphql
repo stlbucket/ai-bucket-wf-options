@@ -1,0 +1,18 @@
+fragment Todo on Todo {
+  id
+  tenantId
+  residentUrn
+  name
+  description
+  type
+  status
+  ordinal
+  pinned
+  tags
+  createdAt
+  updatedAt
+  parentTodoId
+  rootTodoId
+  isTemplate
+  urn
+}

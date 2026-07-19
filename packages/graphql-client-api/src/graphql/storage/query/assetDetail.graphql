@@ -1,0 +1,21 @@
+# Single-asset detail: the asset by PK + uploader/tenant relations, and its derived children.
+# `asset(id:)` is the simplified by-PK accessor. `tenant` is the app.tenant relation; the
+# uploader resolves through the registry (residentUrn -> resourceByResidentUrn -> resident).
+# `children` are derived assets (parentAssetId = $id) — the ONE place children are queried;
+# every list filters parentAssetId: null.
+query AssetDetail($id: UUID!) {
+  asset(id: $id) {
+    ...Asset
+    tenant {
+      name
+    }
+    uploader: resourceByResidentUrn {
+      resident {
+        displayName
+      }
+    }
+  }
+  children: assetsList(condition: { parentAssetId: $id }, orderBy: CREATED_AT_DESC) {
+    ...Asset
+  }
+}

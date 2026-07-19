@@ -1,0 +1,7 @@
+fragment AirportFrequency on AirportFrequency {
+  id
+  externalId
+  type
+  description
+  frequencyMhz
+}

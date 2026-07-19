@@ -1,0 +1,8 @@
+mutation UpdateResidentStatus($residentId: UUID!, $status: ResidentStatus!) {
+  updateResidentStatus(input: { _residentId: $residentId, _status: $status }) {
+    resident {
+      id
+      status
+    }
+  }
+}

@@ -1,0 +1,16 @@
+fragment Message on Message {
+  id
+  tenantId
+  topicId
+  createdAt
+  status
+  content
+  postedByResidentUrn
+  tags
+  postedBy: resourceByPostedByResidentUrn {
+    resident {
+      id
+      displayName
+    }
+  }
+}

@@ -1,0 +1,14 @@
+node_modules
+.turbo
+dist
+.output
+.nuxt
+coverage
+*.log
+.env
+.env.*
+!.env.example
+_cruft
+.pnpm-store
+packages/db-types/src/generated
+packages/graphql-client-api/src/generated

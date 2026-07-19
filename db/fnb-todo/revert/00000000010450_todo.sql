@@ -1,0 +1,10 @@
+drop index if exists idx_todo_todo_root_todo_id;
+drop index if exists idx_todo_todo_parent_todo_id;
+drop index if exists idx_todo_todo_resident_urn;
+drop index if exists idx_todo_todo_tenant_id;
+drop table if exists todo.todo;
+drop type if exists todo_fn.search_todos_options;
+drop type if exists todo.todo_type;
+drop type if exists todo.todo_status;
+drop schema if exists todo_fn;
+drop schema if exists todo;

@@ -1,0 +1,8 @@
+fragment TenantSubscription on TenantSubscription {
+  id
+  tenantId
+  licensePackKey
+  status
+  createdAt
+  updatedAt
+}

@@ -1,0 +1,5 @@
+query SearchAirports($options: SearchAirportsOptionInput) {
+  searchAirportsList(_options: $options) {
+    ...Airport
+  }
+}

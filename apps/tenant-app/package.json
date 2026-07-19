@@ -1,0 +1,35 @@
+{
+  "name": "@function-bucket/fnb-tenant-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@iconify-json/lucide": "catalog:",
+    "@iconify-json/simple-icons": "catalog:",
+    "@nuxt/ui": "catalog:",
+    "@function-bucket/fnb-graphql-client-api": "workspace:*",
+    "@function-bucket/fnb-storage-layer": "workspace:*",
+    "@function-bucket/fnb-tenant-layer": "workspace:*",
+    "@function-bucket/fnb-types": "workspace:*",
+    "@urql/vue": "catalog:",
+    "@vueuse/core": "catalog:",
+    "mapbox-gl": "^3.24.1",
+    "nuxt": "catalog:",
+    "nuxt-mapbox": "^1.6.4",
+    "vue": "catalog:"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:"
+  },
+  "packageManager": "pnpm@10.33.0"
+}

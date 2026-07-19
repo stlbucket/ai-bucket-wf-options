@@ -1,0 +1,27 @@
+{
+  "name": "@function-bucket/fnb-agent-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "catalog:",
+    "@aws-sdk/client-s3": "catalog:",
+    "@function-bucket/fnb-types": "workspace:*",
+    "croner": "catalog:",
+    "csv-parse": "catalog:",
+    "h3": "catalog:",
+    "nuxt": "catalog:",
+    "pg": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/pg": "catalog:",
+    "typescript": "catalog:"
+  },
+  "packageManager": "pnpm@10.33.0"
+}

@@ -1,0 +1,11 @@
+mutation UpsertSubscriber(
+  $subscriberInfo: SubscriberInfoInput!
+) {
+  upsertSubscriber(input: {
+    _subscriberInfo: $subscriberInfo
+  }) {
+    subscriber {
+      id
+    }
+  }
+}

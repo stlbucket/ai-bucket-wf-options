@@ -1,0 +1,10 @@
+query ResidentById(
+  $residentId: UUID!
+) {
+  resident(id: $residentId) {
+    ...Resident
+    licenses: licensesList {
+      ...License
+    }
+  }
+}

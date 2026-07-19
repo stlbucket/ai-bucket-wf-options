@@ -1,0 +1,9 @@
+fragment SupportTicketComment on SupportTicketComment {
+  nodeId
+  id
+  createdAt
+  updatedAt
+  supportTicketId
+  residentId
+  body
+}

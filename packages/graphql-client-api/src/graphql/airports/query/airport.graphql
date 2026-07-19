@@ -1,0 +1,14 @@
+query Airport($id: UUID!) {
+  airport(id: $id) {
+    ...Airport
+    runwaysList(orderBy: LE_IDENT_ASC) {
+      ...Runway
+    }
+    airportFrequenciesList(orderBy: [TYPE_ASC, FREQUENCY_MHZ_ASC]) {
+      ...AirportFrequency
+    }
+    navaidsByAssociatedAirportIdList(orderBy: IDENT_ASC) {
+      ...Navaid
+    }
+  }
+}

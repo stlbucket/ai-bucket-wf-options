@@ -1,0 +1,43 @@
+{
+  "name": "@function-bucket/fnb-graphql-client-api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "generate": "graphql-codegen --config codegen.ts",
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "peerDependencies": {
+    "@urql/vue": ">=2.0.0",
+    "vue": ">=3.0.0"
+  },
+  "dependencies": {
+    "@function-bucket/fnb-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^5.0.2",
+    "@graphql-codegen/introspection": "^4.0.3",
+    "@graphql-codegen/typescript": "^4.0.9",
+    "@graphql-codegen/typescript-operations": "^4.0.1",
+    "@graphql-codegen/urql-introspection": "^3.0.0",
+    "@graphql-codegen/typescript-urql-graphcache": "^3.1.0",
+    "@graphql-codegen/typescript-vue-urql": "^3.1.0",
+    "dotenv": "catalog:",
+    "graphql": "^16.9.0",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,0 +1,14 @@
+query AllApplications {
+  applications: applicationsList {
+    ...Application
+    licenseTypes: licenseTypesByApplicationKeyList {
+      ...LicenseType
+      permissions: licenseTypePermissionsByLicenseTypeKeyList {
+        ...LicenseTypePermission
+      }
+      licenses: licensesByLicenseTypeKey {
+        totalCount
+      }
+    }
+  }
+}

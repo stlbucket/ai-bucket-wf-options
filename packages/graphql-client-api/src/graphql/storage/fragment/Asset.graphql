@@ -1,0 +1,20 @@
+fragment Asset on Asset {
+  nodeId
+  id
+  tenantId
+  residentUrn
+  createdAt
+  updatedAt
+  isPublic
+  originalName
+  extension
+  contentType
+  sizeBytes
+  scanStatus
+  assetStatus
+  downloadUrl
+  tags
+  parentAssetId
+  subjectUrn
+  urn
+}

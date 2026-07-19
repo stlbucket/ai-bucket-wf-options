@@ -1,0 +1,19 @@
+mutation AssignTodo(
+  $todoId: UUID!
+  $residentUrn: String!
+) {
+  assignTodo(input: {
+  	_todoId: $todoId
+    _residentUrn: $residentUrn
+  }) {
+    todo {
+      ...Todo
+      owner: resourceByResidentUrn {
+        resident {
+          id
+          displayName
+        }
+      }
+    }
+  }
+}

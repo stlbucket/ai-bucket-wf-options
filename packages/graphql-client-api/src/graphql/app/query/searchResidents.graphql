@@ -1,0 +1,11 @@
+query SearchResidents(
+  $searchTerm: String
+) {
+  searchResidents(_options: {
+    searchTerm: $searchTerm
+  }) {
+    nodes {
+      ...Resident
+    }    
+  }
+}

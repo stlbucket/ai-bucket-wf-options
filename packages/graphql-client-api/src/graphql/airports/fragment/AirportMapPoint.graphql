@@ -1,0 +1,9 @@
+fragment AirportMapPoint on AirportMapPoint {
+  id
+  ident
+  name
+  type
+  iataCode
+  lat
+  lon
+}

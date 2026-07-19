@@ -1,0 +1,10 @@
+# The one resident picker query (urn-registry: replaces msgResidents + todoResidentsList).
+# urn is the reference value modules store (subscriber.residentUrn, todo.residentUrn, ...).
+query ActiveTenantResidents {
+  residentsList(condition: { status: ACTIVE }) {
+    id
+    urn
+    displayName
+    tenantId
+  }
+}

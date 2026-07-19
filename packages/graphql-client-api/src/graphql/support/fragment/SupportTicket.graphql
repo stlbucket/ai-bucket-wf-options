@@ -1,0 +1,13 @@
+fragment SupportTicket on SupportTicket {
+  nodeId
+  id
+  createdAt
+  updatedAt
+  tenantId
+  tenantSubscriptionId
+  residentId
+  title
+  description
+  status
+  urn
+}

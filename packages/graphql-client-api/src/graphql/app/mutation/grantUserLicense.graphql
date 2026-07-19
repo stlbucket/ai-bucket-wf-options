@@ -1,0 +1,13 @@
+mutation GrantUserLicense(
+  $residentId: UUID!
+  $licenseTypeKey: String!
+) {
+  grantUserLicense(input: {
+    _residentId: $residentId
+    _licenseTypeKey: $licenseTypeKey
+  }) {
+    license {
+      ...License
+    }
+  }
+}

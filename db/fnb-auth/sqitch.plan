@@ -1,0 +1,9 @@
+%syntax-version=1.0.0
+%project=fnb-auth
+
+00000000010100_extensions 2026-04-11T00:00:00Z Developer <dev@example.com> # Install pg extensions
+00000000010150_jwt 2026-04-11T00:00:00Z Developer <dev@example.com> # Install jwt functions
+00000000010200_auth [00000000010100_extensions] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create auth schema and helper functions
+00000000010500_auth_policies [00000000010200_auth] 2026-04-11T00:00:00Z Developer <dev@example.com> # Auth ext policies (placeholder)
+00000000010210_auth_roles_and_grants [00000000010200_auth] 2026-05-16T00:00:00Z Developer <dev@example.com> # Create authenticator login role and grant auth schema to authenticated/anon
+00000000010900_webhook [00000000010100_extensions] 2026-04-11T00:00:00Z Developer <dev@example.com> # Webhook schema (placeholder)

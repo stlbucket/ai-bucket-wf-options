@@ -1,0 +1,13 @@
+query AllAppProfiles {
+  profiles {
+    nodes {
+      ...Profile
+      residents: residentsList {
+        ...Resident
+        licenses: licensesList {
+          ...License
+        }
+      }
+    }
+  }
+}

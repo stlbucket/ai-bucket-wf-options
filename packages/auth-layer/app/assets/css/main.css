@@ -1,0 +1,88 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+/* ===================================================================
+   Cascadia visual direction — theme tokens
+   Single source of truth; cascades to every app via the layer chain.
+   Palette values are OKLCH, anchored on the design handoff README.
+   =================================================================== */
+
+@theme static {
+  --font-sans: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Menlo', monospace;
+
+  /* cascadia blue → primary (active states, links, primary actions)
+     --blue 0.42/0.11/248 = 600 · --blue-ink 0.30 = 900 (sidebar)
+     --blue-light 0.94 = 100 · --blue-line 0.82 = 300 */
+  --color-blue-50: oklch(0.97 0.012 248);
+  --color-blue-100: oklch(0.94 0.025 248);
+  --color-blue-200: oklch(0.88 0.045 248);
+  --color-blue-300: oklch(0.82 0.05 248);
+  --color-blue-400: oklch(0.6 0.09 248);
+  --color-blue-500: oklch(0.5 0.105 248);
+  --color-blue-600: oklch(0.42 0.11 248);
+  --color-blue-700: oklch(0.36 0.105 248);
+  --color-blue-800: oklch(0.32 0.1 248);
+  --color-blue-900: oklch(0.3 0.1 248);
+  --color-blue-950: oklch(0.22 0.07 248);
+
+  /* forest green → secondary / success (brand mark, "+ New" CTAs)
+     --green 0.48/0.11/155 = 600 · --green-ink 0.34 = 900 · --green-light 0.94 = 100 */
+  --color-green-50: oklch(0.97 0.015 155);
+  --color-green-100: oklch(0.94 0.03 155);
+  --color-green-200: oklch(0.88 0.05 155);
+  --color-green-300: oklch(0.78 0.08 155);
+  --color-green-400: oklch(0.62 0.1 155);
+  --color-green-500: oklch(0.55 0.11 155);
+  --color-green-600: oklch(0.48 0.11 155);
+  --color-green-700: oklch(0.4 0.105 155);
+  --color-green-800: oklch(0.36 0.1 155);
+  --color-green-900: oklch(0.34 0.1 155);
+  --color-green-950: oklch(0.24 0.06 155);
+}
+
+/* -------------------------------------------------------------------
+   Surface + text tokens (README paper / ink / line families).
+   Written unlayered so they override @nuxt/ui's @layer theme defaults.
+   These give the light/dark surface system every screen inherits, so
+   dark mode "just works" through the color-mode toggle.
+   ------------------------------------------------------------------- */
+
+:root {
+  --ui-radius: 0.5rem; /* ~8px base — buttons/inputs; cards/modals scale up via component ui props later */
+}
+
+:root,
+.light {
+  --ui-bg: oklch(0.99 0.003 250); /* --paper: cards / base surface */
+  --ui-bg-muted: oklch(0.965 0.006 250); /* --paper-alt: page background */
+  --ui-bg-elevated: oklch(0.94 0.008 250);
+  --ui-bg-accented: oklch(0.9 0.008 250);
+
+  --ui-border: oklch(0.9 0.008 250); /* --line */
+  --ui-border-muted: oklch(0.93 0.008 250);
+  --ui-border-accented: oklch(0.85 0.01 250);
+
+  --ui-text: oklch(0.24 0.012 250); /* --ink */
+  --ui-text-highlighted: oklch(0.18 0.012 250);
+  --ui-text-toned: oklch(0.36 0.012 250);
+  --ui-text-muted: oklch(0.5 0.012 250); /* --ink-soft */
+  --ui-text-dimmed: oklch(0.66 0.01 250); /* --ink-faint */
+}
+
+.dark {
+  --ui-bg: oklch(0.23 0.01 250); /* --paper */
+  --ui-bg-muted: oklch(0.18 0.01 250); /* --paper-alt */
+  --ui-bg-elevated: oklch(0.27 0.01 250);
+  --ui-bg-accented: oklch(0.32 0.012 250);
+
+  --ui-border: oklch(0.33 0.014 250); /* --line */
+  --ui-border-muted: oklch(0.28 0.012 250);
+  --ui-border-accented: oklch(0.4 0.014 250);
+
+  --ui-text: oklch(0.95 0.005 250); /* --ink */
+  --ui-text-highlighted: oklch(0.99 0.003 250);
+  --ui-text-toned: oklch(0.82 0.01 250);
+  --ui-text-muted: oklch(0.75 0.01 250); /* --ink-soft */
+  --ui-text-dimmed: oklch(0.55 0.012 250); /* --ink-faint */
+}

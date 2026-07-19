@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: oklch(0.965 0.006 250); }
+</style>
+</helmet>
+
+<div style="display:flex; min-height:100vh; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color:oklch(0.24 0.012 250);">
+
+  <!-- Sidebar -->
+  <nav style="position:sticky; top:0; height:100vh; width:232px; flex-shrink:0; display:flex; flex-direction:column; gap:16px; background:oklch(0.30 0.10 248); padding:20px 14px; color:#fff; box-sizing:border-box;">
+    <div style="display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding:0 6px 14px 6px;">
+      <svg width="26" height="26" viewBox="0 0 160 160" fill="none">
+        <path d="M 38,54 Q 80,10 122,54" stroke="oklch(0.68 0.11 155)" stroke-width="12" stroke-linecap="round" fill="none"></path>
+        <path d="M 12,58 L 148,58 L 132,148 Q 130,156 122,156 L 38,156 Q 30,156 28,148 Z" fill="oklch(0.68 0.11 155)"></path>
+        <rect x="10" y="47" width="140" height="14" rx="7" fill="oklch(0.68 0.11 155)"></rect>
+      </svg>
+      <span style="font-family:'JetBrains Mono', monospace; font-size:15px; font-weight:700; letter-spacing:-0.02em;">function-bucket</span>
+    </div>
+
+    <div style="display:flex; flex:1; flex-direction:column; gap:18px; overflow-y:auto;">
+      <sc-for list="{{ modules }}" as="mod" hint-placeholder-count="2">
+        <div style="display:flex; flex-direction:column; gap:2px;">
+          <div style="font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:rgba(255,255,255,0.45); padding:0 10px 6px 10px;">{{ mod.label }}</div>
+          <sc-for list="{{ mod.tools }}" as="tool" hint-placeholder-count="3">
+            <div style="display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; font-size:14px; color:rgba(255,255,255,0.85); cursor:pointer;" style-hover="background:rgba(255,255,255,0.08); color:#fff;">
+              <span style="display:flex; width:16px; height:16px; color:rgba(255,255,255,0.75);">{{ tool.iconSm }}</span>
+              <span>{{ tool.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:10px; border-top:1px solid rgba(255,255,255,0.1); padding:12px 4px 0 4px;">
+      <div style="display:flex; width:26px; height:26px; align-items:center; justify-content:center; border-radius:99px; background:oklch(0.68 0.11 155); color:oklch(0.20 0.05 248); font-size:11px; font-weight:700; flex-shrink:0;">JT</div>
+      <span style="font-size:14px; color:rgba(255,255,255,0.85);">Jordan Tate</span>
+    </div>
+  </nav>
+
+  <!-- Content -->
+  <main style="flex:1; min-width:0; padding:44px 48px; box-sizing:border-box;">
+    <div style="max-width:1040px; margin:0 auto; display:flex; flex-direction:column; gap:36px;">
+
+      <div>
+        <h1 style="margin:0; font-family:'JetBrains Mono', monospace; font-size:28px; font-weight:700; letter-spacing:-0.02em;">hey, jordan.</h1>
+        <p style="margin:6px 0 0 0; font-size:14px; color:oklch(0.50 0.012 250);">here's what's in your bucket</p>
+      </div>
+
+      <sc-for list="{{ modules }}" as="mod" hint-placeholder-count="2">
+        <section style="display:flex; flex-direction:column; gap:14px;">
+
+          <!-- Module header -->
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="display:flex; width:15px; height:15px; color: {{ mod.accent }};">{{ mod.iconEl }}</span>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:oklch(0.50 0.012 250);">{{ mod.label }}</span>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11px; font-weight:600; color:oklch(0.66 0.010 250);">{{ mod.count }}</span>
+            <span style="flex:1; height:1px; background:oklch(0.90 0.008 250);"></span>
+          </div>
+
+          <!-- Tool cards -->
+          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px;">
+            <sc-for list="{{ mod.tools }}" as="tool" hint-placeholder-count="3">
+              <a href="#" style="display:flex; flex-direction:column; gap:10px; border:1px solid oklch(0.90 0.008 250); border-top:3px solid {{ tool.accent }}; border-radius:10px; background:oklch(0.99 0.003 250); padding:20px; text-decoration:none; color:inherit; transition:box-shadow 0.15s;" style-hover="box-shadow:0 4px 14px oklch(0 0 0 / 0.07);">
+                <span style="display:flex; width:22px; height:22px; color: {{ tool.accent }};">{{ tool.iconEl }}</span>
+                <span style="font-size:15px; font-weight:600;">{{ tool.label }}</span>
+                <span style="font-size:13px; color:oklch(0.50 0.012 250);">{{ tool.open }}</span>
+              </a>
+            </sc-for>
+
+            <sc-if value="{{ mod.showPlaceholder }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; border:1px dashed oklch(0.82 0.05 248); border-radius:10px; background:transparent; padding:20px; color:oklch(0.66 0.010 250); min-height:110px; box-sizing:border-box;">
+                <span style="font-size:20px; line-height:1;">+</span>
+                <span style="font-size:12px;">more tools as granted</span>
+              </div>
+            </sc-if>
+          </div>
+
+        </section>
+      </sc-for>
+
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accentMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;per-module&quot;,&quot;cycled&quot;],&quot;default&quot;:&quot;cycled&quot;,&quot;tsType&quot;:&quot;'per-module' | 'cycled'&quot;,&quot;section&quot;:&quot;Cards&quot;},&quot;showPlaceholders&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Cards&quot;}}">
+class Component extends DCLogic {
+  icon(paths, size) {
+    return React.createElement('svg', {
+      width: size, height: size, viewBox: '0 0 24 24', fill: 'none',
+      stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
+      style: { display: 'block' }
+    }, paths.map((d, i) => React.createElement('path', { key: i, d })));
+  }
+
+  renderVals() {
+    const ICONS = {
+      'list-todo': ['M3 5h6v6H3z', 'm3 17 2 2 4-4', 'M13 6h8', 'M13 12h8', 'M13 18h8'],
+      'message-square': ['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'],
+      'map-pin': ['M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z', 'M12 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z'],
+      'building-2': ['M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18', 'M2 22h20', 'M9 6h1', 'M14 6h1', 'M9 10h1', 'M14 10h1', 'M9 14h1', 'M14 14h1', 'M9 18h1', 'M14 18h1'],
+      'ticket': ['M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z', 'M13 5v2', 'M13 11v2', 'M13 17v2'],
+      'id-card': ['M2 5h20v14H2z', 'M16 10h2', 'M16 14h2', 'M6.5 13a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z', 'M4 17c.5-1.8 1.5-2.5 2.5-2.5S8.5 15.2 9 17'],
+      'wrench': ['M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z'],
+      'shield': ['M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z'],
+    };
+    const grouped = this.props.accentMode !== 'cycled';
+    const showPlaceholders = this.props.showPlaceholders ?? true;
+    const blue = 'oklch(0.42 0.11 248)', green = 'oklch(0.48 0.11 155)', warn = 'oklch(0.68 0.13 75)';
+    const cycle = [blue, green, warn];
+
+    const raw = [
+      {
+        key: 'tools', label: 'Tools', icon: 'wrench', accent: blue,
+        tools: [
+          { label: 'Todos', icon: 'list-todo' },
+          { label: 'Messaging', icon: 'message-square' },
+          { label: 'Locations', icon: 'map-pin' },
+        ],
+      },
+      {
+        key: 'admin', label: 'Admin', icon: 'shield', accent: green,
+        tools: [
+          { label: 'Tenants', icon: 'building-2' },
+          { label: 'Licenses', icon: 'id-card' },
+          { label: 'Support', icon: 'ticket' },
+        ],
+      },
+    ];
+
+    let i = 0;
+    const modules = raw.map((m) => ({
+      ...m,
+      iconEl: this.icon(ICONS[m.icon], 15),
+      count: String(m.tools.length).padStart(2, '0'),
+      showPlaceholder: showPlaceholders,
+      tools: m.tools.map((t) => ({
+        ...t,
+        accent: grouped ? m.accent : cycle[i++ % cycle.length],
+        iconEl: this.icon(ICONS[t.icon], 22),
+        iconSm: this.icon(ICONS[t.icon], 16),
+        open: 'Open ' + t.label.toLowerCase() + ' \u2192',
+      })),
+    }));
+
+    return { modules };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+query MySubscribedTopics {
+  subscribersList(condition: { status: ACTIVE }) {
+    lastRead
+    residentUrn
+    residentResource: resourceByResidentUrn {
+      resident {
+        id
+        displayName
+      }
+    }
+    topic {
+      id
+      name
+      status
+      createdAt
+      latestMessage: messagesList(first: 1, orderBy: [CREATED_AT_DESC]) {
+        createdAt
+      }
+      topicSubscribers: subscribersList(condition: { status: ACTIVE }) {
+        residentUrn
+        residentResource: resourceByResidentUrn {
+          resident {
+            id
+            displayName
+          }
+        }
+      }
+    }
+  }
+}

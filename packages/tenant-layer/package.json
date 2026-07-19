@@ -1,0 +1,21 @@
+{
+  "name": "@function-bucket/fnb-tenant-layer",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./nuxt.config.ts",
+  "scripts": {
+    "dev:prepare": "nuxt prepare",
+    "postinstall": "nuxt prepare"
+  },
+  "peerDependencies": {
+    "vue": ">=3.4.0"
+  },
+  "dependencies": {
+    "@nuxt/ui": "catalog:",
+    "@function-bucket/fnb-auth-layer": "workspace:*",
+    "@function-bucket/fnb-db-access": "workspace:*",
+    "@function-bucket/fnb-types": "workspace:*",
+    "h3": "catalog:",
+    "nuxt": "catalog:"
+  }
+}

@@ -1,0 +1,9 @@
+mutation UnpinTodo($todoId: UUID!) {
+  unpinTodo(input: {
+    _todoId: $todoId
+  }) {
+    todo {
+      ...Todo
+    }
+  }
+}

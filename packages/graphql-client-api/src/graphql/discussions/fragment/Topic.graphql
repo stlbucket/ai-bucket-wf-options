@@ -1,0 +1,11 @@
+fragment Topic on Topic {
+  id
+  subjectUrn
+  tenantId
+  name
+  identifier
+  tags
+  status
+  createdAt
+  urn
+}

@@ -1,0 +1,8 @@
+%syntax-version=1.0.0
+%project=fnb-loc
+
+00000000010300_loc [fnb-app:00000000010250_app_policies fnb-res:00000000011000_res] 2026-06-22T00:00:00Z Developer <dev@example.com> # Create loc schema, types, and tables
+00000000010310_loc_fn [00000000010300_loc] 2026-06-22T00:00:00Z Developer <dev@example.com> # Create loc functions
+00000000010330_loc_policies [00000000010310_loc_fn] 2026-06-22T00:00:00Z Developer <dev@example.com> # Apply grants and RLS policies
+00000000010340_loc_public_locations [00000000010300_loc 00000000010330_loc_policies] 2026-07-09T00:00:00Z Developer <dev@example.com> # Public locations: is_public flag, nullable resident_id, view_public select policy
+00000000010350_loc_geolocated [00000000010300_loc] 2026-07-09T00:00:00Z Developer <dev@example.com> # is_geolocated generated column (lat/lon both present)

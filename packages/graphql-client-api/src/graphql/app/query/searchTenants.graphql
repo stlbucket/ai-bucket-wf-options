@@ -1,0 +1,22 @@
+query SearchTenants(
+  $searchTerm: String
+) {
+  searchTenants(_options: {
+    searchTerm: $searchTerm
+  }) {
+   nodes {
+    ...Tenant
+    subscriptions: tenantSubscriptionsList(
+      orderBy: LICENSE_PACK_KEY_ASC
+    ) {
+        ...TenantSubscription
+        licensePack {
+          ...LicensePack
+          licenseTypes: licensePackLicenseTypesByLicensePackKeyList(orderBy: LICENSE_TYPE_KEY_ASC) {
+            ...LicensePackLicenseType
+          }
+        }
+      }
+    }    
+  }
+}

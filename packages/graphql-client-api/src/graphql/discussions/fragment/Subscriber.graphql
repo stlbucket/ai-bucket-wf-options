@@ -1,0 +1,15 @@
+fragment Subscriber on Subscriber {
+  id
+  tenantId
+  topicId
+  createdAt
+  status
+  residentUrn
+  lastRead
+  residentResource: resourceByResidentUrn {
+    resident {
+      id
+      displayName
+    }
+  }
+}

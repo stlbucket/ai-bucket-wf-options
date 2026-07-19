@@ -1,0 +1,9 @@
+mutation ReopenSupportTicket($ticketId: UUID!) {
+  reopenSupportTicket(input: {
+    _ticketId: $ticketId
+  }) {
+    supportTicket {
+      ...SupportTicket
+    }
+  }
+}

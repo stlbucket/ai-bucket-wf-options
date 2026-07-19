@@ -1,0 +1,11 @@
+mutation UpdateLocation(
+  $locationInfo: LocationInfoInput!
+) {
+	updateLocation(input: {
+    _locationInfo: $locationInfo
+  }) {
+    location {
+      ...Location
+    }
+  }
+}

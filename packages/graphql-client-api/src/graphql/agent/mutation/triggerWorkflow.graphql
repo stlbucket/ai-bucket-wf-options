@@ -1,0 +1,6 @@
+mutation TriggerWorkflow($workflowKey: String!, $inputData: JSON) {
+  triggerWorkflow(workflowKey: $workflowKey, inputData: $inputData) {
+    accepted
+    runId
+  }
+}

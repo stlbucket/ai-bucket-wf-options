@@ -1,0 +1,16 @@
+query AllDiscussions {
+  topics {
+    nodes {
+      ...Topic
+      subscribers: subscribersList {
+        ...Subscriber
+      }
+      messages {
+        totalCount
+      }
+      latestMessage: messagesList(first: 1, orderBy: [CREATED_AT_DESC]) {
+        createdAt
+      }
+    }
+  }
+}

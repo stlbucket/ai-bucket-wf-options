@@ -1,0 +1,11 @@
+select has_function_privilege('msg_api.upsert_topic(msg_fn.topic_info)', 'execute');
+select has_function_privilege('msg_fn.upsert_topic(msg_fn.topic_info,uuid)', 'execute');
+select has_function_privilege('msg_api.upsert_message(msg_fn.message_info)', 'execute');
+select has_function_privilege('msg_fn.upsert_message(msg_fn.message_info,uuid)', 'execute');
+select has_function_privilege('msg_api.upsert_subscriber(msg_fn.subscriber_info)', 'execute');
+select has_function_privilege('msg_fn.upsert_subscriber(msg_fn.subscriber_info)', 'execute');
+select has_function_privilege('msg_api.deactivate_subscriber(uuid)', 'execute');
+select has_function_privilege('msg_fn.deactivate_subscriber(uuid)', 'execute');
+select has_function_privilege('msg_api.delete_topic(uuid)', 'execute');
+select has_function_privilege('msg_fn.delete_topic(uuid)', 'execute');
+select 1/count(*) from pg_trigger where tgname = '_500_gql_insert';

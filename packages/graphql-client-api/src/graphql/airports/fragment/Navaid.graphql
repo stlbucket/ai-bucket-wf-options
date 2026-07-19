@@ -1,0 +1,22 @@
+fragment Navaid on Navaid {
+  id
+  externalId
+  ident
+  name
+  type
+  frequencyKhz
+  latitudeDeg
+  longitudeDeg
+  elevationFt
+  isoCountry
+  dmeFrequencyKhz
+  dmeChannel
+  dmeLatitudeDeg
+  dmeLongitudeDeg
+  dmeElevationFt
+  slavedVariationDeg
+  magneticVariationDeg
+  usageType
+  power
+  associatedAirportIdent
+}

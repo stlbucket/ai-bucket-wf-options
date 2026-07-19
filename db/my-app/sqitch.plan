@@ -1,0 +1,7 @@
+%syntax-version=1.0.0
+%project=my-app
+
+00000000020010_my_app [fnb-app:00000000010220_app] 2026-05-16T00:00:00Z Developer <dev@example.com> # Create my_app schemas, thing_status enum, and thing table
+00000000020020_my_app_types [00000000020010_my_app] 2026-05-16T00:00:00Z Developer <dev@example.com> # Placeholder for my_app_fn custom types
+00000000020030_my_app_fn [00000000020020_my_app_types] 2026-05-16T00:00:00Z Developer <dev@example.com> # Install my_app application function
+00000000020040_my_app_policies [00000000020030_my_app_fn] 2026-05-16T00:00:00Z Developer <dev@example.com> # Grant schema permissions to anon, authenticated, service_role

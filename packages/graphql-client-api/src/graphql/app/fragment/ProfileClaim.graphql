@@ -1,0 +1,12 @@
+fragment ProfileClaim on ProfileClaim {
+  profileId
+  tenantId
+  residentId
+  actualResidentId
+  profileStatus
+  permissions
+  email
+  displayName
+  tenantName
+  # applicationKey
+}

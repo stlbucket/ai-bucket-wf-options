@@ -1,0 +1,8 @@
+%syntax-version=1.0.0
+%project=fnb-res
+
+00000000011000_res [fnb-app:00000000010220_app] 2026-07-10T00:00:00Z Developer <dev@example.com> # Create res, res_fn, res_api schemas; res.resource registry + res.module_permission visibility map (+ seeds)
+00000000011010_res_fn [00000000011000_res] 2026-07-10T00:00:00Z Developer <dev@example.com> # res_fn.build_urn (IMMUTABLE grammar authority), uuid_generate_v7, register_resource, archive_resource
+00000000011020_res_app_retrofit [00000000011010_res_fn] 2026-07-10T00:00:00Z Developer <dev@example.com> # urn generated columns + unique + deferred registry FKs on app.tenant, app.resident, app.support_ticket
+00000000011030_res_api [00000000011020_res_app_retrofit] 2026-07-10T00:00:00Z Developer <dev@example.com> # res_api.resolve_urn + computed hub fields res.resource_resident / res.resource_tenant
+00000000011040_res_policies [00000000011030_res_api] 2026-07-10T00:00:00Z Developer <dev@example.com> # Grants + RLS for res.resource and res.module_permission (SELECT-only registry)

@@ -1,0 +1,34 @@
+{
+  "name": "@function-bucket/fnb-auth-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@function-bucket/fnb-auth-layer": "workspace:*",
+    "@function-bucket/fnb-auth-server": "workspace:*",
+    "@function-bucket/fnb-db-access": "workspace:*",
+    "@function-bucket/fnb-graphql-client-api": "workspace:*",
+    "@function-bucket/fnb-types": "workspace:*",
+    "@urql/vue": "catalog:",
+    "@vueuse/core": "catalog:",
+    "@iconify-json/lucide": "catalog:",
+    "@iconify-json/simple-icons": "catalog:",
+    "@nuxt/ui": "catalog:",
+    "nuxt": "catalog:",
+    "openid-client": "^6.6.0"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:"
+  },
+  "packageManager": "pnpm@10.33.0"
+}

@@ -1,0 +1,12 @@
+query AirportSyncStatus {
+  airportSyncStatus {
+    lastSyncedAt
+    airportCount
+    runwayCount
+    frequencyCount
+    navaidCount
+    countryCount
+    regionCount
+    inProgress
+  }
+}

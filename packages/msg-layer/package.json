@@ -1,0 +1,24 @@
+{
+  "name": "@function-bucket/fnb-msg-layer",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./nuxt.config.ts",
+  "scripts": {
+    "dev:prepare": "nuxt prepare",
+    "postinstall": "nuxt prepare"
+  },
+  "peerDependencies": {
+    "vue": ">=3.4.0"
+  },
+  "dependencies": {
+    "@nuxt/ui": "catalog:",
+    "@function-bucket/fnb-graphql-client-api": "workspace:*",
+    "@function-bucket/fnb-tenant-layer": "workspace:*",
+    "@function-bucket/fnb-db-access": "workspace:*",
+    "consola": "^3.4.2",
+    "h3": "catalog:",
+    "nitropack": "^2.13.3",
+    "nuxt": "catalog:",
+    "pg": "catalog:"
+  }
+}

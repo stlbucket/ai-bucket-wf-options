@@ -1,0 +1,11 @@
+mutation CreateLocation(
+  $locationInfo: LocationInfoInput!
+) {
+	createLocation(input: {
+    _locationInfo: $locationInfo
+  }) {
+    location {
+      ...Location
+    }
+  }
+}

@@ -1,0 +1,7 @@
+%syntax-version=1.0.0
+%project=fnb-msg
+
+00000000010400_msg [fnb-app:00000000010220_app fnb-res:00000000011000_res] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create msg schema, enums, and tables
+00000000010408_msg_fn_types [00000000010400_msg] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create msg_api and msg_fn schemas and composite types
+00000000010410_msg_fn [00000000010408_msg_fn_types] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create msg functions and triggers
+00000000010420_msg_policies [00000000010410_msg_fn] 2026-04-11T00:00:00Z Developer <dev@example.com> # Apply grants and RLS policies for msg schemas

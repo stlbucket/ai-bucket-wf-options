@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+**/.output
+**/dist
+**/.nuxt
+**/.turbo
+.git
+.gitignore
+.DS_Store
+**/.DS_Store
+.env*.local

@@ -1,0 +1,15 @@
+fragment Brewery on Brewery {
+  id
+  externalId
+  locationId
+  name
+  breweryType
+  notes
+  phone
+  websiteUrl
+  createdAt
+  updatedAt
+  location {
+    ...Location
+  }
+}

@@ -1,0 +1,10 @@
+query MyProfileResidencies {
+  myProfileResidenciesList {
+    ...Resident
+    licenses: licensesList {
+      ...License
+      licenseType {
+        ...LicenseType      }
+    }
+  }
+}

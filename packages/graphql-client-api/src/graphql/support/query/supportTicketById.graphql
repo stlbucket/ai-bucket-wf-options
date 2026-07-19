@@ -1,0 +1,27 @@
+query SupportTicketById($id: UUID!) {
+  supportTicket(id: $id) {
+    ...SupportTicket
+    resident {
+      id
+      profileId
+      displayName
+      email
+      status
+      type
+    }
+    tenant {
+      id
+      name
+      status
+      type
+    }
+    supportTicketCommentsList(orderBy: CREATED_AT_ASC) {
+      ...SupportTicketComment
+      resident {
+        id
+        displayName
+        email
+      }
+    }
+  }
+}

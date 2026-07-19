@@ -1,0 +1,20 @@
+query AllLicensePacks {
+  licensePacks: licensePacksList {
+    ...LicensePack
+    licensePackLicenseTypes: licensePackLicenseTypesByLicensePackKeyList {
+      ...LicensePackLicenseType
+      licenseType {
+        ...LicenseType
+        permissions: licenseTypePermissionsByLicenseTypeKeyList {
+          ...LicenseTypePermission
+        }
+        licenses: licensesByLicenseTypeKey {
+          totalCount
+        }
+      }
+    }
+    tenantSubscriptions: tenantSubscriptionsByLicensePackKey {
+      totalCount
+    }
+  }
+}

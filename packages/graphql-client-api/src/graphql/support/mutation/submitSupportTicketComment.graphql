@@ -1,0 +1,10 @@
+mutation SubmitSupportTicketComment($ticketId: UUID!, $body: String!) {
+  submitSupportTicketComment(input: {
+    _ticketId: $ticketId
+    _body: $body
+  }) {
+    supportTicketComment {
+      ...SupportTicketComment
+    }
+  }
+}

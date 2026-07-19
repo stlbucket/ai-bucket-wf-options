@@ -1,0 +1,8 @@
+fragment LicensePack on LicensePack {
+  key
+  displayName
+  description
+  autoSubscribe
+  createdAt
+  updatedAt
+}

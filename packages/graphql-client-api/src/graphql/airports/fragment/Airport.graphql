@@ -1,0 +1,25 @@
+fragment Airport on Airport {
+  id
+  externalId
+  ident
+  type
+  name
+  elevationFt
+  continent
+  isoCountry
+  isoRegion
+  scheduledService
+  icaoCode
+  iataCode
+  gpsCode
+  localCode
+  homeLink
+  wikipediaLink
+  keywords
+  notes
+  createdAt
+  updatedAt
+  location {
+    ...Location
+  }
+}

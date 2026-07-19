@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><meta name="design_doc_mode" content="canvas"><style>body{margin:0;background:#f0eee9;font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif}.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 20px}.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}.dv-tname{font:600 13px/1.2 system-ui,sans-serif;color:#1a1a1a}.dv-opts{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 system-ui,sans-serif;color:rgba(0,0,0,.55)}.dv-card{max-width:100%;background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}.dv-opt:target .dv-oid{background:#2a78d6;color:#fff}.dv-next{margin:22px 0 0;font:12px/1.5 system-ui,sans-serif;color:rgba(0,0,0,.5)}</style></helmet>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Refined <a class="dv-oid" href="#1a">1a</a> — collapsible right rail, toggle button uses the counts text from <a class="dv-oid" href="#1b">1b</a></span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a">
+  <div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Rail toggle reads "Attachments 3 · Discussion 2" (try it — state persists across reloads) · location chip opens a map popover · Make template / Delete tucked into ⋯ menu</div>
+  <div class="dv-card" style="width: 960px" data-screen-label="2a Refined rail">
+    <!-- header -->
+    <div style="padding: 18px 24px 14px; border-bottom: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9ca3af">
+        <span style="color: #6b7280">Todos</span><span>›</span><span style="color: #6b7280">Spring Maintenance 2026</span>
+      </div>
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px">
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0">
+          <h1 style="margin: 0; font-size: 20px; font-weight: 600; color: #111827; line-height: 1.3">Repair clubhouse siding</h1>
+          <span style="font-size: 11px; font-weight: 500; color: #1d4ed8; background: #dbeafe; border-radius: 6px; padding: 2px 8px">milestone</span>
+          <span style="font-size: 11px; font-weight: 500; color: #6b7280; border: 1px solid #d1d5db; border-radius: 6px; padding: 2px 8px">pinned</span>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: flex-start">
+          <button onClick="{{ toggleRail2 }}" style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #374151; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 5px 10px; cursor: pointer; white-space: nowrap" style-hover="background: #f9fafb">{{ rail2BtnLabel }}</button>
+          <div style="position: relative">
+            <button onClick="{{ toggleMenu }}" style="font-size: 15px; line-height: 1; color: #6b7280; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 5px 10px; cursor: pointer" style-hover="background: #f9fafb">⋯</button>
+            <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="position: absolute; top: 32px; right: 0; width: 180px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 8px 24px rgba(17, 24, 39, 0.12); padding: 4px; z-index: 20; display: flex; flex-direction: column">
+                <button style="text-align: left; font-size: 13px; color: #374151; background: none; border: none; border-radius: 6px; padding: 7px 10px; cursor: pointer" style-hover="background: #f3f4f6">Make template</button>
+                <button style="text-align: left; font-size: 13px; color: #374151; background: none; border: none; border-radius: 6px; padding: 7px 10px; cursor: pointer" style-hover="background: #f3f4f6">Unpin</button>
+                <div style="height: 1px; background: #f1f3f5; margin: 4px 6px"></div>
+                <button style="text-align: left; font-size: 13px; color: #dc2626; background: none; border: none; border-radius: 6px; padding: 7px 10px; cursor: pointer" style-hover="background: #fef2f2">Delete…</button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
+        <div style="display: flex; gap: 6px">
+          <span style="font-size: 12px; font-weight: 500; color: #fff; background: #d97706; border-radius: 6px; padding: 4px 10px">Incomplete</span>
+          <span style="font-size: 12px; font-weight: 500; color: #6b7280; border: 1px solid #d1d5db; border-radius: 6px; padding: 3px 10px; background: #fff; cursor: pointer" style-hover="background: #f9fafb">Complete</span>
+          <span style="font-size: 12px; font-weight: 500; color: #6b7280; border: 1px solid #d1d5db; border-radius: 6px; padding: 3px 10px; background: #fff; cursor: pointer" style-hover="background: #f9fafb">Unfinished</span>
+          <span style="font-size: 12px; font-weight: 500; color: #6b7280; border: 1px solid #d1d5db; border-radius: 6px; padding: 3px 10px; background: #fff; cursor: pointer" style-hover="background: #f9fafb">Archived</span>
+        </div>
+        <span style="width: 1px; height: 18px; background: #e5e7eb"></span>
+        <div style="display: flex; align-items: center; gap: 7px">
+          <span style="width: 22px; height: 22px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center">SO</span>
+          <span style="font-size: 13px; color: #374151">Sam Ortiz</span>
+          <span style="font-size: 11px; color: #9ca3af; cursor: pointer; text-decoration: underline">change</span>
+        </div>
+        <span style="width: 1px; height: 18px; background: #e5e7eb"></span>
+        <div style="position: relative">
+          <button onClick="{{ toggleMap }}" style="display: flex; align-items: center; gap: 5px; font-size: 13px; color: #374151; background: none; border: none; padding: 0; cursor: pointer" title="Show on map">
+            <svg width="13" height="13" viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z" fill="none" stroke="#6b7280" stroke-width="2"></path><circle cx="12" cy="10" r="2.5" fill="#6b7280"></circle></svg>
+            <span style="border-bottom: 1px dotted #9ca3af">Seattle, WA</span>
+          </button>
+          <sc-if value="{{ mapOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; top: 26px; left: 0; width: 260px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; box-shadow: 0 8px 24px rgba(17, 24, 39, 0.12); overflow: hidden; z-index: 20">
+              <div style="height: 130px; background: repeating-linear-gradient(45deg, #eef2f1, #eef2f1 8px, #e4eae8 8px, #e4eae8 16px); display: flex; align-items: center; justify-content: center">
+                <span style="font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: #6b7280; background: rgba(255, 255, 255, 0.85); border-radius: 4px; padding: 3px 8px">map preview</span>
+              </div>
+              <div style="padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px">
+                <span style="min-width: 0"><span style="display: block; font-size: 12px; font-weight: 600; color: #111827">Seattle, WA</span><span style="display: block; font-family: ui-monospace, Menlo, monospace; font-size: 10px; color: #9ca3af">47.613833, -122.33875</span></span>
+                <span style="font-size: 11px; font-weight: 500; color: #047857; cursor: pointer; flex-shrink: 0">Change</span>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+    <!-- body -->
+    <div style="display: flex; align-items: stretch; min-height: 480px">
+      <div style="flex: 1; min-width: 0; padding: 20px 24px; display: flex; flex-direction: column; gap: 24px">
+        <div>
+          <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px">Description</div>
+          <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #374151; max-width: 62ch">West-facing wall shows water damage along the lower trim. Replace the affected panels, repaint to match, and have the HOA board sign off on the color before ordering.</p>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px">
+            <div style="display: flex; align-items: baseline; gap: 8px">
+              <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af">Subtasks</span>
+              <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #6b7280">2/6 done</span>
+            </div>
+            <button style="font-size: 12px; font-weight: 500; color: #374151; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 10px; cursor: pointer" style-hover="background: #f9fafb">+ Add subtask</button>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid #f1f3f5">
+              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#059669"></circle><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"></path></svg>
+              <span style="font-size: 13px; font-weight: 500; color: #111827">Order replacement siding panels</span>
+              <span style="font-size: 11px; color: #6b7280; background: #f3f4f6; border-radius: 999px; padding: 2px 8px">Sam O.</span>
+              <span style="flex: 1"></span>
+              <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #9ca3af">1/1</span>
+              <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 36px; border-bottom: 1px solid #f1f3f5; background: #fafafa">
+              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#059669"></circle><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"></path></svg>
+              <span style="font-size: 13px; color: #374151">Confirm color match with HOA board</span>
+              <span style="flex: 1"></span>
+              <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid #f1f3f5">
+              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#cbd5e1" stroke-width="2"></circle></svg>
+              <span style="font-size: 13px; font-weight: 500; color: #111827">Remove damaged panels — west wall</span>
+              <span style="font-size: 11px; color: #6b7280; background: #f3f4f6; border-radius: 999px; padding: 2px 8px">Priya P.</span>
+              <span style="flex: 1"></span>
+              <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #9ca3af">1/2</span>
+              <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 36px; border-bottom: 1px solid #f1f3f5; background: #fafafa">
+              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#059669"></circle><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"></path></svg>
+              <span style="font-size: 13px; color: #374151">Rent scaffolding</span>
+              <span style="flex: 1"></span>
+              <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 36px; border-bottom: 1px solid #f1f3f5; background: #fafafa">
+              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#cbd5e1" stroke-width="2"></circle></svg>
+              <span style="font-size: 13px; color: #374151">Schedule dumpster pickup</span>
+              <span style="flex: 1"></span>
+              <span style="font-size: 11px; color: #9ca3af">+2 more</span>
+              <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px">
+              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="3 2.5"></circle></svg>
+              <span style="font-size: 13px; font-weight: 500; color: #111827">Paint and seal new siding</span>
+              <span style="flex: 1"></span>
+              <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <sc-if value="{{ rail2Open }}" hint-placeholder-val="{{ true }}">
+        <div style="width: 312px; flex-shrink: 0; border-left: 1px solid #e5e7eb; background: #fafafa; padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 20px">
+          <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px">
+              <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af">Attachments · 3</span>
+              <span style="font-size: 11px; font-weight: 500; color: #047857; cursor: pointer">Upload</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <div style="display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 10px">
+                <span style="width: 30px; height: 30px; border-radius: 6px; background: #fee2e2; color: #b91c1c; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0">PDF</span>
+                <span style="min-width: 0"><span style="display: block; font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">clubhouse-inspection.pdf</span><span style="display: block; font-size: 10px; color: #9ca3af">1.2 MB · Sam Ortiz</span></span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 10px">
+                <span style="width: 30px; height: 30px; border-radius: 6px; background: #ede9fe; color: #6d28d9; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0">M4A</span>
+                <span style="min-width: 0"><span style="display: block; font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">site-walkthrough.m4a</span><span style="display: block; font-size: 10px; color: #9ca3af">3.8 MB · Priya Patel</span></span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 10px">
+                <span style="width: 30px; height: 30px; border-radius: 6px; background: #dcfce7; color: #15803d; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0">PNG</span>
+                <span style="min-width: 0"><span style="display: block; font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">trim-damage-west.png</span><span style="display: block; font-size: 10px; color: #9ca3af">2.4 MB · Sam Ortiz</span></span>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; min-height: 0; flex: 1">
+            <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px">Discussion</div>
+            <sc-if value="{{ hasDiscussion }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 10px; flex: 1">
+                <div style="display: flex; gap: 8px">
+                  <span style="width: 24px; height: 24px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0">SO</span>
+                  <span><span style="display: block; font-size: 11px; color: #9ca3af"><span style="font-weight: 600; color: #374151">Sam Ortiz</span> · 2h</span><span style="display: block; font-size: 13px; color: #374151; line-height: 1.45">Siding panels arrived — color matches the board sample.</span></span>
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <span style="width: 24px; height: 24px; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0">PP</span>
+                  <span><span style="display: block; font-size: 11px; color: #9ca3af"><span style="font-weight: 600; color: #374151">Priya Patel</span> · 45m</span><span style="display: block; font-size: 13px; color: #374151; line-height: 1.45">Scaffolding rental confirmed for Thursday.</span></span>
+                </div>
+                <div style="margin-top: auto; display: flex; gap: 6px">
+                  <span style="flex: 1; font-size: 12px; color: #9ca3af; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 7px 10px">Reply…</span>
+                  <button style="font-size: 12px; font-weight: 500; color: #fff; background: #059669; border: none; border-radius: 6px; padding: 0 12px; cursor: pointer">Send</button>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ noDiscussion }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span style="font-size: 12px; color: #9ca3af">No discussion yet.</span>
+                <button style="font-size: 12px; font-weight: 500; color: #374151; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 10px; cursor: pointer">Start discussion</button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+
+</div>
+<p class="dv-next">Try next: "collapse the rail into a slim strip instead of hiding it" · "put the status pills in the rail too" · "apply <a class="dv-oid" href="#2a">2a</a> back to the Vue components"</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Todo detail — meta inline under title, attachments + discussion as a hideable right stack</span></div>
+<div class="dv-opts">
+
+<!-- ============ 1a: collapsible right rail ============ -->
+<div class="dv-opt" id="1a">
+  <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Collapsible right rail — attachments + discussion in a panel you can hide (try the button); main column reflows to full width</div>
+  <div class="dv-card" style="width: 960px" data-screen-label="1a Right rail">
+    <!-- header -->
+    <div style="padding: 18px 24px 14px; border-bottom: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9ca3af">
+        <span style="color: #6b7280">Todos</span><span>›</span><span style="color: #6b7280">Spring Maintenance 2026</span>
+      </div>
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px">
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0">
+          <h1 style="margin: 0; font-size: 20px; font-weight: 600; color: #111827; line-height: 1.3">Repair clubhouse siding</h1>
+          <span style="font-size: 11px; font-weight: 500; color: #1d4ed8; background: #dbeafe; border-radius: 6px; padding: 2px 8px">milestone</span>
+          <span style="font-size: 11px; font-weight: 500; color: #6b7280; border: 1px solid #d1d5db; border-radius: 6px; padding: 2px 8px">pinned</span>
+        </div>
+        <button onClick="{{ toggleRail }}" style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #374151; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 5px 10px; cursor: pointer; white-space: nowrap" style-hover="background: #f9fafb">{{ railBtnLabel }}</button>
+      </div>
+      <!-- meta row: status pills + assignee + location inline -->
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
+        <div style="display: flex; gap: 6px">
+          <span style="font-size: 12px; font-weight: 500; color: #fff; background: #d97706; border-radius: 6px; padding: 4px 10px">Incomplete</span>
+          <span style="font-size: 12px; font-weight: 500; color: #6b7280; border: 1px solid #d1d5db; border-radius: 6px; padding: 3px 10px; background: #fff">Complete</span>
+          <span style="font-size: 12px; font-weight: 500; color: #6b7280; border: 1px solid #d1d5db; border-radius: 6px; padding: 3px 10px; background: #fff">Unfinished</span>
+          <span style="font-size: 12px; font-weight: 500; color: #6b7280; border: 1px solid #d1d5db; border-radius: 6px; padding: 3px 10px; background: #fff">Archived</span>
+        </div>
+        <span style="width: 1px; height: 18px; background: #e5e7eb"></span>
+        <div style="display: flex; align-items: center; gap: 7px">
+          <span style="width: 22px; height: 22px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center">SO</span>
+          <span style="font-size: 13px; color: #374151">Sam Ortiz</span>
+          <span style="font-size: 11px; color: #9ca3af; cursor: pointer; text-decoration: underline">change</span>
+        </div>
+        <span style="width: 1px; height: 18px; background: #e5e7eb"></span>
+        <div style="display: flex; align-items: center; gap: 5px; font-size: 13px; color: #374151; cursor: pointer" title="Show on map">
+          <svg width="13" height="13" viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z" fill="none" stroke="#6b7280" stroke-width="2"></path><circle cx="12" cy="10" r="2.5" fill="#6b7280"></circle></svg>
+          <span style="border-bottom: 1px dotted #9ca3af">Seattle, WA</span>
+        </div>
+      </div>
+    </div>
+    <!-- body -->
+    <div style="display: flex; align-items: stretch; min-height: 480px">
+      <!-- main column -->
+      <div style="flex: 1; min-width: 0; padding: 20px 24px; display: flex; flex-direction: column; gap: 24px">
+        <div>
+          <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px">Description</div>
+          <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #374151; max-width: 62ch">West-facing wall shows water damage along the lower trim. Replace the affected panels, repaint to match, and have the HOA board sign off on the color before ordering.</p>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px">
+            <div style="display: flex; align-items: baseline; gap: 8px">
+              <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af">Subtasks</span>
+              <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #6b7280">2/6 done</span>
+            </div>
+            <button style="font-size: 12px; font-weight: 500; color: #374151; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 10px; cursor: pointer" style-hover="background: #f9fafb">+ Add subtask</button>
+          </div>
+          <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid #f1f3f5">
+              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#059669"></circle><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"></path></svg>
+              <span style="font-size: 13px; font-weight: 500; color: #111827">Order replacement siding panels</span>
+              <span style="font-size: 11px; color: #6b7280; background: #f3f4f6; border-radius: 999px; padding: 2px 8px">Sam O.</span>
+              <span style="flex: 1"></span>
+              <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #9ca3af">1/1</span>
+              <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 36px; border-bottom: 1px solid #f1f3f5; background: #fafafa">
+              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#059669"></circle><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"></path></svg>
+              <span style="font-size: 13px; color: #374151">Confirm color match with HOA board</span>
+              <span style="flex: 1"></span>
+              <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid #f1f3f5">
+              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#cbd5e1" stroke-width="2"></circle></svg>
+              <span style="font-size: 13px; font-weight: 500; color: #111827">Remove damaged panels — west wall</span>
+              <span style="font-size: 11px; color: #6b7280; background: #f3f4f6; border-radius: 999px; padding: 2px 8px">Priya P.</span>
+              <span style="flex: 1"></span>
+              <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #9ca3af">1/2</span>
+              <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 36px; border-bottom: 1px solid #f1f3f5; background: #fafafa">
+              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#059669"></circle><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"></path></svg>
+              <span style="font-size: 13px; color: #374151">Rent scaffolding</span>
+              <span style="flex: 1"></span>
+              <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 36px; border-bottom: 1px solid #f1f3f5; background: #fafafa">
+              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#cbd5e1" stroke-width="2"></circle></svg>
+              <span style="font-size: 13px; color: #374151">Schedule dumpster pickup</span>
+              <span style="flex: 1"></span>
+              <span style="font-size: 11px; color: #9ca3af">+2 more</span>
+              <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px">
+              <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="3 2.5"></circle></svg>
+              <span style="font-size: 13px; font-weight: 500; color: #111827">Paint and seal new siding</span>
+              <span style="flex: 1"></span>
+              <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: auto; display: flex; gap: 8px; border-top: 1px solid #f1f3f5; padding-top: 14px">
+          <button style="font-size: 12px; font-weight: 500; color: #374151; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 5px 10px; cursor: pointer">Make template</button>
+          <button style="font-size: 12px; font-weight: 500; color: #dc2626; background: #fff; border: 1px solid #fecaca; border-radius: 6px; padding: 5px 10px; cursor: pointer">Delete</button>
+        </div>
+      </div>
+      <!-- right rail -->
+      <sc-if value="{{ railOpen }}" hint-placeholder-val="{{ true }}">
+        <div style="width: 312px; flex-shrink: 0; border-left: 1px solid #e5e7eb; background: #fafafa; padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 20px">
+          <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px">
+              <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af">Attachments · 3</span>
+              <span style="font-size: 11px; font-weight: 500; color: #047857; cursor: pointer">Upload</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <div style="display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 10px">
+                <span style="width: 30px; height: 30px; border-radius: 6px; background: #fee2e2; color: #b91c1c; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0">PDF</span>
+                <span style="min-width: 0"><span style="display: block; font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">clubhouse-inspection.pdf</span><span style="display: block; font-size: 10px; color: #9ca3af">1.2 MB · Sam Ortiz</span></span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 10px">
+                <span style="width: 30px; height: 30px; border-radius: 6px; background: #ede9fe; color: #6d28d9; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0">M4A</span>
+                <span style="min-width: 0"><span style="display: block; font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">site-walkthrough.m4a</span><span style="display: block; font-size: 10px; color: #9ca3af">3.8 MB · Priya Patel</span></span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 10px">
+                <span style="width: 30px; height: 30px; border-radius: 6px; background: #dcfce7; color: #15803d; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0">PNG</span>
+                <span style="min-width: 0"><span style="display: block; font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">trim-damage-west.png</span><span style="display: block; font-size: 10px; color: #9ca3af">2.4 MB · Sam Ortiz</span></span>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; min-height: 0; flex: 1">
+            <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px">Discussion</div>
+            <sc-if value="{{ hasDiscussion }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 10px; flex: 1">
+                <div style="display: flex; gap: 8px">
+                  <span style="width: 24px; height: 24px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0">SO</span>
+                  <span><span style="display: block; font-size: 11px; color: #9ca3af"><span style="font-weight: 600; color: #374151">Sam Ortiz</span> · 2h</span><span style="display: block; font-size: 13px; color: #374151; line-height: 1.45">Siding panels arrived — color matches the board sample.</span></span>
+                </div>
+                <div style="display: flex; gap: 8px">
+                  <span style="width: 24px; height: 24px; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0">PP</span>
+                  <span><span style="display: block; font-size: 11px; color: #9ca3af"><span style="font-weight: 600; color: #374151">Priya Patel</span> · 45m</span><span style="display: block; font-size: 13px; color: #374151; line-height: 1.45">Scaffolding rental confirmed for Thursday.</span></span>
+                </div>
+                <div style="margin-top: auto; display: flex; gap: 6px">
+                  <span style="flex: 1; font-size: 12px; color: #9ca3af; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 7px 10px">Reply…</span>
+                  <button style="font-size: 12px; font-weight: 500; color: #fff; background: #059669; border: none; border-radius: 6px; padding: 0 12px; cursor: pointer">Send</button>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ noDiscussion }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span style="font-size: 12px; color: #9ca3af">No discussion yet.</span>
+                <button style="font-size: 12px; font-weight: 500; color: #374151; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 10px; cursor: pointer">Start discussion</button>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 1b: slide-over drawer ============ -->
+<div class="dv-opt" id="1b">
+  <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Slide-over drawer — main content always full width; attachments + discussion overlay on demand, zero reserved space. Status as a compact dropdown pill.</div>
+  <div class="dv-card" style="width: 960px; position: relative" data-screen-label="1b Slide-over">
+    <div style="padding: 18px 24px 14px; border-bottom: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9ca3af">
+        <span style="color: #6b7280">Todos</span><span>›</span><span style="color: #6b7280">Spring Maintenance 2026</span>
+      </div>
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px">
+        <div style="display: flex; align-items: center; gap: 10px; min-width: 0">
+          <h1 style="margin: 0; font-size: 20px; font-weight: 600; color: #111827; line-height: 1.3">Repair clubhouse siding</h1>
+          <span style="font-size: 11px; font-weight: 500; color: #1d4ed8; background: #dbeafe; border-radius: 6px; padding: 2px 8px">milestone</span>
+        </div>
+        <div style="display: flex; gap: 8px">
+          <button onClick="{{ toggleDrawer }}" style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #374151; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 5px 10px; cursor: pointer; white-space: nowrap" style-hover="background: #f9fafb">Attachments 3 · Discussion 2</button>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
+        <button style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #92400e; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 4px 10px; cursor: pointer">Incomplete <span style="font-size: 9px">▾</span></button>
+        <span style="width: 1px; height: 18px; background: #e5e7eb"></span>
+        <div style="display: flex; align-items: center; gap: 7px">
+          <span style="width: 22px; height: 22px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center">SO</span>
+          <span style="font-size: 13px; color: #374151">Sam Ortiz</span>
+        </div>
+        <span style="width: 1px; height: 18px; background: #e5e7eb"></span>
+        <div style="display: flex; align-items: center; gap: 5px; font-size: 13px; color: #374151; cursor: pointer">
+          <svg width="13" height="13" viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z" fill="none" stroke="#6b7280" stroke-width="2"></path><circle cx="12" cy="10" r="2.5" fill="#6b7280"></circle></svg>
+          <span style="border-bottom: 1px dotted #9ca3af">Seattle, WA</span>
+        </div>
+      </div>
+    </div>
+    <div style="padding: 20px 24px 24px; max-width: 720px; display: flex; flex-direction: column; gap: 24px; min-height: 420px">
+      <div>
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px">Description</div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #374151">West-facing wall shows water damage along the lower trim. Replace the affected panels, repaint to match, and have the HOA board sign off on the color before ordering.</p>
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px">
+          <div style="display: flex; align-items: baseline; gap: 8px">
+            <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af">Subtasks</span>
+            <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #6b7280">2/6 done</span>
+          </div>
+          <button style="font-size: 12px; font-weight: 500; color: #374151; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 10px; cursor: pointer">+ Add subtask</button>
+        </div>
+        <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid #f1f3f5">
+            <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#059669"></circle><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"></path></svg>
+            <span style="font-size: 13px; font-weight: 500; color: #111827">Order replacement siding panels</span>
+            <span style="font-size: 11px; color: #6b7280; background: #f3f4f6; border-radius: 999px; padding: 2px 8px">Sam O.</span>
+            <span style="flex: 1"></span>
+            <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 36px; border-bottom: 1px solid #f1f3f5; background: #fafafa">
+            <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#059669"></circle><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"></path></svg>
+            <span style="font-size: 13px; color: #374151">Confirm color match with HOA board</span>
+            <span style="flex: 1"></span>
+            <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid #f1f3f5">
+            <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#cbd5e1" stroke-width="2"></circle></svg>
+            <span style="font-size: 13px; font-weight: 500; color: #111827">Remove damaged panels — west wall</span>
+            <span style="font-size: 11px; color: #6b7280; background: #f3f4f6; border-radius: 999px; padding: 2px 8px">Priya P.</span>
+            <span style="flex: 1"></span>
+            <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #9ca3af">1/2</span>
+            <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px">
+            <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="3 2.5"></circle></svg>
+            <span style="font-size: 13px; font-weight: 500; color: #111827">Paint and seal new siding</span>
+            <span style="flex: 1"></span>
+            <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- drawer -->
+    <sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ true }}">
+      <div style="position: absolute; inset: 0; background: rgba(17, 24, 39, 0.25)" onClick="{{ toggleDrawer }}"></div>
+      <div style="position: absolute; top: 0; right: 0; bottom: 0; width: 340px; background: #fff; border-left: 1px solid #e5e7eb; box-shadow: -12px 0 32px rgba(17, 24, 39, 0.12); padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 20px; overflow: auto">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <span style="font-size: 14px; font-weight: 600; color: #111827">Details</span>
+          <button onClick="{{ toggleDrawer }}" style="font-size: 14px; color: #9ca3af; background: none; border: none; cursor: pointer; padding: 2px 6px">✕</button>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px">
+            <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af">Attachments · 3</span>
+            <span style="font-size: 11px; font-weight: 500; color: #047857; cursor: pointer">Upload</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; align-items: center; gap: 9px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 10px">
+              <span style="width: 30px; height: 30px; border-radius: 6px; background: #fee2e2; color: #b91c1c; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0">PDF</span>
+              <span style="min-width: 0"><span style="display: block; font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">clubhouse-inspection.pdf</span><span style="display: block; font-size: 10px; color: #9ca3af">1.2 MB · Sam Ortiz</span></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 9px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 10px">
+              <span style="width: 30px; height: 30px; border-radius: 6px; background: #ede9fe; color: #6d28d9; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0">M4A</span>
+              <span style="min-width: 0"><span style="display: block; font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">site-walkthrough.m4a</span><span style="display: block; font-size: 10px; color: #9ca3af">3.8 MB · Priya Patel</span></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 9px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 7px 10px">
+              <span style="width: 30px; height: 30px; border-radius: 6px; background: #dcfce7; color: #15803d; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0">PNG</span>
+              <span style="min-width: 0"><span style="display: block; font-size: 12px; font-weight: 500; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">trim-damage-west.png</span><span style="display: block; font-size: 10px; color: #9ca3af">2.4 MB · Sam Ortiz</span></span>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; flex: 1">
+          <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px">Discussion</div>
+          <sc-if value="{{ hasDiscussion }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; gap: 10px; flex: 1">
+              <div style="display: flex; gap: 8px">
+                <span style="width: 24px; height: 24px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0">SO</span>
+                <span><span style="display: block; font-size: 11px; color: #9ca3af"><span style="font-weight: 600; color: #374151">Sam Ortiz</span> · 2h</span><span style="display: block; font-size: 13px; color: #374151; line-height: 1.45">Siding panels arrived — color matches the board sample.</span></span>
+              </div>
+              <div style="display: flex; gap: 8px">
+                <span style="width: 24px; height: 24px; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0">PP</span>
+                <span><span style="display: block; font-size: 11px; color: #9ca3af"><span style="font-weight: 600; color: #374151">Priya Patel</span> · 45m</span><span style="display: block; font-size: 13px; color: #374151; line-height: 1.45">Scaffolding rental confirmed for Thursday.</span></span>
+              </div>
+              <div style="margin-top: auto; display: flex; gap: 6px">
+                <span style="flex: 1; font-size: 12px; color: #9ca3af; border: 1px solid #d1d5db; border-radius: 6px; padding: 7px 10px">Reply…</span>
+                <button style="font-size: 12px; font-weight: 500; color: #fff; background: #059669; border: none; border-radius: 6px; padding: 0 12px; cursor: pointer">Send</button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noDiscussion }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 10px">
+              <span style="font-size: 12px; color: #9ca3af">No discussion yet.</span>
+              <button style="font-size: 12px; font-weight: 500; color: #374151; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 10px; cursor: pointer">Start discussion</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+
+<!-- ============ 1c: inline collapsible sections ============ -->
+<div class="dv-opt" id="1c">
+  <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Single column, inline accordions — attachments + discussion collapse to one-line headers below subtasks (click to toggle); simplest, and empty discussion costs one row</div>
+  <div class="dv-card" style="width: 760px" data-screen-label="1c Inline accordions">
+    <div style="padding: 18px 24px 14px; border-bottom: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9ca3af">
+        <span style="color: #6b7280">Todos</span><span>›</span><span style="color: #6b7280">Spring Maintenance 2026</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px">
+        <h1 style="margin: 0; font-size: 20px; font-weight: 600; color: #111827; line-height: 1.3">Repair clubhouse siding</h1>
+        <span style="font-size: 11px; font-weight: 500; color: #1d4ed8; background: #dbeafe; border-radius: 6px; padding: 2px 8px">milestone</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
+        <button style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #92400e; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 4px 10px; cursor: pointer">Incomplete <span style="font-size: 9px">▾</span></button>
+        <div style="display: flex; align-items: center; gap: 7px">
+          <span style="width: 22px; height: 22px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center">SO</span>
+          <span style="font-size: 13px; color: #374151">Sam Ortiz</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 5px; font-size: 13px; color: #374151; cursor: pointer">
+          <svg width="13" height="13" viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z" fill="none" stroke="#6b7280" stroke-width="2"></path><circle cx="12" cy="10" r="2.5" fill="#6b7280"></circle></svg>
+          <span style="border-bottom: 1px dotted #9ca3af">Seattle, WA</span>
+        </div>
+      </div>
+    </div>
+    <div style="padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 22px">
+      <div>
+        <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af; margin-bottom: 8px">Description</div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #374151">West-facing wall shows water damage along the lower trim. Replace the affected panels, repaint to match, and have the HOA board sign off on the color before ordering.</p>
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px">
+          <div style="display: flex; align-items: baseline; gap: 8px">
+            <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af">Subtasks</span>
+            <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #6b7280">2/6 done</span>
+          </div>
+          <button style="font-size: 12px; font-weight: 500; color: #374151; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 4px 10px; cursor: pointer">+ Add subtask</button>
+        </div>
+        <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid #f1f3f5">
+            <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#059669"></circle><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"></path></svg>
+            <span style="font-size: 13px; font-weight: 500; color: #111827">Order replacement siding panels</span>
+            <span style="font-size: 11px; color: #6b7280; background: #f3f4f6; border-radius: 999px; padding: 2px 8px">Sam O.</span>
+            <span style="flex: 1"></span>
+            <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-bottom: 1px solid #f1f3f5">
+            <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#cbd5e1" stroke-width="2"></circle></svg>
+            <span style="font-size: 13px; font-weight: 500; color: #111827">Remove damaged panels — west wall</span>
+            <span style="font-size: 11px; color: #6b7280; background: #f3f4f6; border-radius: 999px; padding: 2px 8px">Priya P.</span>
+            <span style="flex: 1"></span>
+            <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #9ca3af">1/2</span>
+            <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px">
+            <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="3 2.5"></circle></svg>
+            <span style="font-size: 13px; font-weight: 500; color: #111827">Paint and seal new siding</span>
+            <span style="flex: 1"></span>
+            <span style="font-size: 14px; color: #9ca3af; cursor: pointer; padding: 0 4px">+</span>
+          </div>
+        </div>
+      </div>
+      <!-- attachments accordion -->
+      <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden">
+        <button onClick="{{ toggleAttach }}" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fafafa; border: none; cursor: pointer; text-align: left">
+          <span style="font-size: 10px; color: #9ca3af">{{ attachCaret }}</span>
+          <span style="font-size: 12px; font-weight: 600; color: #374151">Attachments</span>
+          <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #9ca3af">3</span>
+          <span style="flex: 1"></span>
+          <span style="font-size: 11px; font-weight: 500; color: #047857">Upload</span>
+        </button>
+        <sc-if value="{{ attachOpen }}" hint-placeholder-val="{{ true }}">
+          <div style="padding: 10px 14px; border-top: 1px solid #e5e7eb; display: flex; gap: 8px; flex-wrap: wrap">
+            <span style="display: flex; align-items: center; gap: 7px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px 10px"><span style="width: 24px; height: 24px; border-radius: 5px; background: #fee2e2; color: #b91c1c; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center">PDF</span><span style="font-size: 12px; color: #111827">clubhouse-inspection.pdf</span></span>
+            <span style="display: flex; align-items: center; gap: 7px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px 10px"><span style="width: 24px; height: 24px; border-radius: 5px; background: #ede9fe; color: #6d28d9; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center">M4A</span><span style="font-size: 12px; color: #111827">site-walkthrough.m4a</span></span>
+            <span style="display: flex; align-items: center; gap: 7px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 6px 10px"><span style="width: 24px; height: 24px; border-radius: 5px; background: #dcfce7; color: #15803d; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center">PNG</span><span style="font-size: 12px; color: #111827">trim-damage-west.png</span></span>
+          </div>
+        </sc-if>
+      </div>
+      <!-- discussion accordion -->
+      <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden">
+        <button onClick="{{ toggleDiscuss }}" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #fafafa; border: none; cursor: pointer; text-align: left">
+          <span style="font-size: 10px; color: #9ca3af">{{ discussCaret }}</span>
+          <span style="font-size: 12px; font-weight: 600; color: #374151">Discussion</span>
+          <sc-if value="{{ hasDiscussion }}" hint-placeholder-val="{{ true }}">
+            <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #9ca3af">2</span>
+            <span style="font-size: 11px; color: #9ca3af">· last reply 45m ago</span>
+          </sc-if>
+          <span style="flex: 1"></span>
+          <sc-if value="{{ noDiscussion }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size: 11px; font-weight: 500; color: #047857">Start discussion</span>
+          </sc-if>
+        </button>
+        <sc-if value="{{ discussBodyOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 12px 14px; border-top: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; gap: 8px">
+              <span style="width: 24px; height: 24px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0">SO</span>
+              <span><span style="display: block; font-size: 11px; color: #9ca3af"><span style="font-weight: 600; color: #374151">Sam Ortiz</span> · 2h</span><span style="display: block; font-size: 13px; color: #374151; line-height: 1.45">Siding panels arrived — color matches the board sample.</span></span>
+            </div>
+            <div style="display: flex; gap: 8px">
+              <span style="width: 24px; height: 24px; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0">PP</span>
+              <span><span style="display: block; font-size: 11px; color: #9ca3af"><span style="font-weight: 600; color: #374151">Priya Patel</span> · 45m</span><span style="display: block; font-size: 13px; color: #374151; line-height: 1.45">Scaffolding rental confirmed for Thursday.</span></span>
+            </div>
+            <div style="display: flex; gap: 6px">
+              <span style="flex: 1; font-size: 12px; color: #9ca3af; border: 1px solid #d1d5db; border-radius: 6px; padding: 7px 10px">Reply…</span>
+              <button style="font-size: 12px; font-weight: 500; color: #fff; background: #059669; border: none; border-radius: 6px; padding: 0 12px; cursor: pointer">Send</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 1d: mobile ============ -->
+<div class="dv-opt" id="1d">
+  <div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Mobile — how <a class="dv-oid" href="#1a">1a</a> / <a class="dv-oid" href="#1c">1c</a> stack on a phone: meta chips wrap, rail becomes accordions at the bottom</div>
+  <div class="dv-card" style="width: 390px" data-screen-label="1d Mobile">
+    <div style="padding: 16px 16px 12px; border-bottom: 1px solid #e5e7eb; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9ca3af">
+        <span style="color: #6b7280">‹ Spring Maintenance 2026</span>
+      </div>
+      <div style="display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap">
+        <h1 style="margin: 0; font-size: 18px; font-weight: 600; color: #111827; line-height: 1.3">Repair clubhouse siding</h1>
+        <span style="font-size: 11px; font-weight: 500; color: #1d4ed8; background: #dbeafe; border-radius: 6px; padding: 2px 8px; margin-top: 2px">milestone</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+        <button style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #92400e; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; padding: 6px 12px; min-height: 32px; cursor: pointer">Incomplete <span style="font-size: 9px">▾</span></button>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #374151; border: 1px solid #e5e7eb; border-radius: 6px; padding: 6px 10px; min-height: 32px"><span style="width: 18px; height: 18px; border-radius: 999px; background: #ecfdf5; color: #047857; font-size: 9px; font-weight: 600; display: flex; align-items: center; justify-content: center">SO</span>Sam Ortiz</span>
+        <span style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: #374151; border: 1px solid #e5e7eb; border-radius: 6px; padding: 6px 10px; min-height: 32px"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z" fill="none" stroke="#6b7280" stroke-width="2"></path><circle cx="12" cy="10" r="2.5" fill="#6b7280"></circle></svg>Seattle, WA</span>
+      </div>
+    </div>
+    <div style="padding: 16px; display: flex; flex-direction: column; gap: 18px">
+      <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #374151">West-facing wall shows water damage along the lower trim. Replace the affected panels, repaint to match.</p>
+      <div>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px">
+          <div style="display: flex; align-items: baseline; gap: 8px">
+            <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #9ca3af">Subtasks</span>
+            <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #6b7280">2/6</span>
+          </div>
+          <button style="font-size: 12px; font-weight: 500; color: #374151; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 6px 12px; min-height: 32px; cursor: pointer">+ Add</button>
+        </div>
+        <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-bottom: 1px solid #f1f3f5">
+            <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#059669"></circle><path d="M5 8.2l2 2 4-4.4" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"></path></svg>
+            <span style="font-size: 13px; font-weight: 500; color: #111827; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">Order replacement siding panels</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-bottom: 1px solid #f1f3f5">
+            <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#cbd5e1" stroke-width="2"></circle></svg>
+            <span style="font-size: 13px; font-weight: 500; color: #111827; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1">Remove damaged panels — west wall</span>
+            <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #9ca3af">1/2</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; padding: 11px 12px">
+            <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="3 2.5"></circle></svg>
+            <span style="font-size: 13px; font-weight: 500; color: #111827">Paint and seal new siding</span>
+          </div>
+        </div>
+      </div>
+      <div style="border: 1px solid #e5e7eb; border-radius: 8px; display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: #fafafa">
+        <span style="font-size: 10px; color: #9ca3af">▸</span>
+        <span style="font-size: 12px; font-weight: 600; color: #374151">Attachments</span>
+        <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #9ca3af">3</span>
+      </div>
+      <div style="border: 1px solid #e5e7eb; border-radius: 8px; display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: #fafafa; margin-top: -8px">
+        <span style="font-size: 10px; color: #9ca3af">▸</span>
+        <span style="font-size: 12px; font-weight: 600; color: #374151">Discussion</span>
+        <span style="font-size: 11px; font-family: ui-monospace, Menlo, monospace; color: #9ca3af">2</span>
+        <span style="flex: 1"></span>
+        <span style="font-size: 11px; color: #9ca3af">45m ago</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+<p class="dv-next">Try next: "make <a class="dv-oid" href="#1a">1a</a>'s rail remember its collapsed state" · "give <a class="dv-oid" href="#1c">1c</a> the rail from <a class="dv-oid" href="#1a">1a</a> on wide screens" · use the Tweaks panel to preview the no-discussion state</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;hasDiscussion&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Preview states&quot;}}">
+class Component extends DCLogic {
+  state = {
+    railOpen: true, drawerOpen: true, attachOpen: true, discussOpen: false,
+    rail2Open: localStorage.getItem('todo-detail-2a-rail') !== 'closed',
+    menuOpen: false, mapOpen: false
+  };
+
+  renderVals() {
+    const hasDiscussion = this.props.hasDiscussion ?? true;
+    const rail2 = this.state.rail2Open;
+    const extra = {
+      rail2Open: rail2,
+      rail2BtnLabel: rail2 ? 'Attachments 3 · Discussion 2 ▸' : '◂ Attachments 3 · Discussion 2',
+      toggleRail2: () => this.setState(s => {
+        const open = !s.rail2Open;
+        localStorage.setItem('todo-detail-2a-rail', open ? 'open' : 'closed');
+        return { rail2Open: open };
+      }),
+      menuOpen: this.state.menuOpen,
+      toggleMenu: () => this.setState(s => ({ menuOpen: !s.menuOpen, mapOpen: false })),
+      mapOpen: this.state.mapOpen,
+      toggleMap: () => this.setState(s => ({ mapOpen: !s.mapOpen, menuOpen: false }))
+    };
+    const discussBodyOpen = this.state.discussOpen && hasDiscussion;
+    return {
+      ...extra,
+      hasDiscussion,
+      noDiscussion: !hasDiscussion,
+      railOpen: this.state.railOpen,
+      railBtnLabel: this.state.railOpen ? 'Hide panel ▸' : '◂ Show panel',
+      toggleRail: () => this.setState(s => ({ railOpen: !s.railOpen })),
+      drawerOpen: this.state.drawerOpen,
+      toggleDrawer: () => this.setState(s => ({ drawerOpen: !s.drawerOpen })),
+      attachOpen: this.state.attachOpen,
+      attachCaret: this.state.attachOpen ? '▾' : '▸',
+      toggleAttach: () => this.setState(s => ({ attachOpen: !s.attachOpen })),
+      discussBodyOpen,
+      discussCaret: discussBodyOpen ? '▾' : '▸',
+      toggleDiscuss: () => this.setState(s => ({ discussOpen: !s.discussOpen }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+%syntax-version=1.0.0
+%project=fnb-todo
+
+00000000010450_todo [fnb-app:00000000010220_app fnb-res:00000000011000_res] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create todo schemas, types, and tables
+00000000010460_todo_fn_types [00000000010450_todo] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create todo function types
+00000000010470_todo_fn [00000000010460_todo_fn_types] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create todo API and utility functions
+00000000010480_todo_policies [00000000010470_todo_fn] 2026-04-11T00:00:00Z Developer <dev@example.com> # Todo schema grants and RLS policies

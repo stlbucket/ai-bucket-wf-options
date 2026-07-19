@@ -1,0 +1,16 @@
+query TenantById(
+  $tenantId: UUID!
+) {
+  tenant(id: $tenantId) {
+    ...Tenant
+    residents: residents {
+      totalCount
+    }
+    tenantSubscriptions: tenantSubscriptionsList {
+      ...TenantSubscription
+      licenses: licenses {
+        totalCount
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+%syntax-version=1.0.0
+%project=fnb-app
+
+00000000010220_app [fnb-auth:00000000010100_extensions] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create app schema, types, and tables
+00000000010230_app_fn_types [00000000010220_app] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create app_fn and app_api schemas and composite types
+00000000010240_app_fn [00000000010230_app_fn_types] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create app_fn and app_api functions
+00000000010241_app_fn_support_ticket [00000000010240_app_fn] 2026-05-24T00:00:00Z Developer <dev@example.com> # Support ticket functions
+00000000010242_app_fn_definers [00000000010240_app_fn] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create security definer functions
+00000000010243_app_fn_support [00000000010242_app_fn_definers] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create support and admin functions
+00000000010250_app_policies [00000000010243_app_fn_support] 2026-04-11T00:00:00Z Developer <dev@example.com> # Apply grants and RLS policies
+00000000010260_app_bootstrap [00000000010250_app_policies fnb-auth:00000000010210_auth_roles_and_grants] 2026-05-16T00:00:00Z Developer <dev@example.com> # Bootstrap function for pre-claims session init
+00000000010270_profile_idp_user [00000000010260_app_bootstrap] 2026-07-08T00:00:00Z Developer <dev@example.com> # ZITADEL idp_user_id mapping column + pre-claims provision_idp_user
+00000000010280_drop_auth_user [00000000010270_profile_idp_user fnb-auth:00000000010200_auth] 2026-07-08T00:00:00Z Developer <dev@example.com> # ZITADEL cutover: rework auth.user readers, drop auth.user/identities/login_user/handle_new_user
+00000000010290_session [00000000010280_drop_auth_user] 2026-07-09T00:00:00Z Developer <dev@example.com> # Server-side sessions: auth.session table, create/claims_for/revoke session fns, revoke_my_sessions

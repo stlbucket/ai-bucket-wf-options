@@ -1,0 +1,112 @@
+{
+  version: 1,
+  config: {
+    /*
+     * There can be entries here for:
+     *
+     * - `class`: for tables, composite types, views and materialized views
+     * - `attribute`: for columns/attributes (of any 'class' type)
+     * - `constraint`: for table constraints
+     * - `procedure`: for functions/procedures
+     */
+    constraint: {
+      /*
+       * Self-referential tenant FK (workspace tenants). Explicit names preempt the
+       * simplify-inflection attempts that logged recoverable "naming conflict" warnings
+       * ('tenant') at schema build. (admin/workspace spec, _shared.data.md)
+       */
+      tenant_parent_tenant_id_fkey: {
+        tags: {
+          fieldName: 'parentTenant',
+          foreignFieldName: 'childTenants',
+          foreignSimpleFieldName: 'childTenantsList',
+        },
+      },
+    },
+
+    class: {
+      /*
+       * Hide the internal object-location columns from the exposed schema. They stay in the DB
+       * (the downloadUrl presign plan still reads them server-side), but clients get metadata +
+       * the computed downloadUrl only — never the raw storage_key / bucket. (asset-storage spec,
+       * graphql.data.md §2)
+       */
+      asset: {
+        attribute: {
+          storage_key: { tags: { behavior: '-select -filterBy -orderBy' } },
+          bucket: { tags: { behavior: '-select -filterBy -orderBy' } },
+        },
+      },
+
+      /*
+       * Agent run log: reads go through the gated agent_api.workflow_runs function
+       * (p:app-admin-super). The table's own all-rows root fields would collide with the
+       * function's `workflowRunsList` name (schema-build naming conflict) and serve no
+       * client purpose — drop them; the type itself stays (the function returns it).
+       * (agentic-workflow-engine spec, _shared.data.md)
+       */
+      'agent.workflow_run': {
+        tags: { behavior: '-query:resource:list -query:resource:connection' },
+      },
+
+      /*
+       * URN registry: res.module_permission is pure RLS plumbing — never served.
+       * (urn-registry spec, client.data.md §1. Hub-relation renames, e.g.
+       * assetsBySubjectUrn → assets on Resource, land after first codegen once the
+       * inflected names are known.)
+       */
+      'res.module_permission': {
+        tags: { behavior: '-*' },
+      },
+
+      /*
+       * The next level describes the named type. We've just used the table
+       * name `"post"` but it could be `"my_schema.post"` if you have multiple
+       * tables with the same name and you don't want this rule to apply to
+       * all of them.
+       */
+      permission: {
+        /*
+         * This will override the description sourced from the PostgreSQL COMMENT.
+         */
+        description: "A permission that a license can allow.",
+
+        /*
+         * Add tags specific to the 'post' table here. You can omit this if you
+         * don't want to add any tags.
+         */
+        tags: {
+          // name: 'permission2',
+          // foreignKey: [
+            // "(default_user_id) references user (id)|@fieldName defaultUser",
+            // "(organization_id) references organization (id)|@fieldName organization",
+          // ],
+        },
+
+        /*
+         * We've added a shortcut to class-types so you can tag/describe
+         * columns at the same time of the class.
+         */
+        // attribute: {
+        //   /*
+        //    * Assuming `body` is one of the columns in the 'post' table.
+        //    */
+        //   body: {
+        //     /*
+        //      * Optional description, if provided overrides the PostgreSQL
+        //      * `COMMENT ON COLUMN post.body`.
+        //      */
+        //     description: "The body of the post",
+        //     tags: {
+        //       /*
+        //        * Here we indicate that the 'body' field will not be available
+        //        * in the update mutation.
+        //        */
+        //       // omit: "update",
+        //     },
+        //   },
+        // },
+      },
+    },
+  },
+}

@@ -1,0 +1,9 @@
+{
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.workingDirectories": [
+    { "directory": "apps/fnb-auth-app", "changeProcessCWD": true }
+    { "directory": "apps/fnb-tenant-app", "changeProcessCWD": true }
+  ]
+}

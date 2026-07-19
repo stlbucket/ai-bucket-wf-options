@@ -1,0 +1,12 @@
+fragment License on License {
+  id
+  tenantId
+  residentId
+  profileId
+  tenantSubscriptionId
+  licenseTypeKey
+  status
+  createdAt
+  updatedAt
+  expiresAt
+}

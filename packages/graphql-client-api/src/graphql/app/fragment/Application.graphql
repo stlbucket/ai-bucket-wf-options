@@ -1,0 +1,5 @@
+fragment Application on Application {
+  key
+  name
+  licenseCount
+}

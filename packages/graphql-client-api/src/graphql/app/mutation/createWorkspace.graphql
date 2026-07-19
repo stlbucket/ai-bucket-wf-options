@@ -1,0 +1,13 @@
+mutation CreateWorkspace(
+  $name: String!
+  $identifier: String
+) {
+  createWorkspace(input: {
+    _name: $name
+    _identifier: $identifier
+  }) {
+    tenant {
+      ...Tenant
+    }
+  }
+}

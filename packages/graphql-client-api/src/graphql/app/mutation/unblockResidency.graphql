@@ -1,0 +1,11 @@
+mutation UnblockResident(
+  $residentId: UUID!
+) {
+  unblockResident(input: {
+    _residentId: $residentId
+  }) {
+    resident {
+      ...Resident
+    }
+  }
+}

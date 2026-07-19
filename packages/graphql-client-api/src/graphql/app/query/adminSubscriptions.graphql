@@ -1,0 +1,20 @@
+query AdminSubscriptions {
+  adminSubscriptions: tenantSubscriptionsList {
+    ...TenantSubscription
+    licensePack {
+      ...LicensePack
+      licensePackLicenseTypes: licensePackLicenseTypesByLicensePackKeyList {
+        ...LicensePackLicenseType
+        licenseType {
+          ...LicenseType
+        }
+      }
+    }
+    licensesList {
+      ...License
+      resident {
+        ...Resident
+      }
+    }
+  }
+}

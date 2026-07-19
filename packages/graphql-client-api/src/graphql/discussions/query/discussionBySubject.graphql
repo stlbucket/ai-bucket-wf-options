@@ -1,0 +1,13 @@
+# The discussion about a business object (urn-registry stacking v2). One topic per subject
+# (uq_topic_subject_urn partial unique) — first:1 is exact, not a heuristic.
+query DiscussionBySubject($subjectUrn: String!) {
+  topics: topicsList(condition: { subjectUrn: $subjectUrn }, first: 1) {
+    ...Topic
+    subscribers: subscribersList {
+      ...Subscriber
+    }
+    messages: messagesList(orderBy: [CREATED_AT_ASC]) {
+      ...Message
+    }
+  }
+}

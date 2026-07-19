@@ -1,0 +1,21 @@
+fragment Runway on Runway {
+  id
+  externalId
+  lengthFt
+  widthFt
+  surface
+  lighted
+  closed
+  leIdent
+  leLatitudeDeg
+  leLongitudeDeg
+  leElevationFt
+  leHeadingDegT
+  leDisplacedThresholdFt
+  heIdent
+  heLatitudeDeg
+  heLongitudeDeg
+  heElevationFt
+  heHeadingDegT
+  heDisplacedThresholdFt
+}

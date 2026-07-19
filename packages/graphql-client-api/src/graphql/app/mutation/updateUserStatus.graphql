@@ -1,0 +1,8 @@
+mutation UpdateUserStatus($profileId: UUID!, $status: ProfileStatus!) {
+  updateUserStatus(input: { _profileId: $profileId, _status: $status }) {
+    profile {
+      id
+      status
+    }
+  }
+}

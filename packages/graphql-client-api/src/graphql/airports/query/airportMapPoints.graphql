@@ -1,0 +1,5 @@
+query AirportMapPoints($options: AirportMapPointOptionInput) {
+  airportMapPointsList(_options: $options) {
+    ...AirportMapPoint
+  }
+}

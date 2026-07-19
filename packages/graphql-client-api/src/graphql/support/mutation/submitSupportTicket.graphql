@@ -1,0 +1,8 @@
+mutation SubmitSupportTicket($title: String!, $description: String!) {
+  submitSupportTicket(input: {
+    _title: $title
+    _description: $description
+  }) {
+    uuid
+  }
+}

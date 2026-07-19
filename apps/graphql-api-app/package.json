@@ -1,0 +1,38 @@
+{
+  "name": "@function-bucket/fnb-graphql-api-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint .",
+    "typecheck": "nuxt typecheck"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "catalog:",
+    "@aws-sdk/s3-request-presigner": "catalog:",
+    "@function-bucket/fnb-tenant-layer": "workspace:*",
+    "@function-bucket/fnb-graphql-client-api": "workspace:*",
+    "@function-bucket/fnb-types": "workspace:*",
+    "@graphile/simplify-inflection": "^8.0.0",
+    "@iconify-json/lucide": "catalog:",
+    "@nuxt/ui": "catalog:",
+    "@urql/vue": "catalog:",
+    "@vueuse/core": "catalog:",
+    "h3": "catalog:",
+    "nuxt": "catalog:",
+    "vue": "catalog:",
+    "pg": "catalog:",
+    "postgraphile": "^5.0.0"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "catalog:",
+    "@types/pg": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:"
+  },
+  "packageManager": "pnpm@10.33.0"
+}

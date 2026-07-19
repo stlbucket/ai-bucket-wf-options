@@ -1,0 +1,2898 @@
+{
+  "version": "6.0",
+  "nxVersion": "23.0.1",
+  "pathMappings": {},
+  "nxJsonPlugins": [],
+  "fileMap": {
+    "projectFileMap": {
+      "@function-bucket/fnb-tenant-layer": [
+        {
+          "file": "packages/tenant-layer/app/components/AppLogo.vue",
+          "hash": "17064105777050417189"
+        },
+        {
+          "file": "packages/tenant-layer/app/components/AppNav.vue",
+          "hash": "9530963718851886672"
+        },
+        {
+          "file": "packages/tenant-layer/app/components/FunctionBucketMark.vue",
+          "hash": "3448950044657021823"
+        },
+        {
+          "file": "packages/tenant-layer/app/components/Loc.vue",
+          "hash": "2861609009760078293"
+        },
+        {
+          "file": "packages/tenant-layer/app/components/ModuleNavSection.vue",
+          "hash": "15899289255976930387"
+        },
+        {
+          "file": "packages/tenant-layer/app/components/TemplateMenu.vue",
+          "hash": "7358163747077629881"
+        },
+        {
+          "file": "packages/tenant-layer/app/components/UserProfileStatus.vue",
+          "hash": "6084928177320726415"
+        },
+        {
+          "file": "packages/tenant-layer/app/composables/useAppNav.ts",
+          "hash": "17264540186995940103"
+        },
+        {
+          "file": "packages/tenant-layer/app/layouts/default.vue",
+          "hash": "612359212592222775"
+        },
+        {
+          "file": "packages/tenant-layer/app/pages/index.vue",
+          "hash": "6360194613736032998"
+        },
+        {
+          "file": "packages/tenant-layer/nuxt.config.ts",
+          "hash": "6447860870035886853"
+        },
+        {
+          "file": "packages/tenant-layer/package.json",
+          "hash": "636716250085123405",
+          "deps": [
+            "npm:vue",
+            "npm:@nuxt/ui",
+            "@function-bucket/fnb-auth-layer",
+            "npm:nuxt"
+          ]
+        }
+      ],
+      "@function-bucket/fnb-db-types": [
+        {
+          "file": "packages/db-types/kanel.config.ts",
+          "hash": "15441755822603954198"
+        },
+        {
+          "file": "packages/db-types/package.json",
+          "hash": "15235512286607769255",
+          "deps": [
+            "npm:kanel",
+            "npm:kanel-kysely",
+            "npm:tsx",
+            "npm:typescript",
+            "npm:vite@8.0.8",
+            "npm:vite-plugin-dts",
+            "npm:vitest",
+            "npm:@types/pg",
+            "npm:kysely",
+            "npm:pg@8.20.0"
+          ]
+        },
+        {
+          "file": "packages/db-types/src/db.ts",
+          "hash": "11429309901243272310"
+        },
+        {
+          "file": "packages/db-types/src/index.ts",
+          "hash": "8310320988068483598"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-app/app_api/assume-residency.ts",
+          "hash": "16911968558431001704"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-app/app_api/current-profile-claims.ts",
+          "hash": "3663790996883533279"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-app/app_api/exit-support-mode.ts",
+          "hash": "15137068458573442961"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-app/app_api/index.ts",
+          "hash": "16057257087666856087"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-app/app_api/my-profile-residencies.ts",
+          "hash": "4560874676677022772"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-app/app_fn/current-profile-claims.ts",
+          "hash": "10380439389500020873"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-app/app_fn/index.ts",
+          "hash": "17712911349668387358"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-app/app_fn/profile-claims-for-user.ts",
+          "hash": "14487591333327614845"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-auth/index.ts",
+          "hash": "10743084789137751307"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-auth/login-user.ts",
+          "hash": "4156039527549962172"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-msg/index.ts",
+          "hash": "16250275760538730023"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-msg/upsert-message.ts",
+          "hash": "8728098133969928123"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-msg/upsert-subscriber.ts",
+          "hash": "17652044941770837912"
+        },
+        {
+          "file": "packages/db-types/src/mutations/fnb-msg/upsert-topic.ts",
+          "hash": "1353224478228119537"
+        },
+        {
+          "file": "packages/db-types/src/queries/msg.ts",
+          "hash": "2685778800337254322"
+        },
+        {
+          "file": "packages/db-types/src/queries/resident.ts",
+          "hash": "15136613015595292835"
+        },
+        {
+          "file": "packages/db-types/src/tests/with-claims.spec.ts",
+          "hash": "4881334874112745054"
+        },
+        {
+          "file": "packages/db-types/src/utils/parse-modules.ts",
+          "hash": "6468890659640372367"
+        },
+        {
+          "file": "packages/db-types/src/with-claims.ts",
+          "hash": "7168858814545491007"
+        },
+        {
+          "file": "packages/db-types/tsconfig.build.json",
+          "hash": "2330604681478426273"
+        },
+        {
+          "file": "packages/db-types/tsconfig.json",
+          "hash": "1087652867534724420"
+        },
+        {
+          "file": "packages/db-types/vite.config.ts",
+          "hash": "13805515065740784825"
+        },
+        {
+          "file": "packages/db-types/vitest.config.ts",
+          "hash": "7957409035401277212"
+        }
+      ],
+      "@function-bucket/fnb-auth-app": [
+        {
+          "file": "apps/auth-app/.editorconfig",
+          "hash": "5385076962497618083"
+        },
+        {
+          "file": "apps/auth-app/.github/workflows/ci.yml",
+          "hash": "17609682539390876633"
+        },
+        {
+          "file": "apps/auth-app/.gitignore",
+          "hash": "7659802768140328695"
+        },
+        {
+          "file": "apps/auth-app/Dockerfile",
+          "hash": "15368241729050611876"
+        },
+        {
+          "file": "apps/auth-app/LICENSE",
+          "hash": "8016685892133729402"
+        },
+        {
+          "file": "apps/auth-app/README.md",
+          "hash": "4068344667467504626"
+        },
+        {
+          "file": "apps/auth-app/app/app.vue",
+          "hash": "10087683066628092688"
+        },
+        {
+          "file": "apps/auth-app/app/components/Ping.vue",
+          "hash": "17212932372336289831"
+        },
+        {
+          "file": "apps/auth-app/app/components/ResidencySelectModal.vue",
+          "hash": "2118146404634970511"
+        },
+        {
+          "file": "apps/auth-app/app/composables/useCurrentProfileClaims.ts",
+          "hash": "6929677768648669923"
+        },
+        {
+          "file": "apps/auth-app/app/composables/useLoginFlow.ts",
+          "hash": "13799566663312982894"
+        },
+        {
+          "file": "apps/auth-app/app/pages/current-profile-claims.vue",
+          "hash": "11063027957263837179"
+        },
+        {
+          "file": "apps/auth-app/app/pages/index.vue",
+          "hash": "10342411097528684384"
+        },
+        {
+          "file": "apps/auth-app/app/pages/login.vue",
+          "hash": "16821446630450781061"
+        },
+        {
+          "file": "apps/auth-app/app/pages/ping.vue",
+          "hash": "17747953579029892333"
+        },
+        {
+          "file": "apps/auth-app/app/pages/profile.vue",
+          "hash": "8177549754576541342"
+        },
+        {
+          "file": "apps/auth-app/eslint.config.mjs",
+          "hash": "8917848450663344213"
+        },
+        {
+          "file": "apps/auth-app/nuxt.config.ts",
+          "hash": "15018539642186529227"
+        },
+        {
+          "file": "apps/auth-app/package.json",
+          "hash": "5630834446476257760",
+          "deps": [
+            "npm:@nuxt/eslint",
+            "npm:eslint",
+            "npm:typescript",
+            "npm:vue-tsc",
+            "@function-bucket/fnb-auth-layer",
+            "@function-bucket/fnb-auth-server",
+            "@function-bucket/fnb-db-types",
+            "npm:@graphile/simplify-inflection",
+            "npm:@iconify-json/lucide",
+            "npm:@iconify-json/simple-icons",
+            "npm:@nuxt/ui",
+            "npm:@types/pg",
+            "npm:grafserv",
+            "npm:graphile",
+            "npm:graphql-ws",
+            "npm:nuxt",
+            "npm:pg@8.20.0",
+            "npm:postgraphile",
+            "npm:kysely",
+            "npm:tailwindcss"
+          ]
+        },
+        {
+          "file": "apps/auth-app/pnpm-lock.yaml",
+          "hash": "10742584028392113729"
+        },
+        {
+          "file": "apps/auth-app/pnpm-workspace.yaml",
+          "hash": "1689214250022985623"
+        },
+        {
+          "file": "apps/auth-app/public/favicon.ico",
+          "hash": "11254174431594941832"
+        },
+        {
+          "file": "apps/auth-app/renovate.json",
+          "hash": "12479221254883620899"
+        },
+        {
+          "file": "apps/auth-app/server/api/assume-residency.post.ts",
+          "hash": "17012925271857242243"
+        },
+        {
+          "file": "apps/auth-app/server/api/auth/change-password.post.ts",
+          "hash": "11321289196147020386"
+        },
+        {
+          "file": "apps/auth-app/server/api/auth/login.post.ts",
+          "hash": "5091912593161495831"
+        },
+        {
+          "file": "apps/auth-app/server/api/auth/logout.post.ts",
+          "hash": "1403325527676084793"
+        },
+        {
+          "file": "apps/auth-app/server/api/current-profile-claims.get.ts",
+          "hash": "12230939620228254489"
+        },
+        {
+          "file": "apps/auth-app/server/api/my-residencies.get.ts",
+          "hash": "12480429301746720649"
+        },
+        {
+          "file": "apps/auth-app/server/api/tenants/exit-support.post.ts",
+          "hash": "14807752461150145910"
+        },
+        {
+          "file": "apps/auth-app/server/middleware/auth.ts",
+          "hash": "14071313412317219819"
+        },
+        {
+          "file": "apps/auth-app/server/plugins/db.ts",
+          "hash": "212093271314451139"
+        },
+        {
+          "file": "apps/auth-app/server/tsconfig.json",
+          "hash": "9971712086955286516"
+        },
+        {
+          "file": "apps/auth-app/tsconfig.json",
+          "hash": "17758609897942843643"
+        }
+      ],
+      "@function-bucket/fnb-msg-layer": [
+        {
+          "file": "packages/msg-layer/app/components/MessageComposer.vue",
+          "hash": "6083236605091460906"
+        },
+        {
+          "file": "packages/msg-layer/app/components/MessageThread.vue",
+          "hash": "18237213927036234911"
+        },
+        {
+          "file": "packages/msg-layer/app/components/TopicList.vue",
+          "hash": "7624795360786934386"
+        },
+        {
+          "file": "packages/msg-layer/app/composables/useMsgTopics.ts",
+          "hash": "17058504022307544074"
+        },
+        {
+          "file": "packages/msg-layer/app/pages/messages/[id].vue",
+          "hash": "16646745259529364941"
+        },
+        {
+          "file": "packages/msg-layer/app/pages/messages/index.vue",
+          "hash": "3260169957335464230"
+        },
+        {
+          "file": "packages/msg-layer/nuxt.config.ts",
+          "hash": "11138186983398255357"
+        },
+        {
+          "file": "packages/msg-layer/package.json",
+          "hash": "1512906019601499156",
+          "deps": [
+            "npm:vue",
+            "npm:@nuxt/ui",
+            "@function-bucket/fnb-graphql-client-api",
+            "@function-bucket/fnb-tenant-layer",
+            "@function-bucket/fnb-db-types",
+            "npm:consola",
+            "npm:h3",
+            "npm:nitropack",
+            "npm:nuxt",
+            "npm:pg@8.20.0"
+          ]
+        },
+        {
+          "file": "packages/msg-layer/server/api/residents.get.ts",
+          "hash": "955825448364174209"
+        },
+        {
+          "file": "packages/msg-layer/server/api/topics/[id].get.ts",
+          "hash": "14513146905684444733"
+        },
+        {
+          "file": "packages/msg-layer/server/api/topics/[id]/messages/[msgId].get.ts",
+          "hash": "4853260023738901323"
+        },
+        {
+          "file": "packages/msg-layer/server/api/topics/[id]/messages/index.get.ts",
+          "hash": "13771197210378446361"
+        },
+        {
+          "file": "packages/msg-layer/server/api/topics/[id]/messages/index.post.ts",
+          "hash": "10401412955909091912"
+        },
+        {
+          "file": "packages/msg-layer/server/api/topics/index.get.ts",
+          "hash": "4486071603489373215"
+        },
+        {
+          "file": "packages/msg-layer/server/api/topics/index.post.ts",
+          "hash": "2576322539723555164"
+        },
+        {
+          "file": "packages/msg-layer/server/middleware/auth.ts",
+          "hash": "11698774697564159181"
+        },
+        {
+          "file": "packages/msg-layer/server/plugins/db.ts",
+          "hash": "9622562760830719488"
+        },
+        {
+          "file": "packages/msg-layer/server/plugins/pg-notify-bridge.ts",
+          "hash": "13425615635022798557"
+        },
+        {
+          "file": "packages/msg-layer/server/routes/_ws/topics/[id]/messages.ts",
+          "hash": "6115629894335951763"
+        },
+        {
+          "file": "packages/msg-layer/server/utils/getWsUpgradeClaims.ts",
+          "hash": "18444534868891508104"
+        }
+      ],
+      "@function-bucket/fnb-auth-layer": [
+        {
+          "file": "packages/auth-layer/app.config.ts",
+          "hash": "14990168167501396907"
+        },
+        {
+          "file": "packages/auth-layer/app/assets/css/main.css",
+          "hash": "14788576107884414289"
+        },
+        {
+          "file": "packages/auth-layer/app/components/ChangePasswordForm.vue",
+          "hash": "8524618617514722743"
+        },
+        {
+          "file": "packages/auth-layer/app/components/LoginForm.vue",
+          "hash": "16248933971599277535"
+        },
+        {
+          "file": "packages/auth-layer/app/components/UserProfile.vue",
+          "hash": "1846692412311608962"
+        },
+        {
+          "file": "packages/auth-layer/app/composables/useAuth.ts",
+          "hash": "1267978738376089179"
+        },
+        {
+          "file": "packages/auth-layer/app/layouts/default.vue",
+          "hash": "17640589599578262017"
+        },
+        {
+          "file": "packages/auth-layer/app/middleware/auth.ts",
+          "hash": "16041045685458808151"
+        },
+        {
+          "file": "packages/auth-layer/nuxt.config.ts",
+          "hash": "14927807501107604060"
+        },
+        {
+          "file": "packages/auth-layer/package.json",
+          "hash": "3782255255140867409",
+          "deps": [
+            "npm:vue",
+            "npm:@vueuse/core@14.3.0",
+            "@function-bucket/fnb-auth-ui",
+            "@function-bucket/fnb-db-types",
+            "npm:@iconify-json/lucide",
+            "npm:@iconify-json/simple-icons",
+            "npm:@nuxt/kit@4.4.2",
+            "npm:@nuxt/ui",
+            "npm:nuxt",
+            "npm:tailwindcss"
+          ]
+        },
+        {
+          "file": "packages/auth-layer/server/utils/auth-cookies.ts",
+          "hash": "12485404877692379915"
+        },
+        {
+          "file": "packages/auth-layer/server/utils/getEventClaims.ts",
+          "hash": "5387740402685115473"
+        }
+      ],
+      "@function-bucket/fnb-auth-ui": [
+        {
+          "file": "packages/auth-ui/package.json",
+          "hash": "10651639517625702626",
+          "deps": [
+            "npm:nuxt",
+            "npm:@vitejs/plugin-vue@5.2.4",
+            "npm:typescript",
+            "npm:vite@8.0.8",
+            "npm:vite-plugin-dts",
+            "npm:vitest",
+            "@function-bucket/fnb-db-types",
+            "npm:vue"
+          ]
+        },
+        {
+          "file": "packages/auth-ui/src/index.ts",
+          "hash": "7814924218201259227"
+        },
+        {
+          "file": "packages/auth-ui/src/use-auth.ts",
+          "hash": "8468967389897077003"
+        },
+        {
+          "file": "packages/auth-ui/tsconfig.json",
+          "hash": "6429118632319056496"
+        },
+        {
+          "file": "packages/auth-ui/vite.config.ts",
+          "hash": "16075116050539730126"
+        },
+        {
+          "file": "packages/auth-ui/vitest.config.ts",
+          "hash": "12097365309467296725"
+        }
+      ],
+      "@function-bucket/fnb-home-app": [
+        {
+          "file": "apps/home-app/.editorconfig",
+          "hash": "5385076962497618083"
+        },
+        {
+          "file": "apps/home-app/.github/workflows/ci.yml",
+          "hash": "17609682539390876633"
+        },
+        {
+          "file": "apps/home-app/.gitignore",
+          "hash": "7659802768140328695"
+        },
+        {
+          "file": "apps/home-app/Dockerfile",
+          "hash": "15368241729050611876"
+        },
+        {
+          "file": "apps/home-app/LICENSE",
+          "hash": "8016685892133729402"
+        },
+        {
+          "file": "apps/home-app/README.md",
+          "hash": "4068344667467504626"
+        },
+        {
+          "file": "apps/home-app/app/app.vue",
+          "hash": "10087683066628092688"
+        },
+        {
+          "file": "apps/home-app/app/components/FunctionBucketMark.vue",
+          "hash": "3448950044657021823"
+        },
+        {
+          "file": "apps/home-app/app/pages/index.vue",
+          "hash": "10277874761449962429"
+        },
+        {
+          "file": "apps/home-app/eslint.config.mjs",
+          "hash": "8917848450663344213"
+        },
+        {
+          "file": "apps/home-app/nuxt.config.ts",
+          "hash": "9815958752153040894"
+        },
+        {
+          "file": "apps/home-app/package.json",
+          "hash": "12754260324149366440",
+          "deps": [
+            "npm:@nuxt/eslint",
+            "npm:eslint",
+            "npm:typescript",
+            "npm:vue-tsc",
+            "npm:@nuxt/ui",
+            "@function-bucket/fnb-tenant-layer",
+            "@function-bucket/fnb-db-types",
+            "npm:nuxt"
+          ]
+        },
+        {
+          "file": "apps/home-app/pnpm-lock.yaml",
+          "hash": "10742584028392113729"
+        },
+        {
+          "file": "apps/home-app/pnpm-workspace.yaml",
+          "hash": "1689214250022985623"
+        },
+        {
+          "file": "apps/home-app/public/favicon.ico",
+          "hash": "11254174431594941832"
+        },
+        {
+          "file": "apps/home-app/renovate.json",
+          "hash": "12479221254883620899"
+        },
+        {
+          "file": "apps/home-app/tsconfig.json",
+          "hash": "17758609897942843643"
+        }
+      ],
+      "@function-bucket/fnb-msg-app": [
+        {
+          "file": "apps/msg-app/app/app.vue",
+          "hash": "1511426358185369762"
+        },
+        {
+          "file": "apps/msg-app/app/composables/useTopicMessages.ts",
+          "hash": "13676197712396709022"
+        },
+        {
+          "file": "apps/msg-app/app/plugins/urql.ts",
+          "hash": "15729609481184139804"
+        },
+        {
+          "file": "apps/msg-app/nuxt.config.ts",
+          "hash": "4707959792107575733"
+        },
+        {
+          "file": "apps/msg-app/package.json",
+          "hash": "8738886027463104932",
+          "deps": [
+            "npm:@nuxt/eslint",
+            "npm:eslint",
+            "npm:typescript",
+            "npm:vue-tsc",
+            "npm:@nuxt/ui",
+            "@function-bucket/fnb-msg-layer",
+            "@function-bucket/fnb-db-types",
+            "npm:@types/pg",
+            "npm:@urql/core",
+            "npm:@urql/vue",
+            "npm:nuxt",
+            "npm:pg@8.20.0"
+          ]
+        },
+        {
+          "file": "apps/msg-app/tsconfig.json",
+          "hash": "17758609897942843643"
+        }
+      ],
+      "@function-bucket/fnb-tenant-app": [
+        {
+          "file": "apps/tenant-app/.editorconfig",
+          "hash": "5385076962497618083"
+        },
+        {
+          "file": "apps/tenant-app/.github/workflows/ci.yml",
+          "hash": "17609682539390876633"
+        },
+        {
+          "file": "apps/tenant-app/.gitignore",
+          "hash": "7659802768140328695"
+        },
+        {
+          "file": "apps/tenant-app/Dockerfile",
+          "hash": "15368241729050611876"
+        },
+        {
+          "file": "apps/tenant-app/LICENSE",
+          "hash": "8016685892133729402"
+        },
+        {
+          "file": "apps/tenant-app/README.md",
+          "hash": "4068344667467504626"
+        },
+        {
+          "file": "apps/tenant-app/app/app.vue",
+          "hash": "10087683066628092688"
+        },
+        {
+          "file": "apps/tenant-app/app/components/ApplicationList.vue",
+          "hash": "9214659361657323864"
+        },
+        {
+          "file": "apps/tenant-app/app/components/LicenseAssignment.vue",
+          "hash": "16108398235388999055"
+        },
+        {
+          "file": "apps/tenant-app/app/components/LicenseList.vue",
+          "hash": "3688544067772586864"
+        },
+        {
+          "file": "apps/tenant-app/app/components/Msg.vue",
+          "hash": "16789826875902938002"
+        },
+        {
+          "file": "apps/tenant-app/app/components/MsgTopicList.vue",
+          "hash": "6109122670957455059"
+        },
+        {
+          "file": "apps/tenant-app/app/components/ResidentList.vue",
+          "hash": "12835865345237717907"
+        },
+        {
+          "file": "apps/tenant-app/app/components/SubscriptionList.vue",
+          "hash": "2751599072227213165"
+        },
+        {
+          "file": "apps/tenant-app/app/components/SupportButton.vue",
+          "hash": "14261117729767766533"
+        },
+        {
+          "file": "apps/tenant-app/app/components/TenantList.vue",
+          "hash": "15863148334548360316"
+        },
+        {
+          "file": "apps/tenant-app/app/components/TicketList.vue",
+          "hash": "9910603173360900613"
+        },
+        {
+          "file": "apps/tenant-app/app/components/UserList.vue",
+          "hash": "10681433843670002449"
+        },
+        {
+          "file": "apps/tenant-app/app/components/todo/TodoDetail.vue",
+          "hash": "1208524111713693873"
+        },
+        {
+          "file": "apps/tenant-app/app/components/todo/TodoDetailSmall.vue",
+          "hash": "10969861247044986892"
+        },
+        {
+          "file": "apps/tenant-app/app/components/todo/TodoList.vue",
+          "hash": "12469087978141302344"
+        },
+        {
+          "file": "apps/tenant-app/app/components/todo/TodoListSmall.vue",
+          "hash": "3589656855737432829"
+        },
+        {
+          "file": "apps/tenant-app/app/components/todo/TodoModal.vue",
+          "hash": "17329949822754454069"
+        },
+        {
+          "file": "apps/tenant-app/app/composables/useAdminLicenses.ts",
+          "hash": "10804923309267835387"
+        },
+        {
+          "file": "apps/tenant-app/app/composables/useAdminResidents.ts",
+          "hash": "6717881644016976745"
+        },
+        {
+          "file": "apps/tenant-app/app/composables/useAdminSubscriptions.ts",
+          "hash": "14775666970122051356"
+        },
+        {
+          "file": "apps/tenant-app/app/composables/useLocations.ts",
+          "hash": "2344346018690387725"
+        },
+        {
+          "file": "apps/tenant-app/app/composables/useMsgTopic.ts",
+          "hash": "5361459810032538267"
+        },
+        {
+          "file": "apps/tenant-app/app/composables/useMsgTopics.ts",
+          "hash": "16804961061606566464"
+        },
+        {
+          "file": "apps/tenant-app/app/composables/useSiteAdminApplications.ts",
+          "hash": "6637531778001388080"
+        },
+        {
+          "file": "apps/tenant-app/app/composables/useSiteAdminTenants.ts",
+          "hash": "16276107355016961909"
+        },
+        {
+          "file": "apps/tenant-app/app/composables/useSiteAdminUsers.ts",
+          "hash": "2228360354232144855"
+        },
+        {
+          "file": "apps/tenant-app/app/composables/useSupportTickets.ts",
+          "hash": "8126223326230147749"
+        },
+        {
+          "file": "apps/tenant-app/app/composables/useTodoDetail.ts",
+          "hash": "218388958660007298"
+        },
+        {
+          "file": "apps/tenant-app/app/composables/useTodoList.ts",
+          "hash": "14498917707342125300"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/admin/index.vue",
+          "hash": "5607603229731149975"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/admin/license/index.vue",
+          "hash": "12247280515289664567"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/admin/subscription/[id].vue",
+          "hash": "12664786465850218004"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/admin/subscription/index.vue",
+          "hash": "1780735306798262045"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/admin/user/[id].vue",
+          "hash": "12908364779251175484"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/admin/user/index.vue",
+          "hash": "6004008990776713000"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/loc/[id].vue",
+          "hash": "7702164434035169926"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/loc/index.vue",
+          "hash": "14193432690486472359"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/loc/new.vue",
+          "hash": "4688032605734015941"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/msg/[id].vue",
+          "hash": "15632674155241599883"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/msg/index.vue",
+          "hash": "6760883850728473160"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/site-admin/application/[key].vue",
+          "hash": "10852705258565480864"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/site-admin/application/index.vue",
+          "hash": "11435793148766520617"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/site-admin/index.vue",
+          "hash": "361550796716720597"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/site-admin/tenant/[id].vue",
+          "hash": "8514431923301514748"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/site-admin/tenant/index.vue",
+          "hash": "6136656879613774974"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/site-admin/user/[id].vue",
+          "hash": "3596921344516255993"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/site-admin/user/index.vue",
+          "hash": "9186423800529885020"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/support/tickets/[id].vue",
+          "hash": "15296673695204836933"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/support/tickets/index.vue",
+          "hash": "13870572426990093183"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/support/tickets/new.vue",
+          "hash": "14512770991996349874"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/tools/todo/[id].vue",
+          "hash": "13463251076165799904"
+        },
+        {
+          "file": "apps/tenant-app/app/pages/tools/todo/index.vue",
+          "hash": "16814720136708837977"
+        },
+        {
+          "file": "apps/tenant-app/app/plugins/urql.client.ts",
+          "hash": "15729609481184139804"
+        },
+        {
+          "file": "apps/tenant-app/eslint.config.mjs",
+          "hash": "8917848450663344213"
+        },
+        {
+          "file": "apps/tenant-app/nuxt.config.ts",
+          "hash": "13472701914595563596"
+        },
+        {
+          "file": "apps/tenant-app/package.json",
+          "hash": "15511469303191154863",
+          "deps": [
+            "npm:@nuxt/eslint",
+            "npm:eslint",
+            "npm:typescript",
+            "npm:vue-tsc",
+            "npm:@nuxt/ui",
+            "@function-bucket/fnb-db-types",
+            "@function-bucket/fnb-graphql-client-api",
+            "@function-bucket/fnb-tenant-layer",
+            "npm:@urql/core",
+            "npm:@urql/vue",
+            "npm:@graphile/simplify-inflection",
+            "npm:@types/pg",
+            "npm:mapbox-gl",
+            "npm:nuxt",
+            "npm:nuxt-mapbox",
+            "npm:pg@8.20.0",
+            "npm:postgraphile"
+          ]
+        },
+        {
+          "file": "apps/tenant-app/pnpm-lock.yaml",
+          "hash": "10742584028392113729"
+        },
+        {
+          "file": "apps/tenant-app/pnpm-workspace.yaml",
+          "hash": "1689214250022985623"
+        },
+        {
+          "file": "apps/tenant-app/public/favicon.ico",
+          "hash": "11254174431594941832"
+        },
+        {
+          "file": "apps/tenant-app/renovate.json",
+          "hash": "12479221254883620899"
+        },
+        {
+          "file": "apps/tenant-app/tsconfig.json",
+          "hash": "17758609897942843643"
+        }
+      ],
+      "@function-bucket/fnb-auth-server": [
+        {
+          "file": "packages/auth-server/package.json",
+          "hash": "12533591403556757983",
+          "deps": [
+            "npm:typescript",
+            "npm:vite@8.0.8",
+            "npm:vite-plugin-dts",
+            "npm:vitest",
+            "npm:@types/pg",
+            "npm:pg@8.20.0"
+          ]
+        },
+        {
+          "file": "packages/auth-server/src/index.ts",
+          "hash": "363046106775773017"
+        },
+        {
+          "file": "packages/auth-server/src/ping.ts",
+          "hash": "2207192726154467795"
+        },
+        {
+          "file": "packages/auth-server/src/use-pg-client.ts",
+          "hash": "7373053545816687714"
+        },
+        {
+          "file": "packages/auth-server/tsconfig.json",
+          "hash": "6429118632319056496"
+        },
+        {
+          "file": "packages/auth-server/vite.config.ts",
+          "hash": "17430247147539363870"
+        },
+        {
+          "file": "packages/auth-server/vitest.config.ts",
+          "hash": "12097365309467296725"
+        }
+      ],
+      "@function-bucket/fnb-graphql-client-api": [
+        {
+          "file": "packages/graphql-client-api/codegen.ts",
+          "hash": "11253119719893555720"
+        },
+        {
+          "file": "packages/graphql-client-api/graphql/api.ts",
+          "hash": "10228495415767299409"
+        },
+        {
+          "file": "packages/graphql-client-api/graphql/schema.json",
+          "hash": "6462057170801905021"
+        },
+        {
+          "file": "packages/graphql-client-api/graphql/schema.min.json",
+          "hash": "8583450771136131626"
+        },
+        {
+          "file": "packages/graphql-client-api/package.json",
+          "hash": "673107271591302272",
+          "deps": [
+            "npm:@urql/vue",
+            "npm:vue",
+            "npm:@graphql-codegen/cli",
+            "npm:@graphql-codegen/introspection",
+            "npm:@graphql-codegen/typescript",
+            "npm:@graphql-codegen/typescript-operations",
+            "npm:@graphql-codegen/urql-introspection",
+            "npm:@graphql-codegen/typescript-urql-graphcache",
+            "npm:@graphql-codegen/typescript-vue-urql",
+            "npm:graphql",
+            "npm:tsx",
+            "npm:typescript",
+            "npm:vite@8.0.8",
+            "npm:vite-plugin-dts",
+            "npm:vitest"
+          ]
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useAdminLicenses.ts",
+          "hash": "4434506385212139630"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useAdminResidents.ts",
+          "hash": "186075228152552138"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useAdminSubscriptions.ts",
+          "hash": "3979458258483573846"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useLocations.ts",
+          "hash": "6727023750052020966"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useMsgTopic.ts",
+          "hash": "6688406125211133030"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useMsgTopics.ts",
+          "hash": "1688416265289158943"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useSiteAdminApplication.ts",
+          "hash": "17168038757306806330"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useSiteAdminApplications.ts",
+          "hash": "1960129134469131373"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useSiteAdminTenants.ts",
+          "hash": "15286106094693605226"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useSiteAdminUsers.ts",
+          "hash": "3342128959655404121"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useSupportTickets.ts",
+          "hash": "11492186195976782539"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useTodoDetail.ts",
+          "hash": "8744819424061047721"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useTodoList.ts",
+          "hash": "3050372334659297674"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useWfDetail.ts",
+          "hash": "6951322305871389720"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useWfInstances.ts",
+          "hash": "8949869799955859016"
+        },
+        {
+          "file": "packages/graphql-client-api/src/composables/useWfTemplates.ts",
+          "hash": "5233564575363684068"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/address-book/mutation/joinAddressBook.graphql",
+          "hash": "7838435247651711971"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/address-book/mutation/leaveAddressBook.graphql",
+          "hash": "17886000336017443986"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/address-book/query/getAbListings.graphql",
+          "hash": "17362209630601349341"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/api.ts",
+          "hash": "8458802696391442284"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/fragment/Application.graphql",
+          "hash": "8858683101574467256"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/fragment/License.graphql",
+          "hash": "11901726622905686603"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/fragment/LicensePack.graphql",
+          "hash": "7746308028815678763"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/fragment/LicensePackLicenseType.graphql",
+          "hash": "17470724709015989559"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/fragment/LicenseType.graphql",
+          "hash": "9696292175854900387"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/fragment/LicenseTypePermission.graphql",
+          "hash": "16913413383342944074"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/fragment/Profile.graphql",
+          "hash": "15783839515352691239"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/fragment/ProfileClaim.graphql",
+          "hash": "16543214079817052997"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/fragment/Resident.graphql",
+          "hash": "5671933554284878412"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/fragment/Tenant.graphql",
+          "hash": "4814354977743957021"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/fragment/TenantSubscription.graphql",
+          "hash": "1990214230736737607"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/activateAppTenant.graphql",
+          "hash": "17617314161437157107"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/assumeResidency.graphql",
+          "hash": "16038503014191193046"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/becomeSupport.graphql",
+          "hash": "3311166279203861644"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/blockResidency.graphql",
+          "hash": "4338132418760988904"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/createAppTenant.graphql",
+          "hash": "3481909152939802318"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/deactivateAppTenant.graphql",
+          "hash": "17605177829636696914"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/deactivateTenantSubscription.graphql",
+          "hash": "910391243269256076"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/declineResidency.graphql",
+          "hash": "6612713239216062794"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/exitSupportMode.graphql",
+          "hash": "15129569459277037810"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/grantUserLicense.graphql",
+          "hash": "4150690126830192361"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/reactivateTenantSubscription.graphql",
+          "hash": "301196493104247432"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/revokeUserLicense.graphql",
+          "hash": "12724563551382162812"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/subscribeTenantToLicensePack.graphql",
+          "hash": "14669434848241785066"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/unblockResidency.graphql",
+          "hash": "17930966430930665959"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/updateProfile.graphql",
+          "hash": "1335330146568111986"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/updateResidentStatus.graphql",
+          "hash": "6879586598068847382"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/updateTenant.graphql",
+          "hash": "264747777441069840"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/updateUser.graphql",
+          "hash": "4879249832218355037"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/mutation/updateUserStatus.graphql",
+          "hash": "5886223510512530755"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/activeLicensePacks.graphql",
+          "hash": "5263288552406009094"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/adminSubscriptions.graphql",
+          "hash": "9503759163704501460"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/allAppProfiles.graphql",
+          "hash": "15477883656671430722"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/allApplications.graphql",
+          "hash": "11339778285662371988"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/allLicensePacks.graphql",
+          "hash": "945696254906138666"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/allResidents.graphql",
+          "hash": "16401071997797676353"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/appTenantById.graphql",
+          "hash": "11736000243716876637"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/appTenantLicenses.graphql",
+          "hash": "12073991729407587982"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/appTenantResidents.graphql",
+          "hash": "4053672199722720128"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/appTenantSubscriptions.graphql",
+          "hash": "18303762826192646147"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/applicationByKey.graphql",
+          "hash": "12038883897173850316"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/availableModules.graphql",
+          "hash": "15679195801805561507"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/currentProfileClaims.graphql",
+          "hash": "10193800160500243983"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/getMyself.graphql",
+          "hash": "12208041051882396746"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/myProfileResidencies.graphql",
+          "hash": "2133025452906847712"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/raiseException.graphql",
+          "hash": "18016805049049121427"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/residentById.graphql",
+          "hash": "1704395100221905965"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/searchProfiles.graphql",
+          "hash": "15668850351957813153"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/searchResidents.graphql",
+          "hash": "9129938418283323963"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/searchTenants.graphql",
+          "hash": "935119941695817806"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/app/query/siteUserById.graphql",
+          "hash": "3504196461734745826"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/discussions/fragment/Message.graphql",
+          "hash": "11617422968465404989"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/discussions/fragment/Subscriber.graphql",
+          "hash": "10530325963017315019"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/discussions/fragment/Topic.graphql",
+          "hash": "14651544258442164011"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/discussions/mutation/upsertMessage.graphql",
+          "hash": "6398664612096437921"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/discussions/mutation/upsertSubscriber.graphql",
+          "hash": "5352025437515284940"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/discussions/mutation/upsertTopic.graphql",
+          "hash": "6996357555237276063"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/discussions/query/allDiscussions.graphql",
+          "hash": "6046925266714695479"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/discussions/query/discussionById.graphql",
+          "hash": "10233220456696881391"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/discussions/query/msgResidents.graphql",
+          "hash": "8151115510256688637"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/locations/fragment/Location.graphql",
+          "hash": "4582111527598407315"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/locations/mutation/createLocation.graphql",
+          "hash": "10150921339039448022"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/locations/mutation/deleteLocation.graphql",
+          "hash": "858721453263824595"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/locations/mutation/updateLocation.graphql",
+          "hash": "16274964532433815551"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/locations/query/allLocations.graphql",
+          "hash": "1278269112288798930"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/msg/query/mySubscribedTopics.graphql",
+          "hash": "6680140811252625928"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/schema.json",
+          "hash": "279420096651567215"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/schema.min.json",
+          "hash": "8232739554114068305"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/support/fragment/SupportTicket.graphql",
+          "hash": "16299161804880134912"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/support/fragment/SupportTicketComment.graphql",
+          "hash": "15081633004774203428"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/support/mutation/closeSupportTicket.graphql",
+          "hash": "245842720967573035"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/support/mutation/deleteSupportTicket.graphql",
+          "hash": "8944752905625143186"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/support/mutation/markDuplicateSupportTicket.graphql",
+          "hash": "13677001775123827421"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/support/mutation/parkSupportTicket.graphql",
+          "hash": "335349077764384244"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/support/mutation/reopenSupportTicket.graphql",
+          "hash": "12951198708143978457"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/support/mutation/submitSupportTicket.graphql",
+          "hash": "14321750914145871197"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/support/mutation/submitSupportTicketComment.graphql",
+          "hash": "11961110064236059691"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/support/query/allSupportTickets.graphql",
+          "hash": "9511248555674471679"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/support/query/supportTicketById.graphql",
+          "hash": "2829677411072542707"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/fragment/Todo.graphql",
+          "hash": "3263420471830185928"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/mutation/createTodo.graphql",
+          "hash": "18184643193299344581"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/mutation/deleteTodo.graphql",
+          "hash": "18062789381187083928"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/mutation/makeTemplateFromTodo.graphql",
+          "hash": "1462759579386294069"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/mutation/makeTodoFromTemplate.graphql",
+          "hash": "14507156129170546675"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/mutation/pinTodo.graphql",
+          "hash": "9173154945498698068"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/mutation/unpinTodo.graphql",
+          "hash": "7846046297318957311"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/mutation/updateTodo.graphql",
+          "hash": "2879534921031060002"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/mutation/updateTodoStatus.graphql",
+          "hash": "8967308595458304164"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/query/assignTodo.graphql",
+          "hash": "15629031409909507671"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/query/searchTodos.graphql",
+          "hash": "10035966254935221347"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/query/todoById.graphql",
+          "hash": "15411032489893493999"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/query/todoByIdForRefresh.graphql",
+          "hash": "7154471681825800819"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/todo/query/todoResidentsList.graphql",
+          "hash": "1840943848527188697"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/wf/fragment/uow.graphql",
+          "hash": "6065560617422198302"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/wf/fragment/uowDependency.graphql",
+          "hash": "10295124210301409091"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/wf/fragment/wf.graphql",
+          "hash": "18258392928114999960"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/wf/mutation/pullTrigger.graphql",
+          "hash": "4952288017816180142"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/wf/mutation/queueWorkflow.graphql",
+          "hash": "1484522721535522405"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/wf/mutation/resetWfLayout.graphql",
+          "hash": "14612122729451520586"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/wf/mutation/saveWfLayout.graphql",
+          "hash": "9440187507655060357"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/wf/query/allWfInstances.graphql",
+          "hash": "15174604400296399704"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/wf/query/allWfTemplates.graphql",
+          "hash": "2950166306627882259"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/wf/query/wfById.graphql",
+          "hash": "5175712152044424044"
+        },
+        {
+          "file": "packages/graphql-client-api/src/graphql/wf/query/wfTemplateByIdentifier.graphql",
+          "hash": "9838242004500321395"
+        },
+        {
+          "file": "packages/graphql-client-api/src/index.ts",
+          "hash": "12491457713977630120"
+        },
+        {
+          "file": "packages/graphql-client-api/tsconfig.json",
+          "hash": "7414347936016069056"
+        },
+        {
+          "file": "packages/graphql-client-api/vite.config.ts",
+          "hash": "14226362741467779202"
+        }
+      ],
+      "@function-bucket/fnb-graphql-api-app": [
+        {
+          "file": "apps/graphql-api-app/app/app.vue",
+          "hash": "10087683066628092688"
+        },
+        {
+          "file": "apps/graphql-api-app/app/composables/useWfDetail.ts",
+          "hash": "12809302024194164208"
+        },
+        {
+          "file": "apps/graphql-api-app/app/composables/useWfInstances.ts",
+          "hash": "15714499039193140293"
+        },
+        {
+          "file": "apps/graphql-api-app/app/composables/useWfTemplates.ts",
+          "hash": "17593465801864425166"
+        },
+        {
+          "file": "apps/graphql-api-app/app/pages/index.vue",
+          "hash": "16570421807494002960"
+        },
+        {
+          "file": "apps/graphql-api-app/app/pages/workflow/[id].vue",
+          "hash": "2757517173896358112"
+        },
+        {
+          "file": "apps/graphql-api-app/app/pages/workflow/index.vue",
+          "hash": "12642543181372810393"
+        },
+        {
+          "file": "apps/graphql-api-app/app/plugins/urql.client.ts",
+          "hash": "15729609481184139804"
+        },
+        {
+          "file": "apps/graphql-api-app/eslint.config.mjs",
+          "hash": "8917848450663344213"
+        },
+        {
+          "file": "apps/graphql-api-app/nuxt.config.ts",
+          "hash": "11491488608933105936"
+        },
+        {
+          "file": "apps/graphql-api-app/package.json",
+          "hash": "25989117505778214",
+          "deps": [
+            "npm:@nuxt/eslint",
+            "npm:@types/pg",
+            "npm:eslint",
+            "npm:typescript",
+            "npm:vue-tsc",
+            "@function-bucket/fnb-auth-layer",
+            "@function-bucket/fnb-auth-server",
+            "@function-bucket/fnb-graphql-client-api",
+            "npm:@graphile/simplify-inflection",
+            "npm:@urql/core",
+            "npm:@urql/vue",
+            "npm:camelcase-keys@9.1.3",
+            "npm:grafast",
+            "npm:graphile-utils",
+            "npm:graphile-worker",
+            "npm:@iconify-json/lucide",
+            "npm:@nuxt/ui",
+            "npm:nuxt",
+            "npm:pg@8.20.0",
+            "npm:postgraphile",
+            "npm:tailwindcss"
+          ]
+        },
+        {
+          "file": "apps/graphql-api-app/pnpm-workspace.yaml",
+          "hash": "1689214250022985623"
+        },
+        {
+          "file": "apps/graphql-api-app/postgraphile.tags.json5",
+          "hash": "9111094507604676354"
+        },
+        {
+          "file": "apps/graphql-api-app/server/api/graphql.ts",
+          "hash": "17129152842907131205"
+        },
+        {
+          "file": "apps/graphql-api-app/server/api/graphql/stream.ts",
+          "hash": "8145181301851796163"
+        },
+        {
+          "file": "apps/graphql-api-app/server/api/mutation-hooks/_queueAnonWorkflow.ts",
+          "hash": "11666246050250684502"
+        },
+        {
+          "file": "apps/graphql-api-app/server/api/mutation-hooks/_queueWorkflow.ts",
+          "hash": "10928573346484572022"
+        },
+        {
+          "file": "apps/graphql-api-app/server/api/mutation-hooks/_scheduleUows.ts",
+          "hash": "6255989539217727443"
+        },
+        {
+          "file": "apps/graphql-api-app/server/api/mutation-hooks/index.ts",
+          "hash": "9311173427963028498"
+        },
+        {
+          "file": "apps/graphql-api-app/server/api/mutation-hooks/queue-workflow.ts",
+          "hash": "2581273842279036187"
+        },
+        {
+          "file": "apps/graphql-api-app/server/graphile.config.ts",
+          "hash": "101046678746223984"
+        },
+        {
+          "file": "apps/graphql-api-app/server/graphserv/pgl.ts",
+          "hash": "5328810451249987426"
+        },
+        {
+          "file": "apps/graphql-api-app/server/graphserv/serv.ts",
+          "hash": "11894317763284169197"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/flowModels/milestone.ts",
+          "hash": "3147904730085127953"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/flowModels/task.ts",
+          "hash": "3244421341483603138"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/worker-task-handlers/_common/close-workflow-wf.ts",
+          "hash": "3027861217925289618"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/worker-task-handlers/_common/wait.ts",
+          "hash": "3027861217925289618"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/worker-task-handlers/_workflow-handler.ts",
+          "hash": "17813030898967211403"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/worker-task-handlers/d.ts",
+          "hash": "10652279592479695862"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/worker-task-handlers/index.ts",
+          "hash": "3424470994467490465"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/worker-task-handlers/wf-exerciser/acknowledge-trigger.ts",
+          "hash": "3027861217925289618"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/worker-task-handlers/wf-exerciser/do-the-things.ts",
+          "hash": "5082100946894738502"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/worker-task-handlers/wf-exerciser/finish-workflow-exerciser.ts",
+          "hash": "3027861217925289618"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/worker-task-handlers/wf-exerciser/get-stock-quote.ts",
+          "hash": "1580842217801203821"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/worker-task-handlers/wf-exerciser/init-workflow-exerciser.ts",
+          "hash": "5082100946894738502"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/worker-task-handlers/wf-exerciser/load-workflow-exerciser.sql",
+          "hash": "16445340402869208188"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/worker-task-handlers/wf-exerciser/maybe-raise-exception.ts",
+          "hash": "401512065844939259"
+        },
+        {
+          "file": "apps/graphql-api-app/server/lib/worker-task-handlers/wf-exerciser/maybe-throw-error.ts",
+          "hash": "12376860890643600797"
+        },
+        {
+          "file": "apps/graphql-api-app/server/middleware/auth.ts",
+          "hash": "10241083169680595456"
+        },
+        {
+          "file": "apps/graphql-api-app/server/plugins/graphile-worker.ts",
+          "hash": "5246073773677401096"
+        },
+        {
+          "file": "apps/graphql-api-app/server/plugins/postgraphile.ts",
+          "hash": "4577415344164183492"
+        },
+        {
+          "file": "apps/graphql-api-app/server/tsconfig.json",
+          "hash": "9971712086955286516"
+        },
+        {
+          "file": "apps/graphql-api-app/tsconfig.json",
+          "hash": "17758609897942843643"
+        }
+      ]
+    },
+    "nonProjectFiles": [
+      {
+        "file": ".DS_Store",
+        "hash": "3916367397915927707"
+      },
+      {
+        "file": ".claude/architecture/01-architecture-overview.md",
+        "hash": "12005596692050909299"
+      },
+      {
+        "file": ".claude/architecture/02-full-stack.md",
+        "hash": "1620031898581974773"
+      },
+      {
+        "file": ".claude/architecture/03-tenant-user-example.md",
+        "hash": "8618626700208800178"
+      },
+      {
+        "file": ".claude/architecture/04-security.md",
+        "hash": "14504007381533950955"
+      },
+      {
+        "file": ".claude/architecture/05-licensing-permissions.md",
+        "hash": "4439822155855815527"
+      },
+      {
+        "file": ".claude/architecture/06-special-cases.md",
+        "hash": "2640402511388251379"
+      },
+      {
+        "file": ".claude/architecture/07-fnb-msg-steps-sockets.md",
+        "hash": "11100734027083955241"
+      },
+      {
+        "file": ".claude/architecture/07-fnb-msg-steps.md",
+        "hash": "4315243900387491740"
+      },
+      {
+        "file": ".claude/architecture/08-implement-become-support.md",
+        "hash": "7476218928980929141"
+      },
+      {
+        "file": ".claude/architecture/09-log-management-tooling.md",
+        "hash": "13312680505191371351"
+      },
+      {
+        "file": ".claude/architecture/README.md",
+        "hash": "5310209171843519923"
+      },
+      {
+        "file": ".claude/memory/MEMORY.md",
+        "hash": "10868978134991715231"
+      },
+      {
+        "file": ".claude/memory/feedback_explicit_imports_in_layers.md",
+        "hash": "4403537716267492548"
+      },
+      {
+        "file": ".claude/memory/feedback_h3_websocket_publish.md",
+        "hash": "1929310189698004890"
+      },
+      {
+        "file": ".claude/memory/feedback_nuxt_ui_v4_table_api.md",
+        "hash": "9720187206011827643"
+      },
+      {
+        "file": ".claude/memory/feedback_sqitch_cross_schema_replace.md",
+        "hash": "14524912642558972472"
+      },
+      {
+        "file": ".claude/memory/project_jwt_schema.md",
+        "hash": "6091048939269307711"
+      },
+      {
+        "file": ".claude/memory/project_msg_stack.md",
+        "hash": "846861056437289523"
+      },
+      {
+        "file": ".claude/memory/project_spec_system.md",
+        "hash": "1588426980086460395"
+      },
+      {
+        "file": ".claude/settings.json",
+        "hash": "16999391722273491034"
+      },
+      {
+        "file": ".claude/skills/fnb-create-app/skill.md",
+        "hash": "1641135083938920072"
+      },
+      {
+        "file": ".claude/skills/fnb-db-designer/SKILL.md",
+        "hash": "8843218777087883031"
+      },
+      {
+        "file": ".claude/skills/fnb-stack-implementor/SKILL.md",
+        "hash": "935751562482662431"
+      },
+      {
+        "file": ".claude/skills/fnb-stack-spec/SKILL.md",
+        "hash": "2979104971083122210"
+      },
+      {
+        "file": ".claude/skills/function-bucket-legacy-ui-converter/SKILL.md",
+        "hash": "11694555835675918671"
+      },
+      {
+        "file": ".claude/skills/graphile-worker-expert/SKILL.md",
+        "hash": "6571054596419938943"
+      },
+      {
+        "file": ".claude/skills/graphile-worker-expert/references/configuration.md",
+        "hash": "9297281655978541824"
+      },
+      {
+        "file": ".claude/skills/graphile-worker-expert/references/cron.md",
+        "hash": "9316318572568932325"
+      },
+      {
+        "file": ".claude/skills/graphile-worker-expert/references/job-key.md",
+        "hash": "16355132496918815837"
+      },
+      {
+        "file": ".claude/skills/graphile-worker-expert/references/library-api.md",
+        "hash": "17349895773860291430"
+      },
+      {
+        "file": ".claude/skills/graphile-worker-expert/references/operations.md",
+        "hash": "16417093982000065536"
+      },
+      {
+        "file": ".claude/skills/graphile-worker-expert/references/sql-and-cli.md",
+        "hash": "3291832632790094871"
+      },
+      {
+        "file": ".claude/skills/graphile-worker-expert/references/tasks-and-helpers.md",
+        "hash": "15519102721203420114"
+      },
+      {
+        "file": ".claude/skills/new-db-package/SKILL.md",
+        "hash": "2598355847798179544"
+      },
+      {
+        "file": ".claude/skills/postgraphile-5-expert/SKILL.md",
+        "hash": "13881156353931550763"
+      },
+      {
+        "file": ".claude/skills/postgraphile-5-expert/references/configuration.md",
+        "hash": "3516185349532199360"
+      },
+      {
+        "file": ".claude/skills/postgraphile-5-expert/references/customization.md",
+        "hash": "1419360526358780576"
+      },
+      {
+        "file": ".claude/skills/postgraphile-5-expert/references/extending.md",
+        "hash": "9260731255607959430"
+      },
+      {
+        "file": ".claude/skills/postgraphile-5-expert/references/schema-design.md",
+        "hash": "60111352092647070"
+      },
+      {
+        "file": ".claude/skills/postgraphile-5-expert/references/security.md",
+        "hash": "11412796547312026944"
+      },
+      {
+        "file": ".claude/skills/sqitch-expert/SKILL.md",
+        "hash": "14895497130515839828"
+      },
+      {
+        "file": ".claude/skills/true-up-sqitch-package/SKILL.md",
+        "hash": "12035629512150559337"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/evaluate-later/c3-invited-users-rls.md",
+        "hash": "777860372561689262"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/evaluate-later/d3-websocket-horizontal-scaling.md",
+        "hash": "11213688276169865078"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/evaluate-later/f1-lazydocker.md",
+        "hash": "1331229438160623740"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/implemented/a1-jwt-payload-structure.md",
+        "hash": "7249653181929760341"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/implemented/a5-login-cookie-options.md",
+        "hash": "62405036268830167"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/implemented/b1-assignment-scope-definitions.md",
+        "hash": "14743484718331822498"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/a2-auth-sql-helpers.md",
+        "hash": "12419276730067536555"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/a3-rls-policy-reference.md",
+        "hash": "14500287020001205285"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/a4-noinherit-explanation.md",
+        "hash": "12584293714990992501"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/a6-security-properties-table.md",
+        "hash": "15127946919325944477"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/b2-built-in-license-types.md",
+        "hash": "2003320206273314429"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/b3-license-pack-mechanics.md",
+        "hash": "11296209247234683312"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/b4-anchor-module-tool-structure.md",
+        "hash": "16903563305727308861"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/b5-install-basic-application.md",
+        "hash": "11858384455513099934"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/c1-anchor-tenant-unique-indexes.md",
+        "hash": "17421331671990516120"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/c2-residency-uniqueness-constraints.md",
+        "hash": "10601633416745357129"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/c4-handle-new-user-trigger.md",
+        "hash": "16685930478713861145"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/c5-display-name-propagation.md",
+        "hash": "11068031846955122473"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/c6-profile-claims-functions.md",
+        "hash": "8256707775281661708"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/c7-self-modification-prevention.md",
+        "hash": "7390885285074155497"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/d1-websocket-upgrade-auth.md",
+        "hash": "11931108543918519478"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/d4-pg-notify-channel-naming.md",
+        "hash": "13250029318623261752"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/d5-pg-client-not-pool.md",
+        "hash": "15611255971086965192"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/d6-channel-peers-map.md",
+        "hash": "2864278561827870731"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/e1-cookie-refresh-pattern.md",
+        "hash": "2031214082628351728"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/e2-support-mode-detection.md",
+        "hash": "4089485796428637297"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/e3-become-support-permission-check.md",
+        "hash": "8452611696433889043"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/g1-sqitch-deployment-order.md",
+        "hash": "12345721403379287195"
+      },
+      {
+        "file": ".claude/specs/architecture-considerations/read-these/postgraphile-service-setup.md",
+        "hash": "15554430266507231484"
+      },
+      {
+        "file": ".claude/specs/architecture-mining-items-plan-proposal.md",
+        "hash": "2276352479194032340"
+      },
+      {
+        "file": ".claude/specs/auth-app/current-profile-claims.data.md",
+        "hash": "3624497654620314136"
+      },
+      {
+        "file": ".claude/specs/auth-app/current-profile-claims.ui.md",
+        "hash": "2315058434513714272"
+      },
+      {
+        "file": ".claude/specs/auth-app/index.data.md",
+        "hash": "16421496714188621034"
+      },
+      {
+        "file": ".claude/specs/auth-app/index.ui.md",
+        "hash": "7227128574078039657"
+      },
+      {
+        "file": ".claude/specs/auth-app/login.data.md",
+        "hash": "4752863736026032887"
+      },
+      {
+        "file": ".claude/specs/auth-app/login.ui.md",
+        "hash": "12002679282858085870"
+      },
+      {
+        "file": ".claude/specs/auth-app/profile.data.md",
+        "hash": "5406477959138795779"
+      },
+      {
+        "file": ".claude/specs/auth-app/profile.ui.md",
+        "hash": "160813858668496039"
+      },
+      {
+        "file": ".claude/specs/global-rules.md",
+        "hash": "18266084020693511734"
+      },
+      {
+        "file": ".claude/specs/graphql-client-api-package.md",
+        "hash": "11395031211610159265"
+      },
+      {
+        "file": ".claude/specs/home-app/index.data.md",
+        "hash": "4611244766341252584"
+      },
+      {
+        "file": ".claude/specs/home-app/index.ui.md",
+        "hash": "5618037866332609918"
+      },
+      {
+        "file": ".claude/specs/monorepo-bootstrap-pattern.md",
+        "hash": "4388892322938251305"
+      },
+      {
+        "file": ".claude/specs/msg-app/[id].data.md",
+        "hash": "2247700340131066264"
+      },
+      {
+        "file": ".claude/specs/msg-app/[id].ui.md",
+        "hash": "8518363696635127046"
+      },
+      {
+        "file": ".claude/specs/msg-app/_shared.data.md",
+        "hash": "5146425948421840504"
+      },
+      {
+        "file": ".claude/specs/msg-app/index.data.md",
+        "hash": "6389839859599971979"
+      },
+      {
+        "file": ".claude/specs/msg-app/index.ui.md",
+        "hash": "8475614799240383359"
+      },
+      {
+        "file": ".claude/specs/package-layers-pattern.md",
+        "hash": "1160417043351305127"
+      },
+      {
+        "file": ".claude/specs/rest-api-pattern.md",
+        "hash": "11380518231350347147"
+      },
+      {
+        "file": ".claude/specs/sockets-pattern.md",
+        "hash": "16840543935583946928"
+      },
+      {
+        "file": ".claude/specs/tenant-app/admin/_shared.data.md",
+        "hash": "797247709444525294"
+      },
+      {
+        "file": ".claude/specs/tenant-app/admin/index.ui.md",
+        "hash": "6897752681295305641"
+      },
+      {
+        "file": ".claude/specs/tenant-app/admin/license/index.data.md",
+        "hash": "6618863639645112434"
+      },
+      {
+        "file": ".claude/specs/tenant-app/admin/license/index.ui.md",
+        "hash": "1414861169296707718"
+      },
+      {
+        "file": ".claude/specs/tenant-app/admin/subscription/[id].data.md",
+        "hash": "2212579571132320497"
+      },
+      {
+        "file": ".claude/specs/tenant-app/admin/subscription/[id].ui.md",
+        "hash": "16418271320279957097"
+      },
+      {
+        "file": ".claude/specs/tenant-app/admin/subscription/index.data.md",
+        "hash": "17953726278456813764"
+      },
+      {
+        "file": ".claude/specs/tenant-app/admin/subscription/index.ui.md",
+        "hash": "322880908877139661"
+      },
+      {
+        "file": ".claude/specs/tenant-app/admin/user/[id].data.md",
+        "hash": "10038693638263435722"
+      },
+      {
+        "file": ".claude/specs/tenant-app/admin/user/[id].ui.md",
+        "hash": "11723950999466385426"
+      },
+      {
+        "file": ".claude/specs/tenant-app/admin/user/index.data.md",
+        "hash": "14674538301468693484"
+      },
+      {
+        "file": ".claude/specs/tenant-app/admin/user/index.ui.md",
+        "hash": "5203499711644902717"
+      },
+      {
+        "file": ".claude/specs/tenant-app/loc/[id].data.md",
+        "hash": "7982984650234432401"
+      },
+      {
+        "file": ".claude/specs/tenant-app/loc/[id].ui.md",
+        "hash": "6227941139153428814"
+      },
+      {
+        "file": ".claude/specs/tenant-app/loc/_shared.data.md",
+        "hash": "7022304434118897365"
+      },
+      {
+        "file": ".claude/specs/tenant-app/loc/index.data.md",
+        "hash": "4586019901680509044"
+      },
+      {
+        "file": ".claude/specs/tenant-app/loc/index.ui.md",
+        "hash": "10183014507403754316"
+      },
+      {
+        "file": ".claude/specs/tenant-app/msg/[id].data.md",
+        "hash": "17306717079228578378"
+      },
+      {
+        "file": ".claude/specs/tenant-app/msg/[id].ui.md",
+        "hash": "15874233613269927572"
+      },
+      {
+        "file": ".claude/specs/tenant-app/msg/_shared.data.md",
+        "hash": "9094566193889581061"
+      },
+      {
+        "file": ".claude/specs/tenant-app/msg/index.data.md",
+        "hash": "5564648141303630657"
+      },
+      {
+        "file": ".claude/specs/tenant-app/msg/index.ui.md",
+        "hash": "12338756382042404076"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/_shared.data.md",
+        "hash": "14920583103499711307"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/application/[key].data.md",
+        "hash": "14038173788229402954"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/application/[key].ui.md",
+        "hash": "1847472869358070852"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/application/_shared.data.md",
+        "hash": "9961404946723858991"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/application/index.data.md",
+        "hash": "13039465029409455794"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/application/index.ui.md",
+        "hash": "2189655871671465103"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/index.ui.md",
+        "hash": "12166238713929846353"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/tenant/[id].data.md",
+        "hash": "11953770873414214154"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/tenant/[id].ui.md",
+        "hash": "8496866604932519471"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/tenant/index.data.md",
+        "hash": "14632704176365972144"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/tenant/index.ui.md",
+        "hash": "6849951948854095602"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/user/[id].data.md",
+        "hash": "4567042548476037628"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/user/[id].ui.md",
+        "hash": "1563019541495091265"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/user/index.data.md",
+        "hash": "3414097584568193122"
+      },
+      {
+        "file": ".claude/specs/tenant-app/site-admin/user/index.ui.md",
+        "hash": "7428972103467026432"
+      },
+      {
+        "file": ".claude/specs/tenant-app/support/_shared.data.md",
+        "hash": "5516567316479510001"
+      },
+      {
+        "file": ".claude/specs/tenant-app/support/tickets/[id].data.md",
+        "hash": "15057861625981570231"
+      },
+      {
+        "file": ".claude/specs/tenant-app/support/tickets/[id].ui.md",
+        "hash": "262609537574631105"
+      },
+      {
+        "file": ".claude/specs/tenant-app/support/tickets/index.data.md",
+        "hash": "8138320318760049944"
+      },
+      {
+        "file": ".claude/specs/tenant-app/support/tickets/index.ui.md",
+        "hash": "15107892827439677151"
+      },
+      {
+        "file": ".claude/specs/tenant-app/support/tickets/new.data.md",
+        "hash": "753147414663698190"
+      },
+      {
+        "file": ".claude/specs/tenant-app/support/tickets/new.ui.md",
+        "hash": "14057383083240167195"
+      },
+      {
+        "file": ".claude/specs/tenant-app/tools/_shared.data.md",
+        "hash": "14641457327656761714"
+      },
+      {
+        "file": ".claude/specs/tenant-app/tools/todo/[id].data.md",
+        "hash": "3505803697413824408"
+      },
+      {
+        "file": ".claude/specs/tenant-app/tools/todo/[id].ui.md",
+        "hash": "16817340619882981483"
+      },
+      {
+        "file": ".claude/specs/tenant-app/tools/todo/index.data.md",
+        "hash": "2688790294725656748"
+      },
+      {
+        "file": ".claude/specs/tenant-app/tools/todo/index.ui.md",
+        "hash": "8888061737283119899"
+      },
+      {
+        "file": ".claude/specs/ui-components-rules.md",
+        "hash": "17474420422649924703"
+      },
+      {
+        "file": ".dockerignore",
+        "hash": "9657941626749413144"
+      },
+      {
+        "file": ".env.example",
+        "hash": "15763253930090345174"
+      },
+      {
+        "file": ".gitignore",
+        "hash": "6859913644477990684"
+      },
+      {
+        "file": ".prettierignore",
+        "hash": "9139339959720578010"
+      },
+      {
+        "file": ".prettierrc",
+        "hash": "10125425328886386256"
+      },
+      {
+        "file": ".vscode/settings.json",
+        "hash": "17895792114471147279"
+      },
+      {
+        "file": "CLAUDE.md",
+        "hash": "6950007459858010586"
+      },
+      {
+        "file": "README.md",
+        "hash": "2593763013601820102"
+      },
+      {
+        "file": "db/.DS_Store",
+        "hash": "17967910858229651450"
+      },
+      {
+        "file": "db/db-config.ts",
+        "hash": "12242694013699960494"
+      },
+      {
+        "file": "db/fnb-app/deploy/00000000010220_app.sql",
+        "hash": "17179505873094716235"
+      },
+      {
+        "file": "db/fnb-app/deploy/00000000010230_app_fn_types.sql",
+        "hash": "13672227143044452404"
+      },
+      {
+        "file": "db/fnb-app/deploy/00000000010240_app_fn.sql",
+        "hash": "10801374757527336338"
+      },
+      {
+        "file": "db/fnb-app/deploy/00000000010241_app_fn_support_ticket.sql",
+        "hash": "5201797673837207258"
+      },
+      {
+        "file": "db/fnb-app/deploy/00000000010242_app_fn_definers.sql",
+        "hash": "5902034635676474257"
+      },
+      {
+        "file": "db/fnb-app/deploy/00000000010243_app_fn_support.sql",
+        "hash": "17070419941778999414"
+      },
+      {
+        "file": "db/fnb-app/deploy/00000000010250_app_policies.sql",
+        "hash": "4483976042501608064"
+      },
+      {
+        "file": "db/fnb-app/deploy/00000000010260_app_bootstrap.sql",
+        "hash": "11240932463829165044"
+      },
+      {
+        "file": "db/fnb-app/revert/00000000010220_app.sql",
+        "hash": "11209324004391203064"
+      },
+      {
+        "file": "db/fnb-app/revert/00000000010230_app_fn_types.sql",
+        "hash": "8038198903041739365"
+      },
+      {
+        "file": "db/fnb-app/revert/00000000010240_app_fn.sql",
+        "hash": "11949901513273890744"
+      },
+      {
+        "file": "db/fnb-app/revert/00000000010242_app_fn_definers.sql",
+        "hash": "16566341831366305286"
+      },
+      {
+        "file": "db/fnb-app/revert/00000000010243_app_fn_support.sql",
+        "hash": "14226197925271500262"
+      },
+      {
+        "file": "db/fnb-app/revert/00000000010250_app_policies.sql",
+        "hash": "17917194395541850217"
+      },
+      {
+        "file": "db/fnb-app/revert/00000000010260_app_bootstrap.sql",
+        "hash": "6364500833159066117"
+      },
+      {
+        "file": "db/fnb-app/sqitch.conf",
+        "hash": "15183470435867056506"
+      },
+      {
+        "file": "db/fnb-app/sqitch.plan",
+        "hash": "1121561061989704292"
+      },
+      {
+        "file": "db/fnb-app/verify/00000000010220_app.sql",
+        "hash": "14925252404083948657"
+      },
+      {
+        "file": "db/fnb-app/verify/00000000010230_app_fn_types.sql",
+        "hash": "7152604833961593045"
+      },
+      {
+        "file": "db/fnb-app/verify/00000000010240_app_fn.sql",
+        "hash": "7589812485419156814"
+      },
+      {
+        "file": "db/fnb-app/verify/00000000010242_app_fn_definers.sql",
+        "hash": "8021972035752968859"
+      },
+      {
+        "file": "db/fnb-app/verify/00000000010243_app_fn_support.sql",
+        "hash": "3236742849528246330"
+      },
+      {
+        "file": "db/fnb-app/verify/00000000010250_app_policies.sql",
+        "hash": "14614624934901109256"
+      },
+      {
+        "file": "db/fnb-app/verify/00000000010260_app_bootstrap.sql",
+        "hash": "11376930551541561033"
+      },
+      {
+        "file": "db/fnb-auth/deploy/00000000010100_extensions.sql",
+        "hash": "8495740125659850435"
+      },
+      {
+        "file": "db/fnb-auth/deploy/00000000010150_jwt.sql",
+        "hash": "6573922334868409949"
+      },
+      {
+        "file": "db/fnb-auth/deploy/00000000010200_auth.sql",
+        "hash": "4794353248367202155"
+      },
+      {
+        "file": "db/fnb-auth/deploy/00000000010210_auth_roles_and_grants.sql",
+        "hash": "3211738690642478069"
+      },
+      {
+        "file": "db/fnb-auth/deploy/00000000010500_auth_policies.sql",
+        "hash": "6868673562128144274"
+      },
+      {
+        "file": "db/fnb-auth/deploy/00000000010900_webhook.sql",
+        "hash": "3872529267798548895"
+      },
+      {
+        "file": "db/fnb-auth/revert/00000000010100_extensions.sql",
+        "hash": "6938326062863471445"
+      },
+      {
+        "file": "db/fnb-auth/revert/00000000010150_jwt.sql",
+        "hash": "3244421341483603138"
+      },
+      {
+        "file": "db/fnb-auth/revert/00000000010200_auth.sql",
+        "hash": "8003102320851538998"
+      },
+      {
+        "file": "db/fnb-auth/revert/00000000010210_auth_roles_and_grants.sql",
+        "hash": "7431963452223384267"
+      },
+      {
+        "file": "db/fnb-auth/revert/00000000010500_auth_policies.sql",
+        "hash": "17685996401888124310"
+      },
+      {
+        "file": "db/fnb-auth/revert/00000000010900_webhook.sql",
+        "hash": "919719463321905576"
+      },
+      {
+        "file": "db/fnb-auth/sqitch.conf",
+        "hash": "15183470435867056506"
+      },
+      {
+        "file": "db/fnb-auth/sqitch.plan",
+        "hash": "52473112241247165"
+      },
+      {
+        "file": "db/fnb-auth/verify/00000000010100_extensions.sql",
+        "hash": "10178003597481421194"
+      },
+      {
+        "file": "db/fnb-auth/verify/00000000010150_jwt.sql",
+        "hash": "3244421341483603138"
+      },
+      {
+        "file": "db/fnb-auth/verify/00000000010200_auth.sql",
+        "hash": "2968289380557251363"
+      },
+      {
+        "file": "db/fnb-auth/verify/00000000010210_auth_roles_and_grants.sql",
+        "hash": "5975787446838612519"
+      },
+      {
+        "file": "db/fnb-auth/verify/00000000010500_auth_policies.sql",
+        "hash": "11573846864669495823"
+      },
+      {
+        "file": "db/fnb-auth/verify/00000000010900_webhook.sql",
+        "hash": "15772639765835442164"
+      },
+      {
+        "file": "db/fnb-loc/deploy/00000000010300_loc.sql",
+        "hash": "2704656068768619176"
+      },
+      {
+        "file": "db/fnb-loc/deploy/00000000010310_loc_fn.sql",
+        "hash": "1474141906775650994"
+      },
+      {
+        "file": "db/fnb-loc/deploy/00000000010330_loc_policies.sql",
+        "hash": "12898410446248796530"
+      },
+      {
+        "file": "db/fnb-loc/revert/00000000010300_loc.sql",
+        "hash": "655655939280028024"
+      },
+      {
+        "file": "db/fnb-loc/revert/00000000010310_loc_fn.sql",
+        "hash": "17603097081930031490"
+      },
+      {
+        "file": "db/fnb-loc/revert/00000000010330_loc_policies.sql",
+        "hash": "9619103279986716477"
+      },
+      {
+        "file": "db/fnb-loc/sqitch.conf",
+        "hash": "15183470435867056506"
+      },
+      {
+        "file": "db/fnb-loc/sqitch.plan",
+        "hash": "1639727776144434065"
+      },
+      {
+        "file": "db/fnb-loc/verify/00000000010300_loc.sql",
+        "hash": "12570583299396700886"
+      },
+      {
+        "file": "db/fnb-loc/verify/00000000010310_loc_fn.sql",
+        "hash": "7190860587851627455"
+      },
+      {
+        "file": "db/fnb-loc/verify/00000000010330_loc_policies.sql",
+        "hash": "8291955299304541854"
+      },
+      {
+        "file": "db/fnb-msg/.DS_Store",
+        "hash": "3009385206407207582"
+      },
+      {
+        "file": "db/fnb-msg/deploy/00000000010400_msg.sql",
+        "hash": "1645875067984337740"
+      },
+      {
+        "file": "db/fnb-msg/deploy/00000000010408_msg_fn_types.sql",
+        "hash": "10712872568995789299"
+      },
+      {
+        "file": "db/fnb-msg/deploy/00000000010410_msg_fn.sql",
+        "hash": "10768509755867435373"
+      },
+      {
+        "file": "db/fnb-msg/deploy/00000000010420_msg_policies.sql",
+        "hash": "15121622436520369706"
+      },
+      {
+        "file": "db/fnb-msg/revert/00000000010400_msg.sql",
+        "hash": "16731649878837239688"
+      },
+      {
+        "file": "db/fnb-msg/revert/00000000010408_msg_fn_types.sql",
+        "hash": "3093827522495285589"
+      },
+      {
+        "file": "db/fnb-msg/revert/00000000010410_msg_fn.sql",
+        "hash": "4517641636685645357"
+      },
+      {
+        "file": "db/fnb-msg/revert/00000000010420_msg_policies.sql",
+        "hash": "8132254855737991076"
+      },
+      {
+        "file": "db/fnb-msg/sqitch.conf",
+        "hash": "15183470435867056506"
+      },
+      {
+        "file": "db/fnb-msg/sqitch.plan",
+        "hash": "10185598007945188261"
+      },
+      {
+        "file": "db/fnb-msg/verify/00000000010400_msg.sql",
+        "hash": "10397551761599124451"
+      },
+      {
+        "file": "db/fnb-msg/verify/00000000010408_msg_fn_types.sql",
+        "hash": "3519445387032832925"
+      },
+      {
+        "file": "db/fnb-msg/verify/00000000010410_msg_fn.sql",
+        "hash": "2946586748474717808"
+      },
+      {
+        "file": "db/fnb-msg/verify/00000000010420_msg_policies.sql",
+        "hash": "17162082722017097556"
+      },
+      {
+        "file": "db/fnb-todo/deploy/00000000010450_todo.sql",
+        "hash": "11937219081946516565"
+      },
+      {
+        "file": "db/fnb-todo/deploy/00000000010460_todo_fn_types.sql",
+        "hash": "183156037454877288"
+      },
+      {
+        "file": "db/fnb-todo/deploy/00000000010470_todo_fn.sql",
+        "hash": "15476025100287558344"
+      },
+      {
+        "file": "db/fnb-todo/deploy/00000000010480_todo_policies.sql",
+        "hash": "17214925498551430987"
+      },
+      {
+        "file": "db/fnb-todo/revert/00000000010450_todo.sql",
+        "hash": "11854694810389218828"
+      },
+      {
+        "file": "db/fnb-todo/revert/00000000010460_todo_fn_types.sql",
+        "hash": "2834202384239470647"
+      },
+      {
+        "file": "db/fnb-todo/revert/00000000010470_todo_fn.sql",
+        "hash": "15283516858337936163"
+      },
+      {
+        "file": "db/fnb-todo/revert/00000000010480_todo_policies.sql",
+        "hash": "15903261550107694895"
+      },
+      {
+        "file": "db/fnb-todo/sqitch.conf",
+        "hash": "15183470435867056506"
+      },
+      {
+        "file": "db/fnb-todo/sqitch.plan",
+        "hash": "6019845429997722961"
+      },
+      {
+        "file": "db/fnb-todo/verify/00000000010450_todo.sql",
+        "hash": "17531416882642882851"
+      },
+      {
+        "file": "db/fnb-todo/verify/00000000010460_todo_fn_types.sql",
+        "hash": "13016817148643537108"
+      },
+      {
+        "file": "db/fnb-todo/verify/00000000010470_todo_fn.sql",
+        "hash": "15030089735283461334"
+      },
+      {
+        "file": "db/fnb-todo/verify/00000000010480_todo_policies.sql",
+        "hash": "2248874190228525828"
+      },
+      {
+        "file": "db/fnb-wf/deploy/00000000010500_wf.sql",
+        "hash": "9149102886494048754"
+      },
+      {
+        "file": "db/fnb-wf/deploy/00000000010510_wf_fn_type.sql",
+        "hash": "7712667143021162298"
+      },
+      {
+        "file": "db/fnb-wf/deploy/00000000010520_wf_fn.sql",
+        "hash": "2426759925584664440"
+      },
+      {
+        "file": "db/fnb-wf/deploy/00000000010580_wf_policies.sql",
+        "hash": "17709029702676648175"
+      },
+      {
+        "file": "db/fnb-wf/revert/00000000010500_wf.sql",
+        "hash": "14624617358415690042"
+      },
+      {
+        "file": "db/fnb-wf/revert/00000000010510_wf_fn_type.sql",
+        "hash": "6593792764422860829"
+      },
+      {
+        "file": "db/fnb-wf/revert/00000000010520_wf_fn.sql",
+        "hash": "16571288201480785779"
+      },
+      {
+        "file": "db/fnb-wf/revert/00000000010580_wf_policies.sql",
+        "hash": "8909367012576407426"
+      },
+      {
+        "file": "db/fnb-wf/sqitch.conf",
+        "hash": "15183470435867056506"
+      },
+      {
+        "file": "db/fnb-wf/sqitch.plan",
+        "hash": "2985298298732628673"
+      },
+      {
+        "file": "db/fnb-wf/verify/00000000010500_wf.sql",
+        "hash": "13745745384416377993"
+      },
+      {
+        "file": "db/fnb-wf/verify/00000000010510_wf_fn_type.sql",
+        "hash": "3684696044091189877"
+      },
+      {
+        "file": "db/fnb-wf/verify/00000000010520_wf_fn.sql",
+        "hash": "6383824919585595310"
+      },
+      {
+        "file": "db/fnb-wf/verify/00000000010580_wf_policies.sql",
+        "hash": "6997595336403930084"
+      },
+      {
+        "file": "db/my-app/deploy/00000000020010_my_app.sql",
+        "hash": "3656351093160536274"
+      },
+      {
+        "file": "db/my-app/deploy/00000000020020_my_app_types.sql",
+        "hash": "8297577906535861643"
+      },
+      {
+        "file": "db/my-app/deploy/00000000020030_my_app_fn.sql",
+        "hash": "6993335559880779741"
+      },
+      {
+        "file": "db/my-app/deploy/00000000020040_my_app_policies.sql",
+        "hash": "13572394628098823769"
+      },
+      {
+        "file": "db/my-app/revert/00000000020010_my_app.sql",
+        "hash": "13643974774007043111"
+      },
+      {
+        "file": "db/my-app/revert/00000000020020_my_app_types.sql",
+        "hash": "15891173267386807014"
+      },
+      {
+        "file": "db/my-app/revert/00000000020030_my_app_fn.sql",
+        "hash": "10444016650285810417"
+      },
+      {
+        "file": "db/my-app/revert/00000000020040_my_app_policies.sql",
+        "hash": "17358973869696383539"
+      },
+      {
+        "file": "db/my-app/sqitch.conf",
+        "hash": "15183470435867056506"
+      },
+      {
+        "file": "db/my-app/sqitch.plan",
+        "hash": "5098614175848101482"
+      },
+      {
+        "file": "db/my-app/verify/00000000020010_my_app.sql",
+        "hash": "7310762597314023013"
+      },
+      {
+        "file": "db/my-app/verify/00000000020020_my_app_types.sql",
+        "hash": "4593046279585072368"
+      },
+      {
+        "file": "db/my-app/verify/00000000020030_my_app_fn.sql",
+        "hash": "10353562801063610594"
+      },
+      {
+        "file": "db/my-app/verify/00000000020040_my_app_policies.sql",
+        "hash": "18441103950420947083"
+      },
+      {
+        "file": "db/seed.sql",
+        "hash": "4782301772982767988"
+      },
+      {
+        "file": "docker-compose.yml",
+        "hash": "5260209970634240494"
+      },
+      {
+        "file": "docker/migrate-entrypoint.sh",
+        "hash": "6505657493937441280"
+      },
+      {
+        "file": "docker/migrate.Dockerfile",
+        "hash": "3275518049793482646"
+      },
+      {
+        "file": "docker/nginx.conf",
+        "hash": "5571113085549447990"
+      },
+      {
+        "file": "docker/pinger/Dockerfile",
+        "hash": "13151219527556160987"
+      },
+      {
+        "file": "docker/pinger/pinger.mjs",
+        "hash": "12970621109160899278"
+      },
+      {
+        "file": "docs/rough-db.png",
+        "hash": "10555418418551956808"
+      },
+      {
+        "file": "eslint.config.mjs",
+        "hash": "16724245385601389249"
+      },
+      {
+        "file": "package.json",
+        "hash": "13502684276598382230"
+      },
+      {
+        "file": "pnpm-lock.yaml",
+        "hash": "4816049644062373948"
+      },
+      {
+        "file": "pnpm-workspace.yaml",
+        "hash": "2373171212127886927"
+      },
+      {
+        "file": "scripts/db-deploy.ts",
+        "hash": "5728436012619348847"
+      },
+      {
+        "file": "scripts/db-exec.ts",
+        "hash": "4518825418773155050"
+      },
+      {
+        "file": "scripts/db-generate.ts",
+        "hash": "12280449224564653446"
+      },
+      {
+        "file": "scripts/db-psql.ts",
+        "hash": "16475143835084332905"
+      },
+      {
+        "file": "scripts/db-rebuild.ts",
+        "hash": "6113209973985828948"
+      },
+      {
+        "file": "scripts/db-start.ts",
+        "hash": "1353811741192925405"
+      },
+      {
+        "file": "scripts/db-status.ts",
+        "hash": "13644100427621173205"
+      },
+      {
+        "file": "scripts/db-stop.ts",
+        "hash": "9176373724107178246"
+      },
+      {
+        "file": "scripts/env-build.ts",
+        "hash": "6116171651223192506"
+      },
+      {
+        "file": "scripts/env-destroy.ts",
+        "hash": "10206703922268261014"
+      },
+      {
+        "file": "scripts/graphql-api-generate.ts",
+        "hash": "3591408978468846005"
+      },
+      {
+        "file": "tsconfig.json",
+        "hash": "5237485256434480438"
+      },
+      {
+        "file": "turbo.json",
+        "hash": "17095699945784438088"
+      }
+    ]
+  },
+  "externalNodesHash": "16687766719829111134"
+}

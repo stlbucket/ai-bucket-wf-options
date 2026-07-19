@@ -1,0 +1,35 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# Default catalog — one version per external package, repo-wide.
+# Entries are caret ranges pinned at the pnpm-lock.yaml-resolved version at migration
+# time (2026-07-09). Never add a named `catalogs:` block — divergence is a spec change
+# (.claude/specs/workspace-dependency-integrity-pattern.md → Version alignment).
+# h3 is additionally force-pinned via root package.json → pnpm.overrides (transitive
+# copies); bump the override and this entry together.
+catalog:
+  '@anthropic-ai/claude-agent-sdk': ^0.3.212
+  '@aws-sdk/client-s3': ^3.1080.0
+  '@aws-sdk/s3-request-presigner': ^3.1080.0
+  '@iconify-json/lucide': ^1.2.102
+  '@iconify-json/simple-icons': ^1.2.77
+  '@nuxt/eslint': ^1.15.2
+  '@nuxt/ui': ^4.6.1
+  '@types/pg': ^8.20.0
+  '@urql/vue': ^2.1.1
+  '@vueuse/core': ^14.3.0
+  croner: ^10.0.1
+  csv-parse: ^7.0.1
+  dotenv: ^16.6.1
+  eslint: ^10.2.0
+  h3: ^1.15.11
+  nuxt: ^4.4.2
+  pg: ^8.20.0
+  typescript: ^6.0.2
+  vite: ^8.0.8
+  vite-plugin-dts: ^4.5.4
+  vitest: ^4.1.4
+  vue: ^3.5.32
+  vue-tsc: ^3.2.6
+  zod: ^4.4.3

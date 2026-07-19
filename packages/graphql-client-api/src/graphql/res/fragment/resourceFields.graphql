@@ -1,0 +1,11 @@
+fragment ResourceFields on Resource {
+  nodeId
+  id
+  tenantId
+  module
+  resourceType
+  urn
+  createdAt
+  createdByResidentId
+  archivedAt
+}

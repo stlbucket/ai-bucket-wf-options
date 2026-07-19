@@ -1,0 +1,7 @@
+# ANON-safe single fetch by id (SECURITY DEFINER fn; is_public + clean only; by reference).
+# Function arg keeps its `_id` prefix — PgSimplifyInflection does NOT strip it (verified in GraphiQL).
+query PublicAsset($id: UUID!) {
+  assets: publicAssetList(_id: $id) {
+    ...Asset
+  }
+}

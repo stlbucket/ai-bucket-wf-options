@@ -1,0 +1,47 @@
+{
+  "name": "function-bucket",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,vue,js,json,md}\"",
+    "db-start": "tsx scripts/db-start.ts",
+    "db-stop": "tsx scripts/db-stop.ts",
+    "db-deploy": "tsx scripts/db-deploy.ts",
+    "db-rebuild": "tsx scripts/db-rebuild.ts",
+    "db-psql": "tsx scripts/db-psql.ts",
+    "db-exec": "tsx scripts/db-exec.ts",
+    "db-status": "tsx scripts/db-status.ts",
+    "db-generate": "tsx scripts/db-generate.ts",
+    "dep-audit": "tsx scripts/dep-audit.ts",
+    "graphql-api-generate": "tsx scripts/graphql-api-generate.ts",
+    "env-build": "tsx scripts/env-build.ts",
+    "env-destroy": "tsx scripts/env-destroy.ts",
+    "env-rebuild": "tsx scripts/env-destroy.ts && tsx scripts/env-build.ts"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "catalog:",
+    "dotenv": "catalog:",
+    "eslint": "catalog:",
+    "prettier": "^3.8.2",
+    "tsx": "^4.19.4",
+    "turbo": "^2.9.6",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@10.17.0",
+  "pnpm": {
+    "overrides": {
+      "h3": "1.15.11"
+    }
+  },
+  "dependencies": {
+    "nx": "^23.0.1"
+  }
+}

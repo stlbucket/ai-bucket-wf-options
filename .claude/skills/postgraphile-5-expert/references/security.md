@@ -1,0 +1,276 @@
+# PostGraphile 5: Security Reference
+
+## Security Philosophy
+
+PostGraphile advocates **database-level security** over application-layer security:
+- PostgreSQL Row-Level Security (RLS) policies protect data at the lowest level
+- Consistent across all services accessing the database
+- Declarative and auditable in the schema itself
+
+## The Data Flow: Auth → Database
+
+```
+HTTP Request
+    ↓
+Auth middleware / nuxt-auth-utils (validate session, extract user identity)
+    ↓
+grafast.context() — extract H3Event, read session, build pgSettings
+    ↓
+PostgreSQL receives: SET LOCAL role = 'app_visitor'; SET LOCAL jwt.claims.session_id = '...';
+    ↓
+RLS policies check: current_setting('jwt.claims.session_id')
+    ↓
+Data filtered/blocked at database level
+```
+
+## pgSettings: Passing Identity to PostgreSQL
+
+The `grafast.context` function receives `(requestContext, args)`. Always spread
+`args.contextValue` to accumulate settings from earlier layers (e.g., pgServices):
+
+```typescript
+grafast: {
+  async context(requestContext, args) {
+    const pgSettings = { ...(args.contextValue?.pgSettings as Record<string, string>) };
+    // ... populate pgSettings ...
+    return { ...args.contextValue, pgSettings };
+  },
+},
+```
+
+Reading pgSettings in PostgreSQL:
+
+```sql
+-- Safe helper function (true = return NULL, not error, if setting missing)
+create function current_user_id() returns integer as $$
+  select nullif(current_setting('myapp.user_id', true), '')::integer;
+$$ language sql stable security definer;
+
+create function current_user_is_admin() returns boolean as $$
+  select current_setting('myapp.is_admin', true) = 'true';
+$$ language sql stable security definer;
+```
+
+## H3Event Extraction in grafast.context()
+
+When running in Nuxt/H3, the H3 adaptor populates `requestContext.h3v1.event`. For WebSocket
+connections, the event must be constructed manually from the raw request:
+
+```typescript
+import { H3Event } from "h3";
+import { ServerResponse } from "node:http";
+
+grafast: {
+  async context(requestContext, args) {
+    // HTTP: ctx.h3v1?.event is populated by the h3/v1 adaptor
+    // WebSocket: ctx.ws is provided by makeWsHandler; construct H3Event manually
+    const event =
+      requestContext.event ??
+      requestContext.h3v1?.event ??
+      new H3Event(
+        requestContext.ws!.request._req,
+        new ServerResponse(requestContext.ws!.request)
+      );
+
+    if (!event) throw new Error("No H3Event in request context");
+
+    // ... rest of context setup
+  },
+},
+```
+
+## Authentication Patterns
+
+### Pattern 1: nuxt-auth-utils Session (Nuxt projects)
+
+The `nuxt-auth-utils` package provides server-side session management via encrypted cookies.
+Use `getUserSession(event)` inside `grafast.context()`:
+
+```typescript
+import { getUserSession, setUserSession, clearUserSession } from "nuxt-auth-utils/server";
+
+grafast: {
+  async context(requestContext, args) {
+    const event = requestContext.h3v1?.event ?? /* ws fallback */;
+    const session = await getUserSession(event);
+    const sessionId = validateUuid(session.secure?.session_id);
+
+    // Update last_active using rootPgPool (bypasses RLS — superuser pool)
+    if (sessionId) {
+      await rootPgPool?.query(
+        "UPDATE app_private.sessions SET last_active = NOW() " +
+        "WHERE uuid = $1 AND last_active < NOW() - INTERVAL '15 seconds'",
+        [sessionId]
+      );
+    }
+
+    return {
+      sessionId,
+      pgSettings: {
+        role: process.env.DATABASE_VISITOR ?? "app_visitor",
+        "jwt.claims.session_id": sessionId ?? undefined,
+      },
+      // Expose auth helpers to PostGraphile mutations (via context() accessor):
+      login: (userSession: typeof session) => setUserSession(event, userSession),
+      logout: () => clearUserSession(event),
+      rootPgPool,
+    };
+  },
+},
+```
+
+The `jwt.claims.session_id` convention allows session lookup in PostgreSQL:
+```sql
+create function current_session_id() returns uuid as $$
+  select nullif(current_setting('jwt.claims.session_id', true), '')::uuid;
+$$ language sql stable security definer;
+```
+
+**Why use `rootPgPool` for session updates:** The last_active query must run as superuser to
+bypass RLS. Using `authPgPool` would fail because the session isn't established yet.
+
+### Pattern 2: JWT Verified in Middleware (Express/Koa)
+
+Verify JWT in Express/Koa middleware, then pass claims to pgSettings:
+
+```typescript
+import jwt from "jsonwebtoken";
+
+app.use((req, res, next) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  if (token) {
+    try { req.user = jwt.verify(token, process.env.JWT_SECRET); }
+    catch (e) { /* invalid token */ }
+  }
+  next();
+});
+```
+
+Then in `grafast.context()`:
+```typescript
+const req = requestContext.expressv4?.req;
+return {
+  pgSettings: {
+    role: req?.user ? "app_user" : "app_anonymous",
+    "myapp.user_id": req?.user?.id?.toString() ?? "",
+  },
+};
+```
+
+### Pattern 3: JWT Generated by PostgreSQL Functions
+
+PostGraphile can emit JWTs from PostgreSQL functions:
+
+```sql
+-- Define the JWT payload type
+create type app_public.jwt_token as (
+  role text,
+  user_id integer,
+  exp bigint
+);
+
+-- Function that returns a JWT
+create function app_public.authenticate(email text, password text)
+  returns app_public.jwt_token as $$
+declare account app_private.user_accounts;
+begin
+  select a.* into account from app_private.user_accounts a where a.email = $1;
+  if account.password_hash = crypt(password, account.password_hash) then
+    return ('app_user', account.user_id, extract(epoch from now() + interval '7 days'))::app_public.jwt_token;
+  else
+    return null;
+  end if;
+end;
+$$ language plpgsql strict security definer;
+```
+
+Configure in preset:
+```typescript
+schema: {
+  pgJwtTypes: "app_public.jwt_token",
+  pgJwtSecret: process.env.JWT_SECRET,
+}
+```
+
+## Row-Level Security (RLS)
+
+```sql
+-- Enable RLS on a table
+alter table posts enable row level security;
+alter table posts force row level security;  -- even for table owner
+
+-- Policy: users can only see their own posts (or all if admin)
+create policy posts_select on posts
+  for select
+  using (author_id = current_user_id() or current_user_is_admin());
+
+-- Policy: users can only update their own posts
+create policy posts_update on posts
+  for update
+  using (author_id = current_user_id())
+  with check (author_id = current_user_id());
+
+-- Policy: insert sets author_id automatically
+create policy posts_insert on posts
+  for insert
+  with check (author_id = current_user_id());
+```
+
+## Database Role Strategy
+
+Use multiple PostgreSQL roles for defense in depth:
+
+```sql
+create role app_anonymous;      -- unauthenticated users
+create role app_user;           -- authenticated users
+create role app_admin;          -- admin users
+create role app_postgraphile;   -- PostGraphile connection role
+
+-- PostGraphile connects as app_postgraphile, switches to user role per request
+grant app_anonymous to app_postgraphile;
+grant app_user to app_postgraphile;
+grant app_admin to app_postgraphile;
+
+-- Grant permissions to roles
+grant select on users to app_anonymous;
+grant select, insert, update on posts to app_user;
+grant all on all tables in schema public to app_admin;
+```
+
+PostGraphile uses `pgSettings.role` to `SET LOCAL ROLE` for each request.
+
+## Schema Separation for Security
+
+```
+app_public   — tables/functions exposed via PostGraphile
+app_private  — secrets, passwords, internal data (never exposed)
+app_hidden   — accessible to PostGraphile but not public-facing
+```
+
+```typescript
+// PostGraphile only introspects schemas listed in pgServices
+pgServices: [makePgService({
+  schemas: ["app_public"],  // never include app_private here
+})]
+```
+
+## Security Checklist
+
+- [ ] RLS enabled and forced on all tables with user data
+- [ ] Separate connection roles (anonymous / user / admin)
+- [ ] `app_private` schema excluded from PostGraphile introspection
+- [ ] pgSettings passes identity (not raw JWT — verify first)
+- [ ] `current_setting()` helper functions use `true` second arg (null-safe)
+- [ ] `security definer` functions have explicit `search_path = ''`
+- [ ] Password/secret columns in `app_private`, not `app_public`
+- [ ] JWT secret or session secret in environment variable, never hardcoded
+- [ ] For Nuxt: session secret in `runtimeConfig` (not `public`)
+
+## PgRBACPlugin (Built into Amber Preset)
+
+The `PgRBACPlugin` (enabled by default in Amber) reads PostgreSQL GRANT permissions:
+- Only exposes tables/columns/operations you've granted to the current role
+- Schema automatically reflects the union of all accessible permissions
+- **Your GRANT statements ARE your schema visibility configuration**
+
+This means: if you want to hide a column, don't `GRANT SELECT (secret_col)`. PostGraphile won't expose it.

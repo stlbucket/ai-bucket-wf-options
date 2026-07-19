@@ -1,0 +1,9 @@
+mutation ParkSupportTicket($ticketId: UUID!) {
+  parkSupportTicket(input: {
+    _ticketId: $ticketId
+  }) {
+    supportTicket {
+      ...SupportTicket
+    }
+  }
+}

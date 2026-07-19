@@ -1,0 +1,7 @@
+mutation ExitSupportMode {
+  exitSupportMode(input: {}) {
+    resident {
+      ...Resident
+    }
+  }
+}

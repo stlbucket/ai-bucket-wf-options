@@ -1,0 +1,11 @@
+mutation DeactivateWorkspace(
+  $tenantId: UUID!
+) {
+  deactivateWorkspace(input: {
+    _tenantId: $tenantId
+  }) {
+    tenant {
+      ...Tenant
+    }
+  }
+}

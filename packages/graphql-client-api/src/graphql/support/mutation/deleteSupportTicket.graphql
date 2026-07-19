@@ -1,0 +1,9 @@
+mutation DeleteSupportTicket($ticketId: UUID!) {
+  deleteSupportTicket(input: {
+    _ticketId: $ticketId
+  }) {
+    supportTicket {
+      ...SupportTicket
+    }
+  }
+}

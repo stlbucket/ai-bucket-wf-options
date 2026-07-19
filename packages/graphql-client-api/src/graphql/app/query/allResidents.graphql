@@ -1,0 +1,12 @@
+query AllResidents {
+  residents: residentsList {
+    ...Resident
+    licenses: licensesList {
+      ...License
+      licenseType {
+        ...LicenseType
+      }
+    }
+  }
+}
+  

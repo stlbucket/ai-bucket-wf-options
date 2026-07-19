@@ -1,0 +1,5 @@
+query AllSupportTickets {
+  tickets: supportTicketsList {
+    ...SupportTicket
+  }
+}

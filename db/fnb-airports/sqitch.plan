@@ -1,0 +1,7 @@
+%syntax-version=1.0.0
+%project=fnb-airports
+
+00000000010800_airports [fnb-app:00000000010250_app_policies fnb-loc:00000000010340_loc_public_locations] 2026-07-09T00:00:00Z Developer <dev@example.com> # Create airports schemas, enums, and tables (airport, runway, airport_frequency, navaid, country, region, sync_source)
+00000000010810_airports_fn [00000000010800_airports fnb-agent:00000000011130_agent_policies] 2026-07-09T00:00:00Z Developer <dev@example.com> # Create airports_fn types and functions (six upserts, record_sync_source, airport_sync_status) + agent_worker grants
+00000000010815_airports_api [00000000010810_airports_fn] 2026-07-09T00:00:00Z Developer <dev@example.com> # Create airports_api functions (search_airports, airport_map_points, airport_sync_status)
+00000000010820_airports_policies [00000000010815_airports_api] 2026-07-09T00:00:00Z Developer <dev@example.com> # Apply grants and RLS policies

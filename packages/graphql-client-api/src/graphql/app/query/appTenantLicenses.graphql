@@ -1,0 +1,8 @@
+query TenantLicenses{
+  tenantLicenses: tenantLicensesList {
+    ...License
+    resident {
+      ...Resident
+    }
+  }
+}

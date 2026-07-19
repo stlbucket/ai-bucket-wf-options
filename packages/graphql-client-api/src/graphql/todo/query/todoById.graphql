@@ -1,0 +1,75 @@
+query TodoById(
+  $id: UUID!
+) {
+  todo(id: $id) {
+    ...Todo
+    owner: resourceByResidentUrn {
+      resident {
+        id
+        displayName
+      }
+    }
+    parentTodo {
+      id
+      name
+      parentTodo {
+        id
+        name
+        parentTodo {
+          id
+          name
+          parentTodo {
+            id
+            name
+            parentTodo {
+              id
+              name
+              parentTodo {
+                id
+                name
+                parentTodo {
+                  id
+                  name
+                  parentTodo {
+                    id
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    children: todosByParentTodoIdList {
+      ...Todo
+      owner: resourceByResidentUrn {
+        resident {
+          id
+          displayName
+        }
+      }
+      children: todosByParentTodoIdList {
+        ...Todo
+        owner: resourceByResidentUrn {
+          resident {
+            id
+            displayName
+          }
+        }
+        children: todosByParentTodoIdList {
+          ...Todo
+          owner: resourceByResidentUrn {
+            resident {
+              id
+              displayName
+            }
+          }
+          hiddenChildren: todosByParentTodoId {
+            totalCount
+          }
+        }
+      }
+    }
+  }
+}

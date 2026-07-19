@@ -1,0 +1,11 @@
+query SearchProfiles(
+  $searchTerm: String
+) {
+  searchProfiles(_options: {
+    searchTerm: $searchTerm
+  }) {
+   nodes {
+      ...Profile
+    }    
+  }
+}

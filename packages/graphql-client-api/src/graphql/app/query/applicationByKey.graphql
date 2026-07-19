@@ -1,0 +1,23 @@
+query ApplicationByKey($key: String!) {
+  application(key: $key) {
+    ...Application
+    licenseTypes: licenseTypesByApplicationKeyList {
+      ...LicenseType
+      permissions: licenseTypePermissionsByLicenseTypeKeyList {
+        ...LicenseTypePermission
+      }
+    }
+    modules: modulesByApplicationKeyList {
+      key
+      name
+      ordinal
+      tools: toolsByModuleKeyList {
+        key
+        name
+        route
+        moduleKey
+        permissionKeys
+      }
+    }
+  }
+}

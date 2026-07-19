@@ -1,0 +1,5 @@
+query ResolveUrn($urn: String!) {
+  resolveUrn(_urn: $urn) {
+    ...ResourceFields
+  }
+}

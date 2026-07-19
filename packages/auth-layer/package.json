@@ -1,0 +1,27 @@
+{
+  "name": "@function-bucket/fnb-auth-layer",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./nuxt.config.ts",
+  "scripts": {
+    "dev:prepare": "nuxt prepare",
+    "postinstall": "nuxt prepare"
+  },
+  "peerDependencies": {
+    "vue": ">=3.4.0"
+  },
+  "dependencies": {
+    "@vueuse/core": "catalog:",
+    "@function-bucket/fnb-auth-ui": "workspace:*",
+    "@function-bucket/fnb-db-access": "workspace:*",
+    "@function-bucket/fnb-types": "workspace:*",
+    "@iconify-json/lucide": "catalog:",
+    "@iconify-json/simple-icons": "catalog:",
+    "@nuxt/fonts": "^0.14.0",
+    "@nuxt/kit": "^4.4.2",
+    "@nuxt/ui": "catalog:",
+    "h3": "catalog:",
+    "nuxt": "catalog:",
+    "tailwindcss": "^4.2.2"
+  }
+}

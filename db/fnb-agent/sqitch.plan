@@ -1,0 +1,7 @@
+%syntax-version=1.0.0
+%project=fnb-agent
+
+00000000011100_agent [fnb-app:00000000010250_app_policies] 2026-07-17T00:00:00Z Developer <dev@example.com> # Create agent schema, workflow_run_status enum, and workflow_run run log
+00000000011110_agent_fn [00000000011100_agent] 2026-07-17T00:00:00Z Developer <dev@example.com> # Create agent_fn functions (begin_run, attach_session, complete_run, error_run, running_count)
+00000000011120_agent_api [00000000011110_agent_fn] 2026-07-17T00:00:00Z Developer <dev@example.com> # Create agent_api.workflow_runs (gated p:app-admin-super)
+00000000011130_agent_policies [00000000011120_agent_api] 2026-07-17T00:00:00Z Developer <dev@example.com> # Grants + RLS policies + agent_worker login role (password via :'agent_worker_password')

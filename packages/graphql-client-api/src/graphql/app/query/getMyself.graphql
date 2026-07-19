@@ -1,0 +1,5 @@
+query GetMyself {
+  getMyself {
+    ...Profile
+  }
+}

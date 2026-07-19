@@ -1,0 +1,13 @@
+❯ ok - so this skill need to take:
+  - url to api/api documentation
+  - name for the main table of the dataset
+
+  the skill needs to work with /fnb-stack-spec to create a spec for a new stack and workflow to import, search and visualize the dataset
+
+  the breweries data set is the pattern, and also probably the simplest case
+
+  the skill will likely need to understand more about most datasets, including but not limited to:
+  - how to access (api keys, etc).  keys should go into .env...
+  - some datasets may have more than one table.  anything beyone 3 tables might be a good candidate for a dedicated schema
+  - by default, these datasets can go in the location_datasets schema, but you should ask just to make sure
+  - expect the actual import process to have some hiccups.

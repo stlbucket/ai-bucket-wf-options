@@ -1,0 +1,7 @@
+# ANON-safe per-subject fetch (SECURITY DEFINER fn; is_public + clean only; by reference).
+# Function arg keeps its `_subjectUrn` prefix (PgSimplifyInflection does not strip it).
+query PublicAssetsForSubject($subjectUrn: String!) {
+  assets: publicAssetsForSubjectList(_subjectUrn: $subjectUrn) {
+    ...Asset
+  }
+}

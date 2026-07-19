@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sheep PoC</title>
+<style>
+  /* [throwaway] — centered canvas, dark page, HUD */
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #14181c;
+    color: #cdd6df;
+    font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 10px;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  #wrap {
+    position: relative;
+  }
+  canvas {
+    display: block;
+    background: #1c2228;
+    border: 1px solid #2c353d;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  }
+  #hud {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 6px 8px;
+    background: rgba(10, 13, 16, 0.55);
+    border: 1px solid #2c353d;
+    border-radius: 4px;
+    pointer-events: none;
+    white-space: pre;
+  }
+  #controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  #controls button {
+    font: inherit;
+    color: #cdd6df;
+    background: #232b32;
+    border: 1px solid #37424c;
+    border-radius: 4px;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  #controls button:hover { background: #2c363f; }
+  #controls button.active {
+    background: #2f5d3a;
+    border-color: #4c8a5e;
+    color: #eafaef;
+  }
+  #controls button kbd {
+    opacity: 0.55;
+    font-size: 11px;
+    margin-left: 4px;
+  }
+  #controls .sep { width: 1px; height: 22px; background: #37424c; margin: 0 4px; }
+  #card {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 300px;
+    padding: 20px 24px;
+    background: rgba(16, 20, 24, 0.96);
+    border: 1px solid #3a4650;
+    border-radius: 8px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+  }
+  #card h2 { margin: 0 0 6px; font-size: 16px; font-weight: 600; }
+  #card .big { font-size: 44px; font-weight: 700; color: #7fd79a; margin-bottom: 12px; }
+  #card .big small { font-size: 16px; color: #7b8894; font-weight: 400; }
+  #card .row { display: flex; justify-content: space-between; gap: 24px; padding: 3px 0; border-top: 1px solid #232b32; }
+  #card .row span:last-child { color: #e08a8a; }
+  #card .foot { margin-top: 12px; font-size: 11px; color: #7b8894; }
+</style>
+<!-- [throwaway] lil-gui UMD build (window.lil.GUI) — plain <script> can't import ESM -->
+<script src="https://cdn.jsdelivr.net/npm/lil-gui@0.19/dist/lil-gui.umd.min.js"></script>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="field" width="1120" height="720"></canvas>
+  <div id="hud">boot…</div>
+</div>
+<div id="controls">
+  <button data-cmd="come_by">Come By <kbd>Q</kbd></button>
+  <button data-cmd="away">Away <kbd>E</kbd></button>
+  <button data-cmd="walk_on">Walk On <kbd>W</kbd></button>
+  <button data-cmd="lie_down">Lie Down <kbd>S</kbd></button>
+  <button data-cmd="that_ll_do">That'll Do <kbd>D</kbd></button>
+  <span class="sep"></span>
+  <button data-action="finish">Finish <kbd>F</kbd></button>
+  <button data-action="reset">Reset <kbd>R</kbd></button>
+</div>
+<div id="card"></div>
+
+<script>
+'use strict'
+// ============================================================================
+// §0 PARAMS — the single `params` object (SALVAGE ARTIFACT — ports as data)
+//   All tunables live here and are bound to lil-gui as phases introduce them.
+// ============================================================================
+const params = {
+  // Stage
+  canvasW: 1120,
+  canvasH: 720,
+  fenceInset: 20,   // play rect inset → 1080 × 680 play area
+  L: 12,            // body-length (px per sheep)
+
+  // Sheep (P1)
+  sheepCount: 20,   // herd size
+  vMax: 90,         // sheep max speed (px/s)
+  grazeSpeed: 15,   // gentle wander cruising speed (px/s)
+  damping: 0.9,     // velocity retention per fixed tick
+  w_graze: 0.3,     // wander steering weight
+  wanderTurn: 1.5,  // graze heading random-walk rate (rad/s)
+
+  // Boids (P2)
+  r_sep: 18,        // separation radius (px)
+  minSep: 4,        // min-distance clamp so inverse-square can't explode
+  cohN: 10,         // cohesion: number of nearest neighbors (topological)
+  cohScale: 100,    // cohesion spring scale (px): eases within this of local CoM
+  r_align: 36,      // alignment radius (px)
+  w_sep: 1.5,       // separation weight
+  w_coh: 1.0,       // cohesion weight
+  w_align: 0.2,     // alignment weight (weak — sheep aren't starlings)
+  accelScale: 250,  // px/s² per unit steering force (global responsiveness)
+
+  // Dog + flee (P3)
+  dogVMax: 135,     // dog max speed (px/s) — 1.5× sheep
+  R_flee: 120,      // flee threat radius (px)
+  w_flee: 2.0,      // flee weight
+  ambient: 0.2,     // eye floor: 1 = pure radius, 0 = pure cone
+  coneK: 2,         // eye cone tightness (cos^k)
+  lieDownIntensity: 0.3, // dog intensity on lie-down
+
+  // Dog steering (P4)
+  R_orbit: 160,     // come-by/away orbit radius around GCM (px)
+  omega: 1.2,       // orbit angular speed (rad/s)
+  R_drive: 140,     // walk-on standoff behind GCM (px)
+  driveShrink: 10,  // walk-on: R_drive shrink rate (px/s)
+  R_driveMin: 55,   // walk-on standoff floor (don't walk into the blob)
+  goal: { x: 970, y: 360 }, // pen center
+
+  // Gate + crush (P5)
+  fenceX: 820,      // interior fence x (goal pen = x > fenceX)
+  gateY: 360,       // gate gap center y
+  gateWidth: 42,    // gate opening (px)
+  w_fence: 1.5,     // fence repulsion weight
+  r_fence: 30,      // fence repulsion range (px)
+  spawnMinX: 220,   // herd spawn box (left of the gate, but not the far corner)
+  spawnMaxX: 500,
+  crushRadius: 40,  // gate-mouth neighborhood (px)
+  crushThreshold: 1.5, // crush injury threshold (calibrated in P5: bulldoze >1.5s sustained, lie-down ~0.2)
+  crushSustain: 0.8, // seconds over threshold → injury event
+
+  // Boldness / protest / bolt (P5)
+  boldnessTheta: 0.5,  // hold scale: ignore dog while T < boldness·θ
+  panicThreshold: 0.6, // T above this → panic sprint (enables bolting)
+  panicMult: 1.6,      // vMax multiplier when panicking
+  protestProb: 0.6,    // protest chance per second just below threshold
+  protestDur: 0.3,     // protest stamp duration (s)
+
+  // Scoring (P6) — subtractive: total = 100 − Σ weighted penalties.
+  // Each axis accumulates a normalized 0..1 fraction per second, so weights read
+  // as "points per second of full badness."
+  w_time: 0.1,      // penalty per second of run time
+  w_line: 0.4,      // penalty per second fully off the ideal path
+  w_cohesion: 0.4,  // penalty per straggler-fraction-second (+1.5× per split-second)
+  w_calm: 0.6,      // penalty per second of full flock panic
+  injuryWeight: 5,  // calm penalty (stress-seconds equivalent) per injury
+  lineNorm: 150,    // path deviation (px) that counts as "fully off-line"
+  T_straggle: 3.0,  // seconds outside the blob before a straggler counts
+  splitMinSize: 3,  // min cluster size to count as a real sub-flock
+  clusterDist: 70,  // link distance for cluster detection (px)
+
+  // Debug overlays (P7) — render toggles, not sim params (excluded from export)
+  debug: { eye: true, velocity: false, neighbors: false, gcm: false, dogTarget: false, state: false },
+
+  // Sim
+  seed: 1337,       // PRNG seed (reproducible runs)
+  dt: 1 / 60,       // fixed timestep (s)
+  maxFrameDelta: 0.25, // clamp real elapsed to kill spiral-of-death
+}
+
+// lil-gui panel (UMD build → window.lil.GUI). Folders fill in per phase.
+const gui = new lil.GUI({ title: 'sheep-poc' })
+const fStage = gui.addFolder('Stage')
+fStage.add(params, 'fenceInset', 0, 60, 1)
+const fSheep = gui.addFolder('Sheep')
+fSheep.add(params, 'vMax', 20, 240, 5)
+fSheep.add(params, 'grazeSpeed', 0, 60, 1)
+fSheep.add(params, 'damping', 0.5, 0.99, 0.01)
+// sheepCount is bound in §4 (its onChange respawns the herd).
+const fBoids = gui.addFolder('Boids')
+fBoids.add(params, 'r_sep', 4, 60, 1)
+fBoids.add(params, 'minSep', 1, 20, 1)
+fBoids.add(params, 'cohN', 1, 20, 1)
+fBoids.add(params, 'cohScale', 10, 160, 5)
+fBoids.add(params, 'r_align', 6, 120, 1)
+fBoids.add(params, 'w_sep', 0, 4, 0.1)
+fBoids.add(params, 'w_coh', 0, 4, 0.1)
+fBoids.add(params, 'w_align', 0, 2, 0.05)
+fBoids.add(params, 'w_graze', 0, 2, 0.05)
+fBoids.add(params, 'accelScale', 0, 800, 10)
+const fEye = gui.addFolder('Flee / Eye')
+fEye.add(params, 'R_flee', 40, 300, 5)
+fEye.add(params, 'w_flee', 0, 5, 0.1)
+fEye.add(params, 'ambient', 0, 1, 0.05)
+fEye.add(params, 'coneK', 0.5, 8, 0.5)
+const fDog = gui.addFolder('Dog')
+fDog.add(params, 'R_orbit', 60, 300, 5)
+fDog.add(params, 'omega', 0.2, 3, 0.1)
+fDog.add(params, 'R_drive', 80, 260, 5)
+fDog.add(params, 'driveShrink', 0, 40, 1)
+fDog.add(params, 'R_driveMin', 40, 160, 5)
+fDog.add(params, 'lieDownIntensity', 0, 1, 0.05)
+const fGate = gui.addFolder('Gate + Crush')
+fGate.add(params, 'gateWidth', 12, 60, 1)
+fGate.add(params, 'crushThreshold', 0.5, 8, 0.1)
+fGate.add(params, 'w_fence', 0, 4, 0.1)
+fGate.add(params, 'r_fence', 10, 80, 1)
+fGate.add(params, 'crushRadius', 20, 80, 1)
+const fBold = gui.addFolder('Boldness')
+fBold.add(params, 'boldnessTheta', 0, 1.5, 0.05)
+fBold.add(params, 'panicThreshold', 0.2, 1, 0.05)
+fBold.add(params, 'panicMult', 1, 2.5, 0.1)
+const fScore = gui.addFolder('Scoring')
+fScore.add(params, 'w_time', 0, 1, 0.01)
+fScore.add(params, 'w_line', 0, 0.01, 0.0005)
+fScore.add(params, 'w_cohesion', 0, 3, 0.1)
+fScore.add(params, 'w_calm', 0, 5, 0.1)
+fScore.add(params, 'T_straggle', 0, 6, 0.5)
+fScore.add(params, 'splitMinSize', 2, 8, 1)
+const fDebug = gui.addFolder('Debug')
+fDebug.add(params.debug, 'eye').name('flee cone + R_flee')
+fDebug.add(params.debug, 'velocity').name('velocity vectors')
+fDebug.add(params.debug, 'neighbors').name('neighbor links')
+fDebug.add(params.debug, 'gcm').name('flock GCM')
+fDebug.add(params.debug, 'dogTarget').name('dog target')
+fDebug.add(params.debug, 'state').name('collect / drive')
+
+// ============================================================================
+// §1 SIM  ◀── PURE, DOM-FREE — ports to Godot FlockSim 1:1.
+//   NOTHING here may touch canvas / document / window / lil-gui.
+//   Phase 0: vec2 helpers only.
+// ============================================================================
+const vec2 = {
+  add:  (a, b) => ({ x: a.x + b.x, y: a.y + b.y }),
+  sub:  (a, b) => ({ x: a.x - b.x, y: a.y - b.y }),
+  scale:(a, s) => ({ x: a.x * s,   y: a.y * s   }),
+  len:  (a)    => Math.hypot(a.x, a.y),
+  norm: (a) => {
+    const l = Math.hypot(a.x, a.y)
+    return l > 1e-9 ? { x: a.x / l, y: a.y / l } : { x: 0, y: 0 }
+  },
+  dist: (a, b) => Math.hypot(a.x - b.x, a.y - b.y),
+}
+
+function clampLen(v, max) {
+  const l = Math.hypot(v.x, v.y)
+  if (l > max && l > 1e-9) return { x: (v.x / l) * max, y: (v.y / l) * max }
+  return v
+}
+
+// Hermite smoothstep; returns 0 at e0 → 1 at e1 (params may be reversed).
+function smoothstep(e0, e1, x) {
+  const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0)))
+  return t * t * (3 - 2 * t)
+}
+
+// Distance from point p to segment a→b (for path-deviation scoring).
+function distToSeg(p, a, b) {
+  const abx = b.x - a.x, aby = b.y - a.y
+  const len2 = abx * abx + aby * aby
+  let t = len2 > 1e-9 ? ((p.x - a.x) * abx + (p.y - a.y) * aby) / len2 : 0
+  t = Math.max(0, Math.min(1, t))
+  return Math.hypot(p.x - (a.x + t * abx), p.y - (a.y + t * aby))
+}
+
+// Tiny seeded PRNG (mulberry32) — pure & reproducible so P7 reseed replays a run.
+function makePRNG(seed) {
+  let a = seed >>> 0
+  return function () {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+// FlockSim — owns all sheep state + integration. Pure: receives `params` as data,
+// exposes `sheep`, `ticks`, `step(dt)`. No DOM, no rendering.
+class FlockSim {
+  constructor(params) {
+    this.p = params
+    this.ticks = 0
+    this.sheep = []
+    this.reseed(params.seed)
+    // dog: a steering agent. `command` sets target/facing/intensity (P4); facing
+    // is derived (eye on the flock's GCM), never manually steered.
+    const home = { x: 100, y: params.canvasH / 2 }
+    this.gcm = { x: params.canvasW / 2, y: params.canvasH / 2 }
+    this.dog = {
+      pos: { ...home }, vel: { x: 0, y: 0 }, facing: 0,
+      command: 'that_ll_do', target: { ...home }, intensity: 1,
+      owner: { ...home }, orbitAngle: 0, driveDist: params.R_drive,
+    }
+    this.crush = 0        // live crush at the gate mouth (density × forward pressure)
+    this.crushTime = 0    // seconds sustained over threshold
+    this.injuries = 0     // down-sheep count (welfare hit; scoring uses it in P6)
+    // ideal path for the line axis: herd start → gate → pen center
+    this.idealPath = [
+      { x: (params.spawnMinX + Math.min(params.spawnMaxX, params.fenceX - 60)) / 2, y: params.canvasH / 2 },
+      { x: params.fenceX, y: params.gateY },
+      { x: params.goal.x, y: params.goal.y },
+    ]
+    this.resetRun()
+  }
+
+  // Fresh subtractive-scoring accumulators for a new run (called on reseed).
+  resetRun() {
+    this.run = { t: 0, lineDev: 0, strag: 0, split: 0, stress: 0, won: false, finished: false }
+  }
+
+  // Flock centroid (global center of mass) — drives all dog steering.
+  computeGCM() {
+    const n = this.sheep.length
+    if (n === 0) return { x: this.p.canvasW / 2, y: this.p.canvasH / 2 }
+    let cx = 0, cy = 0
+    for (const s of this.sheep) { cx += s.pos.x; cy += s.pos.y }
+    return { x: cx / n, y: cy / n }
+  }
+
+  // Strömbom f(N): the flock is cohesive (→ drive) when every sheep is within
+  // r_sep·N^(2/3) of the GCM; otherwise collect the outliers first.
+  isCohesive() {
+    const p = this.p
+    const active = this.sheep.filter((s) => !s.down)
+    if (!active.length) return true
+    const fN = p.r_sep * Math.pow(active.length, 2 / 3)
+    for (const s of active) if (vec2.dist(s.pos, this.gcm) > fN) return false
+    return true
+  }
+
+  // Player input calls this (via §3) — sets only the command + per-command entry
+  // state, so §1 owns the whole player→command→target→steering chain.
+  setCommand(cmd) {
+    const d = this.dog, g = this.gcm
+    if (cmd === 'come_by' || cmd === 'away')      // start orbit from current bearing
+      d.orbitAngle = Math.atan2(d.pos.y - g.y, d.pos.x - g.x)
+    // Reset the walk-on standoff only on a *reposition* command — so it stays
+    // crept-in through a lie-down ↔ walk-on rhythm (otherwise each walk-on
+    // re-entry kicks the dog back out to arm's length and kills the drive).
+    if (cmd === 'come_by' || cmd === 'away' || cmd === 'that_ll_do')
+      d.driveDist = this.p.R_drive
+    d.command = cmd
+  }
+
+  playRect() {
+    const p = this.p
+    return {
+      x0: p.fenceInset, y0: p.fenceInset,
+      x1: p.canvasW - p.fenceInset, y1: p.canvasH - p.fenceInset,
+    }
+  }
+
+  // standard-normal via Box–Muller off the seeded stream
+  gauss(mean, sd) {
+    const u = 1 - this.rng(), v = this.rng()
+    return mean + sd * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v)
+  }
+
+  // (re)seed the PRNG and respawn the whole herd — deterministic given seed.
+  reseed(seed) {
+    this.rng = makePRNG(seed >>> 0)
+    this.spawn()
+  }
+
+  spawn() {
+    const r = this.playRect()
+    const p = this.p, n = p.sheepCount
+    const x0 = p.spawnMinX, x1 = Math.min(p.spawnMaxX, p.fenceX - 60) // herd starts left
+    this.sheep = []
+    for (let i = 0; i < n; i++) {
+      const boldness = Math.max(0, Math.min(1, this.gauss(0.3, 0.1)))
+      this.sheep.push({
+        pos: { x: x0 + this.rng() * (x1 - x0), y: r.y0 + this.rng() * (r.y1 - r.y0) },
+        vel: { x: 0, y: 0 },
+        heading: this.rng() * Math.PI * 2, // wander heading (graze)
+        facing: this.rng() * Math.PI * 2,  // stable render angle when near-still
+        boldness,                          // per-sheep flightiness gate
+        stress: 0,                         // incoming threat this tick
+        down: false,                       // injured → frozen obstacle
+        protest: 0,                        // protest-stamp timer (s)
+        panic: false,                      // panic sprint this tick
+        fleeFwd: 0,                        // forward (+goal) flee push, for crush
+        fwdPush: 0,                        // net forward push (crowd + dog), for crush
+        stragTime: 0,                      // time spent outside the main blob (s)
+        through: false,                    // passed the gate → commits forward, never turns back
+        throughDir: null,                  // locked into-pen heading once through
+      })
+    }
+    this.crush = 0; this.crushTime = 0; this.injuries = 0
+    this.resetRun()
+  }
+
+  // Neighbor query — single swappable function. Brute-force O(n²); returns
+  // [{ j, d }] for every other sheep, nearest-first. Replace with a spatial hash
+  // later (150+ agents) without touching the force code below.
+  neighborsOf(i) {
+    const a = this.sheep[i]
+    const out = []
+    for (let j = 0; j < this.sheep.length; j++) {
+      if (j === i) continue
+      out.push({ j, d: vec2.dist(a.pos, this.sheep[j].pos) })
+    }
+    out.sort((x, y) => x.d - y.d)
+    return out
+  }
+
+  // Separation: Σ (p_i − p_j)/max(d,minSep)²  over neighbors within r_sep.
+  // The minSep clamp stops the inverse-square term exploding on near-overlap.
+  separation(i, nbrs) {
+    const a = this.sheep[i], p = this.p
+    let fx = 0, fy = 0
+    for (const n of nbrs) {
+      if (n.d >= p.r_sep) break            // sorted → the rest are farther
+      const b = this.sheep[n.j]
+      const mag = 1 / Math.max(n.d, p.minSep) // inverse-linear, capped at 1/minSep
+      let ux, uy
+      if (n.d > 1e-4) {                    // unit direction away from neighbor
+        ux = (a.pos.x - b.pos.x) / n.d
+        uy = (a.pos.y - b.pos.y) / n.d
+      } else {                             // exact overlap → deterministic nudge
+        const ang = (i + 1) * 2.399963 + n.j
+        ux = Math.cos(ang); uy = Math.sin(ang)
+      }
+      fx += ux * mag; fy += uy * mag
+    }
+    return { x: fx, y: fy }
+  }
+
+  // Cohesion: toward the mean position of the cohN nearest (topological —
+  // robust as density changes, which it constantly does here). Spring-scaled by
+  // cohScale so it's full-strength for far stragglers but eases near the local
+  // CoM → the group settles at a loose spacing instead of crushing to a pack.
+  cohesion(i, nbrs) {
+    const p = this.p
+    const k = Math.min(p.cohN, nbrs.length)
+    if (k === 0) return { x: 0, y: 0 }
+    let cx = 0, cy = 0
+    for (let t = 0; t < k; t++) {
+      const b = this.sheep[nbrs[t].j]
+      cx += b.pos.x; cy += b.pos.y
+    }
+    const a = this.sheep[i]
+    const to = { x: cx / k - a.pos.x, y: cy / k - a.pos.y }
+    const d = vec2.len(to)
+    if (d < 1e-6) return { x: 0, y: 0 }
+    const mag = Math.min(d / p.cohScale, 1)   // proportional within cohScale, capped
+    return vec2.scale(to, mag / d)            // = unit(to) · mag
+  }
+
+  // Alignment: toward the mean heading of neighbors within r_align (kept weak).
+  alignment(i, nbrs) {
+    const p = this.p
+    let vx = 0, vy = 0, c = 0
+    for (const n of nbrs) {
+      if (n.d >= p.r_align) break
+      const b = this.sheep[n.j]
+      vx += b.vel.x; vy += b.vel.y; c++
+    }
+    if (c === 0) return { x: 0, y: 0 }
+    return vec2.norm({ x: vx, y: vy })
+  }
+
+  // Dog steering: command → target + facing + intensity, then arrive-seek toward
+  // the target at dogVMax. Facing is DERIVED (eye on GCM) — no manual head control.
+  stepDog(dt) {
+    const p = this.p, d = this.dog, g = this.gcm
+    const faceGCM = Math.atan2(g.y - d.pos.y, g.x - d.pos.x)
+    d.intensity = 1                              // default; lie_down lowers it
+
+    switch (d.command) {
+      case 'come_by':                            // orbit CW around the blob
+      case 'away': {                             // orbit CCW
+        const sign = d.command === 'come_by' ? 1 : -1
+        d.orbitAngle += sign * p.omega * dt
+        d.target = {
+          x: g.x + p.R_orbit * Math.cos(d.orbitAngle),
+          y: g.y + p.R_orbit * Math.sin(d.orbitAngle),
+        }
+        d.facing = faceGCM                        // eye locked on herd → near-edge sweep
+        break
+      }
+      case 'walk_on': {                          // stand behind GCM, opposite the goal
+        const away = vec2.norm(vec2.sub(g, p.goal)) // GCM-side away from goal
+        d.driveDist = Math.max(p.R_driveMin, d.driveDist - p.driveShrink * dt)
+        d.target = { x: g.x + away.x * d.driveDist, y: g.y + away.y * d.driveDist }
+        d.facing = faceGCM                        // aimed forward drive
+        break
+      }
+      case 'lie_down': {                         // stop, ease pressure, hold the eye
+        d.target = { x: d.pos.x, y: d.pos.y }
+        d.intensity = p.lieDownIntensity
+        d.facing = faceGCM
+        break
+      }
+      case 'that_ll_do':                         // return to owner, eye off the herd
+      default: {
+        d.target = { x: d.owner.x, y: d.owner.y }
+        d.facing = Math.atan2(d.pos.y - g.y, d.pos.x - g.x) // disengage → flock relaxes
+        break
+      }
+    }
+
+    // arrive-seek: slow within arriveR so the orbit doesn't jitter / overshoot
+    const to = vec2.sub(d.target, d.pos)
+    const dist = vec2.len(to)
+    const arriveR = 40
+    const speed = dist < arriveR ? p.dogVMax * (dist / arriveR) : p.dogVMax
+    d.vel = dist > 0.5 ? vec2.scale(vec2.norm(to), Math.min(speed, dist / dt))
+                       : { x: 0, y: 0 }
+    const prev = { x: d.pos.x, y: d.pos.y }
+    d.pos = vec2.add(d.pos, vec2.scale(d.vel, dt))
+    const r = this.playRect()
+    d.pos.x = Math.max(r.x0, Math.min(r.x1, d.pos.x))
+    d.pos.y = Math.max(r.y0, Math.min(r.y1, d.pos.y))
+    this.fenceBlock(prev, d.pos, d.vel) // dog can't cheat through the wall
+  }
+
+  // Interior fence: a vertical wall at fenceX with a gap of gateWidth at gateY.
+  // Repulsion pushes agents horizontally off the walled span (none in the gap).
+  fenceForce(pos) {
+    const p = this.p
+    const dxWall = pos.x - p.fenceX
+    if (Math.abs(dxWall) > p.r_fence) return { x: 0, y: 0 }
+    const half = p.gateWidth / 2
+    if (pos.y > p.gateY - half && pos.y < p.gateY + half) return { x: 0, y: 0 } // aperture → free
+    const g = smoothstep(p.r_fence, 0, Math.abs(dxWall))      // 1 at wall → 0 at r_fence
+    return { x: (dxWall >= 0 ? 1 : -1) * g, y: 0 }
+  }
+
+  // Hard anti-tunnel clamp: if an agent crossed the fence line at a walled y,
+  // put it back on the side it came from and kill the inward x-velocity. Applies
+  // to sheep AND dog (so the dog can't cheat through walls during orbits).
+  fenceBlock(prev, pos, vel) {
+    const p = this.p, half = p.gateWidth / 2
+    const inGap = pos.y > p.gateY - half && pos.y < p.gateY + half
+    const crossed = (prev.x - p.fenceX) * (pos.x - p.fenceX) < 0
+    if (crossed && !inGap) {
+      const side = prev.x < p.fenceX ? -1 : 1
+      pos.x = p.fenceX + side * (p.L * 0.5 + 1)
+      if ((side < 0 && vel.x > 0) || (side > 0 && vel.x < 0)) vel.x = 0
+    }
+  }
+
+  // Ambient-cone flee + boldness gate. Records `stress` (incoming threat T),
+  // `fleeFwd` (forward push toward the goal, for the crush metric), and `panic`.
+  //   T = smoothstep(R_flee,0,dist) · [ambient + (1−ambient)·max(0,cosθ)^coneK] · intensity
+  // Boldness: below boldness·θ a sheep ignores the dog (and may protest); high T
+  // trips a panic sprint (bolting through gaps). Returns the flee force.
+  flee(i, dt) {
+    const p = this.p, a = this.sheep[i], d = this.dog
+    a.fleeFwd = 0; a.panic = false
+    const to = { x: a.pos.x - d.pos.x, y: a.pos.y - d.pos.y } // dog → sheep
+    const dist = vec2.len(to)
+    if (dist >= p.R_flee || dist < 1e-6) {
+      a.stress = 0; if (a.protest > 0) a.protest -= dt; return { x: 0, y: 0 }
+    }
+    const dir = { x: to.x / dist, y: to.y / dist }            // flee away from dog
+    const g = smoothstep(p.R_flee, 0, dist)                   // 1 at contact → 0 at edge
+    const cosT = Math.max(0, dir.x * Math.cos(d.facing) + dir.y * Math.sin(d.facing))
+    const eye = p.ambient + (1 - p.ambient) * Math.pow(cosT, p.coneK)
+    const T = g * eye * d.intensity
+    a.stress = T
+    const hold = a.boldness * p.boldnessTheta
+
+    if (a.protest > 0) {                    // active protest → brief stamp toward dog
+      a.protest -= dt
+      return vec2.scale(dir, -0.5 * T)
+    }
+    if (T < hold) {                         // brave enough to ignore → graze
+      if (T > 0.6 * hold && this.rng() < p.protestProb * dt) a.protest = p.protestDur
+      return { x: 0, y: 0 }
+    }
+    if (T > p.panicThreshold) a.panic = true // panic sprint → can bolt through a gap
+    const f = vec2.scale(dir, T)
+    a.fleeFwd = Math.max(0, f.x)            // forward (+goal) component feeds crush
+    return f
+  }
+
+  integrate(i, dt) {
+    const s = this.sheep[i], p = this.p
+    if (s.down) { s.vel = { x: 0, y: 0 }; return } // injured → frozen obstacle
+
+    // Once through the gate (goal side), a sheep commits forward and never turns
+    // back — no boids/flee steer it. Lock an into-pen heading and cruise straight
+    // until it settles against the pen wall.
+    if (s.through || s.pos.x > p.fenceX) {
+      s.through = true; s.fwdPush = 0; s.stress = 0
+      if (!s.throughDir) {
+        let d = vec2.len(s.vel) > 1e-3 ? vec2.norm(s.vel) : { x: 1, y: 0 }
+        if (d.x < 0.2) d = vec2.norm({ x: 0.2, y: d.y }) // guarantee it heads into the pen
+        s.throughDir = d
+      }
+      s.vel = vec2.scale(s.throughDir, p.vMax * 0.6)
+      s.pos = vec2.add(s.pos, vec2.scale(s.vel, dt))
+      const rr = this.playRect()
+      if (s.pos.x > rr.x1) { s.pos.x = rr.x1; s.vel.x = 0 }
+      if (s.pos.y < rr.y0) { s.pos.y = rr.y0; s.vel.y = 0 }
+      if (s.pos.y > rr.y1) { s.pos.y = rr.y1; s.vel.y = 0 }
+      if (vec2.len(s.vel) > 2) s.facing = Math.atan2(s.vel.y, s.vel.x)
+      return
+    }
+    const nbrs = this.neighborsOf(i)   // one query, shared by all forces
+
+    const fSep = this.separation(i, nbrs)
+    const fCoh = this.cohesion(i, nbrs)
+    const fAli = this.alignment(i, nbrs)
+    const fFlee = this.flee(i, dt)
+    const fFen = this.fenceForce(s.pos)
+    // forward (+goal) push from the crowd behind + the dog — spikes when a sheep
+    // is jammed against the pile at the gate. Feeds the crush metric.
+    s.fwdPush = Math.max(0, fSep.x + fFlee.x)
+
+    // graze: smoothed random-walk heading → steer toward a low graze speed.
+    // Normalized by vMax so it's an O(1) force on the same footing as the boid
+    // forces (gentle: sheep barely move while grazing). grazeSpeed sets the pace.
+    s.heading += (this.rng() - 0.5) * 2 * p.wanderTurn * dt
+    const gdir = { x: Math.cos(s.heading), y: Math.sin(s.heading) }
+    const fGrz = vec2.scale(vec2.sub(vec2.scale(gdir, p.grazeSpeed), s.vel), 1 / p.vMax)
+
+    // accel = accelScale · (w_sep·F_sep + w_coh·F_coh + w_align·F_align + w_graze·F_graze)
+    // All forces share one global scale → tuning stays intuitive.
+    // (P3 adds flee, P7 fence — summed here.)
+    let accel = { x: 0, y: 0 }
+    accel = vec2.add(accel, vec2.scale(fSep, p.w_sep))
+    accel = vec2.add(accel, vec2.scale(fCoh, p.w_coh))
+    accel = vec2.add(accel, vec2.scale(fAli, p.w_align))
+    accel = vec2.add(accel, vec2.scale(fGrz, p.w_graze))
+    accel = vec2.add(accel, vec2.scale(fFlee, p.w_flee))
+    accel = vec2.add(accel, vec2.scale(fFen, p.w_fence))
+    accel = vec2.scale(accel, p.accelScale)
+
+    // integrate: v ← clampLen((v + a·dt)·damping, vMax) ; p ← p + v·dt
+    // panicking sheep get a higher speed cap so they can bolt.
+    const vmax = s.panic ? p.vMax * p.panicMult : p.vMax
+    const prev = { x: s.pos.x, y: s.pos.y }
+    s.vel = clampLen(vec2.scale(vec2.add(s.vel, vec2.scale(accel, dt)), p.damping), vmax)
+    s.pos = vec2.add(s.pos, vec2.scale(s.vel, dt))
+
+    // hard boundary clamp + zero the outward velocity component
+    const r = this.playRect()
+    if (s.pos.x < r.x0) { s.pos.x = r.x0; if (s.vel.x < 0) s.vel.x = 0 }
+    if (s.pos.x > r.x1) { s.pos.x = r.x1; if (s.vel.x > 0) s.vel.x = 0 }
+    if (s.pos.y < r.y0) { s.pos.y = r.y0; if (s.vel.y < 0) s.vel.y = 0 }
+    if (s.pos.y > r.y1) { s.pos.y = r.y1; if (s.vel.y > 0) s.vel.y = 0 }
+    this.fenceBlock(prev, s.pos, s.vel)   // interior fence (anti-tunnel)
+
+    // stable facing: track heading only when actually moving (no flicker at rest)
+    if (vec2.len(s.vel) > 2) s.facing = Math.atan2(s.vel.y, s.vel.x)
+  }
+
+  // Crush at the gate mouth: local density × forward pressure. Sustained crush
+  // over threshold injures a sheep. Lie-down (low intensity → low flee → low
+  // fleeFwd) and a dissipating pile both drop crush, so lie-down relieves it.
+  updateCrush(dt) {
+    const p = this.p, mx = p.fenceX, my = p.gateY
+    let count = 0, sumFwd = 0
+    for (const s of this.sheep) {
+      if (s.down) continue
+      if (Math.hypot(s.pos.x - mx, s.pos.y - my) < p.crushRadius) {
+        count++; sumFwd += s.fwdPush
+      }
+    }
+    const forwardPressure = count > 0 ? sumFwd / count : 0
+    this.crush = count * forwardPressure
+    if (this.crush > p.crushThreshold) this.crushTime += dt
+    else this.crushTime = Math.max(0, this.crushTime - dt * 2) // relief decays fast
+    // Injuries disabled for now: crush still reads as gate pressure (indicator +
+    // stress stay), but sustained crush no longer downs a sheep.
+    // if (this.crushTime >= p.crushSustain) { this.injureAtGate(); this.crushTime = 0 }
+  }
+
+  // Down the most-central sheep at the mouth (big welfare hit; becomes an obstacle).
+  injureAtGate() {
+    const p = this.p, mx = p.fenceX, my = p.gateY
+    let best = -1, bestD = p.crushRadius
+    for (let i = 0; i < this.sheep.length; i++) {
+      const s = this.sheep[i]; if (s.down) continue
+      const d = Math.hypot(s.pos.x - mx, s.pos.y - my)
+      if (d < bestD) { bestD = d; best = i }
+    }
+    if (best >= 0) {
+      const s = this.sheep[best]
+      s.down = true; s.vel = { x: 0, y: 0 }; s.stress = 1; this.injuries++
+    }
+  }
+
+  // Cluster a subset of the flock via union-find (link sheep within clusterDist).
+  // One cheap O(m²) pass; returns labels (sheep-index → root), cluster sizes, and
+  // the main-blob label. `indices` defaults to the whole flock.
+  clusterLabels(indices) {
+    const idx = indices || this.sheep.map((_, i) => i)
+    const m = idx.length, d2 = this.p.clusterDist * this.p.clusterDist
+    const parent = Array.from({ length: m }, (_, k) => k)
+    const find = (x) => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x] } return x }
+    for (let a = 0; a < m; a++) for (let b = a + 1; b < m; b++) {
+      const s1 = this.sheep[idx[a]], s2 = this.sheep[idx[b]]
+      const dx = s1.pos.x - s2.pos.x, dy = s1.pos.y - s2.pos.y
+      if (dx * dx + dy * dy <= d2) { const ra = find(a), rb = find(b); if (ra !== rb) parent[ra] = rb }
+    }
+    const labels = new Map(), sizes = new Map()
+    for (let a = 0; a < m; a++) { const r = find(a); labels.set(idx[a], r); sizes.set(r, (sizes.get(r) || 0) + 1) }
+    let mainLabel = -1, mainSize = -1
+    for (const [k, v] of sizes) if (v > mainSize) { mainSize = v; mainLabel = k }
+    return { labels, sizes, mainLabel }
+  }
+
+  distToPath(pt) {
+    let best = Infinity
+    for (let i = 0; i < this.idealPath.length - 1; i++)
+      best = Math.min(best, distToSeg(pt, this.idealPath[i], this.idealPath[i + 1]))
+    return best
+  }
+
+  // Accumulate the four subtractive-scoring axes over the run (pure).
+  updateScore(dt) {
+    const p = this.p, run = this.run
+    if (run.finished) return
+    run.t += dt
+    run.lineDev += Math.min(this.distToPath(this.gcm) / p.lineNorm, 1) * dt // line: 0..1/s off-path
+
+    // cohesion is judged over the flock still being worked — exclude penned
+    // (succeeded) and down (already penalized) so spanning the gate isn't a "split"
+    const active = []
+    for (let i = 0; i < this.sheep.length; i++) {
+      const s = this.sheep[i]
+      if (!s.down && s.pos.x <= p.fenceX) active.push(i); else s.stragTime = 0
+    }
+    if (active.length >= 2) {
+      const { labels, sizes, mainLabel } = this.clusterLabels(active)
+      let big = 0
+      for (const [, v] of sizes) if (v >= p.splitMinSize) big++
+      if (big >= 2) run.split += dt                        // cohesion: split
+      let stragglers = 0
+      for (const i of active) {
+        const s = this.sheep[i]
+        if (labels.get(i) !== mainLabel) {
+          s.stragTime += dt
+          if (s.stragTime > p.T_straggle) stragglers++
+        } else s.stragTime = 0
+      }
+      run.strag += (stragglers / active.length) * dt       // cohesion: straggler fraction
+    }
+
+    let sum = 0
+    for (const s of this.sheep) sum += s.stress
+    run.stress += (sum / this.sheep.length) * dt           // calm: mean-stress integral
+
+    let penned = 0
+    for (const s of this.sheep) if (s.pos.x > p.fenceX) penned++
+    if (penned >= this.sheep.length) { run.won = true; run.finished = true } // win = all penned
+  }
+
+  finishRun() { this.run.finished = true }
+
+  // Current sub-scores + total (100 − Σ weighted penalties). Pure read-out.
+  score() {
+    const p = this.p, run = this.run
+    const time = p.w_time * run.t
+    const line = p.w_line * run.lineDev
+    const cohesion = p.w_cohesion * (run.strag + 1.5 * run.split)
+    const calm = p.w_calm * (run.stress + p.injuryWeight * this.injuries)
+    let penned = 0
+    for (const s of this.sheep) if (s.pos.x > p.fenceX) penned++
+    return {
+      time, line, cohesion, calm,
+      total: Math.max(0, 100 - time - line - cohesion - calm),
+      penned, won: run.won, finished: run.finished,
+      raw: { t: run.t, lineDev: run.lineDev, strag: run.strag, split: run.split, stress: run.stress, injuries: this.injuries },
+    }
+  }
+
+  step(dt) {
+    this.gcm = this.computeGCM()       // flock centroid → dog steering
+    this.stepDog(dt)                   // dog moves first → sheep react to it
+    for (let i = 0; i < this.sheep.length; i++) this.integrate(i, dt)
+    this.updateCrush(dt)               // gate crush → injury
+    this.updateScore(dt)               // four-axis subtractive scoring
+    this.ticks++
+  }
+}
+
+// ============================================================================
+// §2 RENDER — draw field / fence / FPS. [throwaway]
+// ============================================================================
+const canvas = document.getElementById('field')
+const ctx = canvas.getContext('2d')
+const hud = document.getElementById('hud')
+let cardShown = false
+
+function showCard(sc) {
+  const el = document.getElementById('card')
+  const row = (label, pts) => `<div class="row"><span>${label}</span><span>−${pts.toFixed(1)}</span></div>`
+  el.innerHTML =
+    `<h2>${sc.won ? 'Penned! 🐑' : 'Run finished'}</h2>` +
+    `<div class="big">${sc.total.toFixed(0)}<small>/100</small></div>` +
+    row(`Time (${sc.raw.t.toFixed(0)}s)`, sc.time) +
+    row('Line — off ideal path', sc.line) +
+    row('Cohesion — splits / stragglers', sc.cohesion) +
+    row(`Calm — stress${sc.raw.injuries ? ` · ${sc.raw.injuries} injured` : ''}`, sc.calm) +
+    `<div class="foot">penned ${sc.penned}/${sim.sheep.length} · press <b>R</b> to run again</div>`
+  el.style.display = 'block'
+}
+function hideCard() { document.getElementById('card').style.display = 'none'; cardShown = false }
+
+function render(fps) {
+  const { canvasW, canvasH, fenceInset } = params
+
+  // field background
+  ctx.fillStyle = '#1c2228'
+  ctx.fillRect(0, 0, canvasW, canvasH)
+
+  // subtle grass gradient wash
+  ctx.fillStyle = '#20301f'
+  ctx.fillRect(fenceInset, fenceInset,
+               canvasW - 2 * fenceInset, canvasH - 2 * fenceInset)
+
+  // goal pen shading (region right of the interior fence)
+  ctx.fillStyle = 'rgba(95,191,122,0.06)'
+  ctx.fillRect(params.fenceX, fenceInset,
+               canvasW - params.fenceX - fenceInset, canvasH - 2 * fenceInset)
+
+  // fence rectangle (inset play rect)
+  ctx.strokeStyle = '#6b7a5a'
+  ctx.lineWidth = 2
+  ctx.strokeRect(fenceInset + 1, fenceInset + 1,
+                 canvasW - 2 * fenceInset - 2, canvasH - 2 * fenceInset - 2)
+
+  // ideal path (line-axis reference), shaded by current deviation
+  drawPath()
+
+  // interior fence + gate + crush indicator
+  drawFence()
+  drawCrush()
+
+  // field markers (under everything): goal pen center + dog's owner/home
+  drawGoal(params.goal)
+  drawOwner(sim.dog.owner)
+
+  // the "eye" (threat viz) sits under the sheep so they read on top (toggle)
+  if (params.debug.eye) drawEye(sim.dog)
+
+  // sheep — triangles pointing along facing (12 × 8 px, nose forward)
+  for (const s of sim.sheep) drawSheep(s)
+
+  // dog on top
+  drawDog(sim.dog)
+
+  // debug overlays (each gated so toggled-off work is skipped, not just hidden)
+  drawDebugOverlays()
+
+  // live flock-stress meter (overlay)
+  drawStressMeter()
+
+  // HUD readout
+  const sc = sim.score()
+  hud.textContent =
+    `fps ${fps.toFixed(0)}   cmd ${sim.dog.command}   intensity ${sim.dog.intensity.toFixed(2)}\n` +
+    `crush ${sim.crush.toFixed(1)}/${params.crushThreshold.toFixed(1)}   ` +
+    `injuries ${sim.injuries}   penned ${sc.penned}/${sim.sheep.length}\n` +
+    `time ${sc.raw.t.toFixed(0)}s   score ${sc.total.toFixed(0)}`
+
+  // post-run card on finish (win or Finish button)
+  if (sim.run.finished && !cardShown) { showCard(sc); cardShown = true }
+}
+
+function drawPath() {
+  const path = sim.idealPath
+  const dev = Math.min(1, sim.distToPath(sim.gcm) / params.lineNorm) // shade by deviation
+  ctx.save()
+  ctx.setLineDash([6, 7])
+  ctx.strokeStyle = `rgba(${Math.round(110 + 130 * dev)},${Math.round(170 - 110 * dev)},120,0.45)`
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(path[0].x, path[0].y)
+  for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y)
+  ctx.stroke()
+  ctx.setLineDash([])
+  ctx.restore()
+}
+
+// Debug overlays — each block is skipped entirely when its toggle is off.
+function drawDebugOverlays() {
+  const d = params.debug
+
+  if (d.neighbors) {                      // links between sheep within r_align
+    ctx.save()
+    ctx.strokeStyle = 'rgba(120,165,205,0.22)'
+    ctx.lineWidth = 1
+    const r2 = params.r_align * params.r_align
+    const sh = sim.sheep
+    ctx.beginPath()
+    for (let i = 0; i < sh.length; i++) for (let j = i + 1; j < sh.length; j++) {
+      const dx = sh[i].pos.x - sh[j].pos.x, dy = sh[i].pos.y - sh[j].pos.y
+      if (dx * dx + dy * dy <= r2) { ctx.moveTo(sh[i].pos.x, sh[i].pos.y); ctx.lineTo(sh[j].pos.x, sh[j].pos.y) }
+    }
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  if (d.velocity) {                       // per-sheep velocity vectors
+    ctx.save()
+    ctx.strokeStyle = 'rgba(120,225,150,0.75)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    for (const s of sim.sheep) {
+      ctx.moveTo(s.pos.x, s.pos.y)
+      ctx.lineTo(s.pos.x + s.vel.x * 0.3, s.pos.y + s.vel.y * 0.3)
+    }
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  if (d.gcm) {                            // flock centroid marker
+    const g = sim.gcm
+    ctx.save()
+    ctx.strokeStyle = '#57d3e0'; ctx.lineWidth = 1.5
+    ctx.beginPath(); ctx.arc(g.x, g.y, 8, 0, Math.PI * 2); ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(g.x - 11, g.y); ctx.lineTo(g.x + 11, g.y)
+    ctx.moveTo(g.x, g.y - 11); ctx.lineTo(g.x, g.y + 11); ctx.stroke()
+    ctx.restore()
+  }
+
+  if (d.dogTarget) {                      // dog → target
+    const dg = sim.dog
+    ctx.save()
+    ctx.strokeStyle = 'rgba(216,154,99,0.7)'; ctx.lineWidth = 1
+    ctx.setLineDash([4, 4])
+    ctx.beginPath(); ctx.moveTo(dg.pos.x, dg.pos.y); ctx.lineTo(dg.target.x, dg.target.y); ctx.stroke()
+    ctx.setLineDash([])
+    ctx.fillStyle = '#d89a63'
+    ctx.beginPath(); ctx.arc(dg.target.x, dg.target.y, 3, 0, Math.PI * 2); ctx.fill()
+    ctx.restore()
+  }
+
+  if (d.state) {                          // collect/drive strategic label
+    const g = sim.gcm, drive = sim.isCohesive()
+    ctx.save()
+    ctx.font = 'bold 12px ui-monospace, monospace'
+    ctx.fillStyle = drive ? '#7fd79a' : '#e0b070'
+    ctx.textAlign = 'center'
+    ctx.fillText(drive ? 'DRIVE' : 'COLLECT', g.x, g.y - 26)
+    ctx.textAlign = 'left'
+    ctx.restore()
+  }
+}
+
+function drawStressMeter() {
+  let sum = 0
+  for (const s of sim.sheep) sum += s.stress
+  const mean = sim.sheep.length ? sum / sim.sheep.length : 0
+  const w = 220, h = 10, x = params.canvasW / 2 - w / 2, y = 12
+  ctx.save()
+  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(x, y, w, h)
+  ctx.fillStyle = `rgb(${Math.round(110 + 145 * mean)},${Math.round(200 - 170 * mean)},80)`
+  ctx.fillRect(x, y, w * Math.min(1, mean * 2), h)   // ×2: mean rarely exceeds 0.5
+  ctx.strokeStyle = '#4a5560'; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h)
+  ctx.fillStyle = '#9fb0c0'; ctx.font = '11px ui-monospace, monospace'
+  ctx.fillText('flock stress', x, y - 3)
+  ctx.restore()
+}
+
+function drawFence() {
+  const { fenceX, gateY, gateWidth, fenceInset, canvasH } = params
+  const half = gateWidth / 2
+  ctx.save()
+  ctx.strokeStyle = '#8a7a52'
+  ctx.lineWidth = 4
+  ctx.beginPath()                       // upper segment
+  ctx.moveTo(fenceX, fenceInset); ctx.lineTo(fenceX, gateY - half); ctx.stroke()
+  ctx.beginPath()                       // lower segment
+  ctx.moveTo(fenceX, gateY + half); ctx.lineTo(fenceX, canvasH - fenceInset); ctx.stroke()
+  ctx.fillStyle = '#c2ab68'             // gate posts
+  ctx.fillRect(fenceX - 3, gateY - half - 3, 6, 6)
+  ctx.fillRect(fenceX - 3, gateY + half - 3, 6, 6)
+  ctx.restore()
+}
+
+// Gate-mouth heat: warms yellow→red as crush climbs, flares past threshold. Must
+// be visible BEFORE it injures, so the player can read the danger and lie down.
+function drawCrush() {
+  const { fenceX, gateY, crushRadius, crushThreshold } = params
+  const t = crushThreshold > 0 ? sim.crush / crushThreshold : 0
+  if (t < 0.05) return
+  const tc = Math.min(t, 1)
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(fenceX, gateY, crushRadius, 0, Math.PI * 2)
+  const green = Math.round(180 * (1 - tc))
+  ctx.fillStyle = `rgba(255,${green},40,${(0.10 + 0.30 * Math.min(t, 1.3)).toFixed(3)})`
+  ctx.fill()
+  if (t >= 1) {                          // over threshold → hot ring warning
+    ctx.strokeStyle = 'rgba(255,60,30,0.9)'; ctx.lineWidth = 3; ctx.stroke()
+  }
+  ctx.restore()
+}
+
+function drawGoal(g) {
+  ctx.save()
+  ctx.strokeStyle = '#5fbf7a'
+  ctx.lineWidth = 2
+  ctx.beginPath(); ctx.arc(g.x, g.y, 16, 0, Math.PI * 2); ctx.stroke()
+  ctx.beginPath(); ctx.arc(g.x, g.y, 4, 0, Math.PI * 2)
+  ctx.fillStyle = '#5fbf7a'; ctx.fill()
+  ctx.restore()
+}
+
+function drawOwner(o) {
+  ctx.save()
+  ctx.fillStyle = '#8aa2b8'
+  ctx.fillRect(o.x - 4, o.y - 4, 8, 8)
+  ctx.restore()
+}
+
+function drawSheep(s) {
+  if (s.down) {                    // injured → distinct dark-red marker
+    ctx.save()
+    ctx.translate(s.pos.x, s.pos.y)
+    ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2)
+    ctx.fillStyle = '#7a1f1f'; ctx.fill()
+    ctx.strokeStyle = '#e06a6a'; ctx.lineWidth = 1.5
+    ctx.beginPath(); ctx.moveTo(-4, -4); ctx.lineTo(4, 4)
+    ctx.moveTo(4, -4); ctx.lineTo(-4, 4); ctx.stroke()
+    ctx.restore()
+    return
+  }
+  const t = Math.max(0, Math.min(1, s.stress)) // stress tint: white → alarm red
+  const cr = Math.round(230 + (220 - 230) * t)
+  const cg = Math.round(233 + (70 - 233) * t)
+  const cb = Math.round(236 + (60 - 236) * t)
+  ctx.save()
+  ctx.translate(s.pos.x, s.pos.y)
+  ctx.rotate(s.facing)
+  ctx.beginPath()
+  ctx.moveTo(6, 0)      // nose (forward = +x, length 12)
+  ctx.lineTo(-6, 4)     // width 8
+  ctx.lineTo(-6, -4)
+  ctx.closePath()
+  ctx.fillStyle = `rgb(${cr},${cg},${cb})`
+  ctx.fill()
+  ctx.strokeStyle = '#3a444d'
+  ctx.lineWidth = 1
+  ctx.stroke()
+  ctx.restore()
+}
+
+// The "eye": ambient threat circle (R_flee) + directional cone wedge. The wedge
+// half-angle is where the cos^coneK term drops to half — so it narrows as coneK
+// rises, and the circle's fill reflects the `ambient` floor. Tuning must see this.
+function drawEye(d) {
+  const { R_flee, coneK, ambient } = params
+  ctx.beginPath()
+  ctx.arc(d.pos.x, d.pos.y, R_flee, 0, Math.PI * 2)
+  ctx.fillStyle = `rgba(220,80,80,${(0.04 + 0.12 * ambient).toFixed(3)})`
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(220,80,80,0.25)'
+  ctx.lineWidth = 1
+  ctx.stroke()
+
+  const half = Math.acos(Math.pow(0.5, 1 / Math.max(coneK, 0.01)))
+  ctx.beginPath()
+  ctx.moveTo(d.pos.x, d.pos.y)
+  ctx.arc(d.pos.x, d.pos.y, R_flee, d.facing - half, d.facing + half)
+  ctx.closePath()
+  ctx.fillStyle = 'rgba(235,95,70,0.18)'
+  ctx.fill()
+}
+
+function drawDog(d) {
+  ctx.save()
+  ctx.translate(d.pos.x, d.pos.y)
+  ctx.rotate(d.facing)
+  ctx.beginPath()
+  ctx.moveTo(8, 0)       // nose (16 long)
+  ctx.lineTo(-8, 5.5)    // 11 wide
+  ctx.lineTo(-8, -5.5)
+  ctx.closePath()
+  ctx.fillStyle = '#241812'
+  ctx.fill()
+  ctx.strokeStyle = '#d89a63'
+  ctx.lineWidth = 1.5
+  ctx.stroke()
+  ctx.restore()
+}
+
+// ============================================================================
+// §3 INPUT — five commands via buttons + hotkeys. [throwaway]
+//   Player→command only: buttons/keys set `dog.command` through sim.setCommand();
+//   §1 does all the steering. No sheep are ever touched by input.
+// ============================================================================
+const cmdButtons = Array.from(document.querySelectorAll('#controls button[data-cmd]'))
+function issue(cmd) {
+  sim.setCommand(cmd)
+  for (const b of cmdButtons) b.classList.toggle('active', b.dataset.cmd === cmd)
+}
+function restartRun() { sim.reseed(params.seed); hideCard(); issue('that_ll_do') }
+for (const b of cmdButtons) b.addEventListener('click', () => issue(b.dataset.cmd))
+document.querySelector('[data-action="finish"]').addEventListener('click', () => sim.finishRun())
+document.querySelector('[data-action="reset"]').addEventListener('click', restartRun)
+const HOTKEYS = { q: 'come_by', e: 'away', w: 'walk_on', s: 'lie_down', d: 'that_ll_do' }
+window.addEventListener('keydown', (ev) => {
+  const k = ev.key.toLowerCase()
+  if (k === 'f') return sim.finishRun()
+  if (k === 'r') return restartRun()
+  const cmd = HOTKEYS[k]
+  if (cmd) issue(cmd)
+})
+// (initial button highlight is set in §4, once `sim` exists)
+
+// ============================================================================
+// §4 BOOTSTRAP — fixed-timestep accumulator loop, wire gui, kick off. [throwaway]
+// ============================================================================
+const sim = new FlockSim(params)
+
+// sheepCount slider lives here — its onChange respawns the herd from the seed.
+fSheep.add(params, 'sheepCount', 1, 80, 1).onChange(() => sim.reseed(params.seed))
+issue(sim.dog.command) // reflect the initial command in the button strip
+
+// P7 salvage artifact: export the tuned §0 params (minus debug) as JSON to the
+// clipboard + console — the numbers to carry into the Godot FlockSim.
+function exportParams() {
+  const { debug, ...rest } = params
+  const json = JSON.stringify(rest, null, 2)
+  console.log('[sheep-poc] params:\n' + json)
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(json).catch(() => {})
+}
+const fTools = gui.addFolder('Tools')
+fTools.add({ f: () => { params.seed = Math.floor(Math.random() * 1e6); sim.reseed(params.seed); hideCard(); issue('that_ll_do') } }, 'f').name('Reseed → new flock')
+fTools.add({ f: () => restartRun() }, 'f').name('Reset run')
+fTools.add({ f: exportParams }, 'f').name('Export params → clipboard')
+
+let last = performance.now() / 1000
+let acc = 0
+let fps = 0
+let fpsAcc = 0
+let fpsFrames = 0
+
+function frame(nowMs) {
+  const now = nowMs / 1000
+  let delta = now - last
+  last = now
+
+  // clamp real elapsed → anti spiral-of-death
+  if (delta > params.maxFrameDelta) delta = params.maxFrameDelta
+
+  // fixed-timestep stepping in dt slices (framerate-independent)
+  acc += delta
+  while (acc >= params.dt) {
+    sim.step(params.dt)
+    acc -= params.dt
+  }
+
+  // FPS meter (smoothed over ~0.25s windows)
+  fpsAcc += delta
+  fpsFrames++
+  if (fpsAcc >= 0.25) {
+    fps = fpsFrames / fpsAcc
+    fpsAcc = 0
+    fpsFrames = 0
+  }
+
+  render(fps)
+  requestAnimationFrame(frame)
+}
+
+requestAnimationFrame(frame)
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+query Brewery($id: UUID!) {
+  brewery(id: $id) {
+    ...Brewery
+  }
+}

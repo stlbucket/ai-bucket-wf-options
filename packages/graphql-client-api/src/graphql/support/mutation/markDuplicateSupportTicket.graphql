@@ -1,0 +1,9 @@
+mutation MarkDuplicateSupportTicket($ticketId: UUID!) {
+  markDuplicateSupportTicket(input: {
+    _ticketId: $ticketId
+  }) {
+    supportTicket {
+      ...SupportTicket
+    }
+  }
+}

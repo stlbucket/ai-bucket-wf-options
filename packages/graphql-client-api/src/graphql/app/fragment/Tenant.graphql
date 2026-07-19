@@ -1,0 +1,14 @@
+fragment Tenant on Tenant {
+  id
+  name
+  createdAt
+  updatedAt
+  identifier
+  status
+  type
+  parentTenantId
+  urn
+  licenses {
+    totalCount
+  }
+}

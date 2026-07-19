@@ -1,0 +1,9 @@
+mutation UpdateTenant($id: UUID!, $name: String, $identifier: String, $type: TenantType) {
+  updateTenant(input: {
+    _input: { id: $id, name: $name, identifier: $identifier, type: $type }
+  }) {
+    tenant {
+      ...Tenant
+    }
+  }
+}

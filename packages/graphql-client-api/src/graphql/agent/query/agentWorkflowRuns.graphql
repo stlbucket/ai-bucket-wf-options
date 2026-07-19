@@ -1,0 +1,19 @@
+query AgentWorkflowRuns($workflowKey: String, $itemLimit: Int) {
+  workflowRunsList(
+    _workflowKey: $workflowKey
+    _pagingOptions: { itemLimit: $itemLimit }
+  ) {
+    id
+    workflowKey
+    agentSessionId
+    model
+    tenantId
+    status
+    inputData
+    resultData
+    error
+    usage
+    startedAt
+    finishedAt
+  }
+}

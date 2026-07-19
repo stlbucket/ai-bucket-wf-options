@@ -9,6 +9,16 @@
      * - `constraint`: for table constraints
      * - `procedure`: for functions/procedures
      */
+    procedure: {
+      /*
+       * n8n run-log read fn: rename so its root field (n8nWorkflowRunsList) cannot collide
+       * with agent_api.workflow_runs' workflowRunsList. (n8n-parallel-engine spec)
+       */
+      'n8n_api.workflow_runs': {
+        tags: { name: 'n8n_workflow_runs' },
+      },
+    },
+
     constraint: {
       /*
        * Self-referential tenant FK (workspace tenants). Explicit names preempt the
@@ -47,6 +57,21 @@
        */
       'agent.workflow_run': {
         tags: { behavior: '-query:resource:list -query:resource:connection' },
+      },
+
+      /*
+       * n8n run log (parallel engine): same treatment as agent.workflow_run — reads go
+       * through the gated n8n_api.workflow_runs function — PLUS a name rename, because
+       * agent.workflow_run already owns the WorkflowRun GraphQL type name; unrenamed, the
+       * two schemas collide at schema build. The enum's rename lives as a smart COMMENT in
+       * the deploy SQL (this file can't target types) and the function's rename in the
+       * procedure section below. (n8n-parallel-engine spec, _shared.data.md)
+       */
+      'n8n.workflow_run': {
+        tags: {
+          name: 'n8n_workflow_run',
+          behavior: '-query:resource:list -query:resource:connection',
+        },
       },
 
       /*

@@ -98,7 +98,7 @@ apps/tenant-app        → nginx /tenant       (port 3000 in Docker)   extends t
 apps/msg-app           → nginx /msg          (port 3000 in Docker)   extends msg-layer
 apps/storage-app       → nginx /storage      (port 3000 in Docker)   extends storage-layer
 apps/graphql-api-app   → nginx /graphql-api  (port 3000 in Docker)   PostGraphile 5 + extendSchema plugins (triggerWorkflow, downloadUrl)
-apps/agent-app         → HEADLESS (no nginx)                         the stack's ONLY workflow engine — Claude Agent SDK harness (exerciser, sync-breweries, sync-airports, asset-scan + reaper)
+apps/agent-app         → HEADLESS (no nginx)                         primary workflow engine — Claude Agent SDK harness (exerciser, sync-breweries, sync-airports, asset-scan + reaper); the PARALLEL n8n engine (R22 dual engines) is a compose service trio, not an app — n8n-parallel-engine spec, skill n8n-cli
 packages/auth-layer      Nuxt layer: layout, AppNav, LoginForm, UserProfile, useAuth; server/utils claims+cookies
 packages/tenant-layer    Nuxt layer: extends auth-layer; server/middleware/auth.ts (applyEventClaims)
 packages/msg-layer       Nuxt layer: extends tenant-layer; WebSocket carve-out server/
@@ -119,11 +119,14 @@ Enum values in `fnb-types` mirror the GraphQL enum values (UPPERCASE); timestamp
 `graphql-client-api` barrel does NOT `export *` the generated module.
 All routed apps share one nginx entry point; each listens on `:3000` inside its container.
 `NUXT_APP_BASE_URL` sets the path prefix so Nuxt asset URLs and the router base are correct.
-`agent-app` is the headless exception (no nginx location, no base URL) — the stack's only
-workflow engine (R22: fnb→agent is trigger-endpoint-only with the shared secret; agent→fnb is
-`agent_worker`-via-`_fn` from tool handlers only; closed toolboxes; deterministic reaper); see
-`monorepo-bootstrap-pattern.md` → Headless apps. Writing/altering workflow definitions,
-toolboxes, or the harness → skill `claude-agent-sdk`.
+`agent-app` is the headless exception (no nginx location, no base URL) — the primary
+workflow engine (R22 dual engines: fnb→agent is trigger-endpoint-only with the shared secret;
+agent→fnb is `agent_worker`-via-`_fn` from tool handlers only; closed toolboxes; deterministic
+reaper); see `monorepo-bootstrap-pattern.md` → Headless apps. Writing/altering workflow
+definitions, toolboxes, or the harness → skill `claude-agent-sdk`. The **parallel n8n engine**
+(R22) is a compose service trio on its own host port — per-workflow engine assignment lives in
+the `triggerWorkflow` plugin's `WORKFLOW_REGISTRY`; spec `.claude/specs/n8n-parallel-engine/`,
+operator loop → skill `n8n-cli`.
 
 ---
 

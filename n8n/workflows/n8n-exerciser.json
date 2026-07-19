@@ -1,0 +1,364 @@
+{
+  "id": "Je3CNFXlPob8FUim",
+  "name": "n8n-exerciser",
+  "active": true,
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        400
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "n8n-exerciser",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnbwebhooksecr01",
+          "name": "fnb-webhook-secret"
+        }
+      },
+      "id": "a86bfd23-1530-4b4b-8e1f-ba7b6c596de1",
+      "webhookId": "a799317f-902c-4592-96ea-e569fdd63ad5"
+    },
+    {
+      "name": "Begin Run",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        420,
+        400
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select n8n_fn.begin_run('n8n-exerciser'::citext, $1, $2::jsonb, nullif($3, '')::uuid) as run_id",
+        "options": {
+          "queryReplacement": "={{ [ $execution.id, JSON.stringify($json.body ?? {}), $json.body?.tenantId ?? '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "c3967aa1-7123-4915-8e8f-72dd5c708a73"
+    },
+    {
+      "name": "Set Stock Quote",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        400
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "runId",
+              "type": "string",
+              "value": "={{ $json.run_id }}"
+            },
+            {
+              "id": "a2",
+              "name": "stockQuote",
+              "type": "number",
+              "value": 420.69
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d65029e2-463d-4764-989f-0bc99fe09aed"
+    },
+    {
+      "name": "If Throw Error",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        860,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $('Webhook').item.json.body?.throwError }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "da107abe-4e26-44d1-b801-b96cc7115dcd"
+    },
+    {
+      "name": "Stop and Error",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        240
+      ],
+      "parameters": {
+        "errorMessage": "exerciser: requested throw"
+      },
+      "id": "5e51552c-d281-4b97-aa8f-45741e487cd6"
+    },
+    {
+      "name": "If Raise Exception",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1080,
+        480
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $('Webhook').item.json.body?.raiseExceptionMessage }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c85ad28b-de05-4cec-b1b3-faf5cc498b45"
+    },
+    {
+      "name": "Raise DB Exception",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1300,
+        320
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select app_api.raise_exception($1::citext)",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body?.raiseExceptionMessage ?? 'exerciser: raised' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "88d77cac-5f10-4030-90a0-4c95e54e7c27"
+    },
+    {
+      "name": "If Wait For Resume",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1300,
+        560
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $('Webhook').item.json.body?.waitForResume }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "66166f41-a164-4bc4-94f6-be85aadfa058"
+    },
+    {
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1520,
+        480
+      ],
+      "parameters": {
+        "resume": "webhook",
+        "httpMethod": "POST",
+        "options": {}
+      },
+      "id": "662c716e-0e10-4b31-9e45-b7f9aa489eb8",
+      "webhookId": "eb524fb5-c4c5-4879-a76a-53c225df46c9"
+    },
+    {
+      "name": "Complete Run",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1740,
+        560
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select (n8n_fn.complete_run($1::uuid, $2::jsonb)).id as run_id",
+        "options": {
+          "queryReplacement": "={{ [ $('Begin Run').item.json.run_id, JSON.stringify({ stockQuote: $('Set Stock Quote').item.json.stockQuote, resumed: $('Webhook').item.json.body?.waitForResume === true }) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "2d03d8ff-2e81-49c7-ab78-0f525339c5ae"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Begin Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Begin Run": {
+      "main": [
+        [
+          {
+            "node": "Set Stock Quote",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Stock Quote": {
+      "main": [
+        [
+          {
+            "node": "If Throw Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Throw Error": {
+      "main": [
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If Raise Exception",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Raise Exception": {
+      "main": [
+        [
+          {
+            "node": "Raise DB Exception",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If Wait For Resume",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Wait For Resume": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Complete Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Complete Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "errorWorkflow": "0E8QFQyYGSyHHq0g"
+  },
+  "pinData": {}
+}

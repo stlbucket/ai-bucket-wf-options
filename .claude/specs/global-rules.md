@@ -146,9 +146,19 @@ The only `server/` directories are the H3 carve-outs (`graphql-api-app` — the 
 `msg-layer` — WebSocket infrastructure; `storage-layer` — the multipart upload endpoint) and the
 headless `agent-app` (R22).
 
-### R22 — agent-app is the stack's only workflow engine
-All workflows run in `apps/agent-app` (headless: no nginx route, no layers, no UI) — the Claude
-Agent SDK harness. Spec: `.claude/specs/agentic-workflow-engine/`. The invariants:
+### R22 — two workflow engines: agent-app (primary) + the parallel n8n container
+The stack runs **two** workflow engines side by side, with **per-workflow engine assignment**
+in exactly one place: the `WORKFLOW_REGISTRY` of the `triggerWorkflow` extendSchema plugin
+(`apps/graphql-api-app/server/graphile/trigger-workflow.plugin.ts` — `{ key: { engine:
+'agent' | 'n8n', permission } }`). Pages/composables are engine-agnostic (R1); moving a
+workflow between engines is a registry edit plus the DB grants the workflow needs on the
+target side. Per-engine run logs (`agent.workflow_run` / `n8n.workflow_run`) back the two
+site-admin tools (Agentic Workflows / n8n Workflows, both `p:app-admin-super`).
+
+**The agentic engine** is `apps/agent-app` (headless: no nginx route, no layers, no UI) — the
+Claude Agent SDK harness running all four production workflows (asset-scan + reaper,
+sync-breweries, sync-airports, exerciser). Spec: `.claude/specs/agentic-workflow-engine/`.
+The invariants:
 - **fnb → agent is trigger-endpoint-only**: HTTP POST `${AGENT_INTERNAL_URL}/api/trigger/<key>`
   with the `X-Fnb-Trigger-Secret` header (callers: the `triggerWorkflow` extendSchema plugin in
   graphql-api-app, the storage-layer upload endpoint's post-commit POST, and the in-process
@@ -165,6 +175,16 @@ Agent SDK harness. Spec: `.claude/specs/agentic-workflow-engine/`. The invariant
   security verdicts. Deterministic recurring work (the reaper) is croner code, not an agent.
 - **Terminal writes are harness-owned**: the injected `complete_run` tool hands resultData to
   the harness; begin/attach/complete/error/sweep DB writes happen only in harness code.
+
+**The n8n engine** is a parallel container (official pinned image, own host port, state in the
+separate `n8n_engine` DB in the existing cluster; initial inventory: `n8n-exerciser` +
+`error-handler`). Spec: `.claude/specs/n8n-parallel-engine/`. Its invariants mirror the
+agentic ones: **fnb → n8n is webhook-only** (`${N8N_INTERNAL_URL}/webhook/<key>` with
+`X-Fnb-Webhook-Secret`, respond-immediately, no runId); **n8n → fnb is the `n8n_worker` PG
+role calling granted functions only** (never PostGraphile, never authenticator); workflow
+definitions are code (`n8n/workflows/*.json`, imported at boot; the shared `error-handler` —
+which must be **active** — turns any failure into a terminal `n8n.workflow_run` error row).
+
 No graphile-worker anywhere. See `monorepo-bootstrap-pattern.md` → Headless apps.
 
 ---

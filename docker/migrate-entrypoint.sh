@@ -8,6 +8,8 @@ PG_URL="${PG_URL:?PG_URL is required (set it in .env)}"
 # fnb-agent's policies change creates the agent_worker login role with this password
 # (psql var :'agent_worker_password' — passed to every package deploy; unused vars are harmless).
 : "${AGENT_WORKER_PG_PASSWORD:?AGENT_WORKER_PG_PASSWORD is required (set it in .env)}"
+# fnb-n8n's policies change creates the n8n_worker login role the same way.
+: "${N8N_WORKER_PG_PASSWORD:?N8N_WORKER_PG_PASSWORD is required (set it in .env)}"
 
 # Belt-and-braces on top of the compose healthcheck: on a fresh volume postgres restarts once
 # after initdb, so wait until a real TCP connection works before doing anything.
@@ -38,7 +40,7 @@ done
 echo "==> Running sqitch migrations..."
 for pkg in $DEPLOY_PACKAGES; do
   echo "  --> deploying $pkg"
-  sqitch deploy --chdir "/db/$pkg" --set agent_worker_password="$AGENT_WORKER_PG_PASSWORD" "$DB_URL"
+  sqitch deploy --chdir "/db/$pkg" --set agent_worker_password="$AGENT_WORKER_PG_PASSWORD" --set n8n_worker_password="$N8N_WORKER_PG_PASSWORD" "$DB_URL"
 done
 
 echo "==> All migrations complete."

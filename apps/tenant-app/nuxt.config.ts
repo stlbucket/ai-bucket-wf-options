@@ -18,7 +18,10 @@ export default defineNuxtConfig({
     public: {
       authAppUrl: '',
       graphqlApiUrl: '',
-      msgAppUrl: ''
+      msgAppUrl: '',
+      // site-admin n8n Workflows page — editor link-out (NUXT_PUBLIC_N8N_EDITOR_URL);
+      // '' hides the button (n8n-parallel-engine spec, wf-n8n.ui.md)
+      n8nEditorUrl: ''
     }
   },
 

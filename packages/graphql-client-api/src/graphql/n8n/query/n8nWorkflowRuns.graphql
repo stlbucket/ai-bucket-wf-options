@@ -1,0 +1,17 @@
+query N8nWorkflowRuns($workflowKey: String, $itemLimit: Int) {
+  n8NWorkflowRunsList(
+    _workflowKey: $workflowKey
+    _pagingOptions: { itemLimit: $itemLimit }
+  ) {
+    id
+    workflowKey
+    n8NExecutionId
+    tenantId
+    status
+    inputData
+    resultData
+    error
+    startedAt
+    finishedAt
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "id": "0E8QFQyYGSyHHq0g",
+  "name": "error-handler",
+  "active": true,
+  "nodes": [
+    {
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        260,
+        300
+      ],
+      "parameters": {},
+      "id": "15c0b085-6c9c-4829-9ab8-12a43235a6e3"
+    },
+    {
+      "name": "Record Error Run",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        520,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select (n8n_fn.error_run_by_execution($1, jsonb_build_object('message', $2::text, 'lastNodeExecuted', $3::text, 'executionUrl', $4::text))).id as run_id",
+        "options": {
+          "queryReplacement": "={{ [ $json.execution.id, $json.execution.error?.message ?? 'unknown error', $json.execution.lastNodeExecuted ?? '', $json.execution.url ?? '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "cb418f7a-a6ad-4182-9754-368fa63e56cf"
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Record Error Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "pinData": {}
+}

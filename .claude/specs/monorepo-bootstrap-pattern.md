@@ -300,8 +300,9 @@ See `fnb-create-app` skill for the complete file-by-file scaffold.
 
 ### Headless apps (agent-app)
 
-`apps/agent-app` is the one **headless** app: the stack's only workflow engine (Claude Agent SDK
-harness — R22; spec `.claude/specs/agentic-workflow-engine/`). It follows the app service
+`apps/agent-app` is the one **headless** app: the primary workflow engine (Claude Agent SDK
+harness — R22; spec `.claude/specs/agentic-workflow-engine/`; the parallel **n8n engine** is
+not an app but a service trio — see below). It follows the app service
 template but **skips checklist steps 4–5** (no nginx entry, no `NUXT_APP_BASE_URL`, not in
 `pinger`) and differs from the routed apps in:
 - **dedicated Dockerfile** (`apps/agent-app/Dockerfile`): `ffmpeg` + `clamav-clamdscan` system
@@ -315,3 +316,24 @@ template but **skips checklist steps 4–5** (no nginx entry, no `NUXT_APP_BASE_
   `AGENT_INTERNAL_URL=http://agent-app:3000` (trigger routes are secret-gated).
 It deploys **after db-migrate** (the `fnb-agent` schema + `agent_worker` role must exist).
 There is no graphile-worker/job-queue service anywhere in the stack.
+
+### The n8n engine services (`n8n-db-init` / `n8n-import` / `n8n`)
+
+The **parallel n8n workflow engine** (R22; spec `.claude/specs/n8n-parallel-engine/` — do not
+restate it here) is three compose services, not an app:
+- `n8n-db-init` — one-shot (`docker/n8n/db-init.sh`, postgis image): idempotently creates the
+  separate **`n8n_engine` database** + owner login role in the shared postgis container.
+  Gotcha baked into the script: psql only substitutes `:'var'` in stdin/`-f` input, never `-c`.
+- `n8n-import` — one-shot, same pinned n8n image as the server: renders
+  `n8n/credentials/*.json.tpl` with the image's node (`n8n/scripts/render-credentials.mjs` —
+  no gettext in the stock image, values JSON-escaped) then `n8n import:credentials` +
+  `import:workflow --separate` from `n8n/workflows/`. Stable ids → idempotent overwrite (the
+  sqitch/seed analog).
+- `n8n` — the engine (official image, **pinned**), **own host port** `N8N_HOST_PORT`
+  (ZITADEL own-port precedent, no nginx route), volume `n8n-data`, healthcheck probes
+  `http://127.0.0.1:5678/healthz` (**not** `localhost` — the alpine image resolves it to `::1`
+  and n8n listens IPv4-only). Boots after `n8n-import` + `db-migrate` (the `fnb-n8n` schema +
+  `n8n_worker` role).
+Env additions elsewhere: graphql-api-app gets `N8N_INTERNAL_URL` + `N8N_WEBHOOK_SECRET`
+(trigger-plugin registry), tenant-app gets `NUXT_PUBLIC_N8N_EDITOR_URL` (site-admin editor
+link-out), db-migrate gets `N8N_WORKER_PG_PASSWORD` (threaded as `--set n8n_worker_password`).

@@ -5,6 +5,11 @@
 > workflow engine (R22). **Do not execute this spec** — its retirement inventory has already
 > been carried out by the agentic plan; the n8n engine sections are a historical record of the
 > road not taken.
+>
+> **2026-07-19 — n8n returns as a *parallel* engine:** `.claude/specs/n8n-parallel-engine/`
+> specs n8n *alongside* the agentic engine (coexistence, demo-only initial inventory, site-admin
+> tools for both engines). That spec carries this one's still-sound infra decisions forward;
+> this file remains do-not-execute.
 
 # n8n Workflow Engine — migration from graphile-worker (Full replacement)
 

@@ -355,6 +355,8 @@ CREATE OR REPLACE FUNCTION app_fn.install_anchor_application()
               ,row('tenant-site-admin-applications'::citext,'Applications'::citext,'{"p:app-admin-super"}'::citext[],'i-lucide-building-2'::citext,'/tenant/site-admin/application',0)::app_fn.tool_info
               ,row('tenant-site-admin-graphql-dashboard'::citext,'GraphQL Dashboard'::citext,'{"p:app-admin-super"}'::citext[],'i-lucide-building-2'::citext,'/graphql-api/api/graphql',0)::app_fn.tool_info
               ,row('tenant-site-admin-asset-manager'::citext,'Asset Manager'::citext,'{"p:app-admin-super"}'::citext[],'i-lucide-grid-3x3'::citext,'/storage/assets',0)::app_fn.tool_info
+              ,row('tenant-site-admin-wf-agentic'::citext,'Agentic Workflows'::citext,'{"p:app-admin-super"}'::citext[],'i-lucide-bot'::citext,'/tenant/site-admin/wf-agentic',0)::app_fn.tool_info
+              ,row('tenant-site-admin-wf-n8n'::citext,'n8n Workflows'::citext,'{"p:app-admin-super"}'::citext[],'i-lucide-workflow'::citext,'/tenant/site-admin/wf-n8n',0)::app_fn.tool_info
             ]::app_fn.tool_info[]
           )::app_fn.module_info
           ,row(

@@ -16,6 +16,7 @@ volumes:
   node_modules_storage_app:
   node_modules_agent_app:
   agent-transcripts:                 # per-run JSONL transcripts — the agent engine's step-level record
+  n8n-data:                          # n8n instance settings; state of record is the n8n_engine DB
   minio-data:
   clamav-db:
   zitadel-seed:                      # PAT + { issuer, clientId } handoff (zitadel → seed job → auth-app)
@@ -69,6 +70,8 @@ services:
       DEPLOY_PACKAGES: "${DEPLOY_PACKAGES:?}"
       # fnb-agent creates the agent_worker role with this password (sqitch --set).
       AGENT_WORKER_PG_PASSWORD: "${AGENT_WORKER_PG_PASSWORD:?}"
+      # fnb-n8n creates the n8n_worker role with this password (sqitch --set).
+      N8N_WORKER_PG_PASSWORD: "${N8N_WORKER_PG_PASSWORD:?}"
     restart: "no"
 
   pnpm-install:
@@ -367,6 +370,8 @@ services:
       # storage-layer's uploadUrl runtimeConfig (tenant-app extends storage-layer — issue 0330).
       # Uploads still POST same-origin to storage-app via nginx /storage; no S3_* needed here.
       NUXT_PUBLIC_UPLOAD_URL: "${NUXT_PUBLIC_UPLOAD_URL:?}"
+      # site-admin n8n Workflows page — editor link-out ('' sentinel in nuxt.config.ts)
+      NUXT_PUBLIC_N8N_EDITOR_URL: "${NUXT_PUBLIC_N8N_EDITOR_URL:?}"
       MAPBOX_ACCESS_TOKEN: "${MAPBOX_ACCESS_TOKEN:?}"
       DATABASE_URL: "${DATABASE_URL:?}"
       VITE_HMR_CLIENT_PORT: "${VITE_HMR_CLIENT_PORT:?}"
@@ -474,6 +479,10 @@ services:
       # agent-app trigger surface (triggerWorkflow extendSchema plugin — Phase 5)
       AGENT_INTERNAL_URL: "${AGENT_INTERNAL_URL:?}"
       AGENT_TRIGGER_SECRET: "${AGENT_TRIGGER_SECRET:?}"
+      # n8n parallel engine — the trigger plugin's engine registry routes n8n-engine
+      # workflow keys to the webhook URL with the shared secret (n8n-parallel-engine spec)
+      N8N_INTERNAL_URL: "${N8N_INTERNAL_URL:?}"
+      N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"
     volumes:
       - .:/app
       - node_modules_root:/app/node_modules
@@ -582,6 +591,120 @@ services:
       - agent-transcripts:/data/transcripts       # per-run JSONL — the deep step-level record
     working_dir: /app
     command: ["sh", "-c", "pnpm --filter @function-bucket/fnb-agent-app exec nuxt dev --host 0.0.0.0 --port 3000"]
+    restart: unless-stopped
+
+  # ─── n8n parallel workflow engine (spec: .claude/specs/n8n-parallel-engine/) ───
+  # Coexists with agent-app (dual engines — R22). State lives in the separate n8n_engine
+  # database in the shared postgis cluster; editor + webhooks on their own host port
+  # (ZITADEL own-port precedent — no nginx route). Official pinned image: the demo-only
+  # inventory has no binary steps, so no custom Dockerfile.
+
+  n8n-db-init:
+    image: postgis/postgis
+    platform: linux/amd64
+    container_name: fnb_n8n_db_init
+    networks:
+      - fnb-network
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGDATABASE: "${POSTGRES_DB:?}"
+      PGUSER: "${POSTGRES_USER:?}"
+      PGPASSWORD: "${POSTGRES_PASSWORD:?}"
+      N8N_ENGINE_DB_PASSWORD: "${N8N_ENGINE_DB_PASSWORD:?}"
+    volumes:
+      - ./docker/n8n/db-init.sh:/n8n-db-init.sh:ro
+    entrypoint: ["/bin/sh", "/n8n-db-init.sh"]
+    restart: "no"
+
+  # Workflow-as-code import — runs BEFORE the server starts (CLI writes straight to
+  # n8n_engine). Same pinned image as the server so CLI/schema versions match. Credential
+  # templates render with the image's own node (no gettext in the stock image); rendered
+  # files never touch the repo. Idempotent: stable ids overwrite in place (sqitch/seed analog).
+  n8n-import:
+    image: docker.n8n.io/n8nio/n8n:2.30.7
+    container_name: fnb_n8n_import
+    networks:
+      - fnb-network
+    depends_on:
+      n8n-db-init:
+        condition: service_completed_successfully
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: db
+      DB_POSTGRESDB_PORT: "5432"
+      DB_POSTGRESDB_DATABASE: n8n_engine
+      DB_POSTGRESDB_USER: n8n_engine
+      DB_POSTGRESDB_PASSWORD: "${N8N_ENGINE_DB_PASSWORD:?}"
+      N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY:?}"
+      # ${…} refs inside the credential templates (scripts/render-credentials.mjs)
+      POSTGRES_DB: "${POSTGRES_DB:?}"
+      N8N_WORKER_PG_PASSWORD: "${N8N_WORKER_PG_PASSWORD:?}"
+      N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"
+    volumes:
+      - ./n8n/workflows:/import/workflows:ro
+      - ./n8n/credentials:/import/credentials:ro
+      - ./n8n/scripts:/import/scripts:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      # import:workflow force-deactivates everything it imports (observed live), and n8n 2.x
+      # retired update:workflow --all — so publish each imported workflow by its id from the
+      # repo JSON. Webhook workflows + the error-handler (which n8n 2.x requires to be ACTIVE)
+      # must come back active or a rebuild boots with dead webhooks.
+      - |
+        node /import/scripts/render-credentials.mjs /import/credentials /tmp/creds &&
+        n8n import:credentials --separate --input=/tmp/creds &&
+        if ls /import/workflows/*.json >/dev/null 2>&1; then
+          n8n import:workflow --separate --input=/import/workflows &&
+          for f in /import/workflows/*.json; do
+            n8n publish:workflow --id="$$(node -p "require('$$f').id")" || exit 1;
+          done;
+        else
+          echo "no workflows to import yet (Phase 3 exports land here)";
+        fi
+    restart: "no"
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.30.7
+    container_name: fnb_n8n
+    networks:
+      - fnb-network
+    depends_on:
+      n8n-import:
+        condition: service_completed_successfully
+      db-migrate:
+        condition: service_completed_successfully   # fnb-n8n schema + n8n_worker role must exist
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: db
+      DB_POSTGRESDB_PORT: "5432"
+      DB_POSTGRESDB_DATABASE: n8n_engine
+      DB_POSTGRESDB_USER: n8n_engine
+      DB_POSTGRESDB_PASSWORD: "${N8N_ENGINE_DB_PASSWORD:?}"
+      N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY:?}"
+      N8N_PORT: "5678"
+      N8N_LISTEN_ADDRESS: 0.0.0.0
+      # editor-displayed URLs only; internal callers use N8N_INTERNAL_URL (http://n8n:5678)
+      WEBHOOK_URL: "http://localhost:${N8N_HOST_PORT:?}/"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_RUNNERS_ENABLED: "true"
+      GENERIC_TIMEZONE: "${TZ:-UTC}"
+    ports:
+      - "${N8N_HOST_PORT:?}:5678"                  # editor + webhooks (ZITADEL own-port precedent)
+    volumes:
+      - n8n-data:/home/node/.n8n                   # instance settings; state of record is n8n_engine
+    healthcheck:
+      # 127.0.0.1, not localhost: the alpine image resolves localhost to ::1 first and n8n
+      # listens on IPv4 only — a localhost probe gets connection-refused while n8n is fine.
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5678/healthz >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
 
   pinger:

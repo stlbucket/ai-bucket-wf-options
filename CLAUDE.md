@@ -17,7 +17,7 @@ stack in full here (global-rules R21).
 | `graphql-api-app` | `/graphql-api` | `tenant-layer` |
 | `storage-app` | `/storage` | `storage-layer` |
 | `msg-app` | `/msg` | `msg-layer` |
-| `agent-app` | — (headless) | none — the agentic workflow engine (Claude Agent SDK harness, R22) |
+| `agent-app` | — (headless) | none — the agentic workflow engine (Claude Agent SDK harness; R22 dual engines — the parallel n8n engine is a compose service trio, not an app) |
 
 **Packages** (`packages/`) — nine shared packages (details:
 `.claude/specs/package-layers-pattern.md`):
@@ -29,11 +29,14 @@ stack in full here (global-rules R21).
 - `auth-ui` — `useAuth()` composable (claims in localStorage)
 - `auth-layer` → `tenant-layer` → { `msg-layer`, `storage-layer` } — the Nuxt layer chain
 
-**DB** (`db/`) — ten sqitch packages (deploy order: `fnb-auth fnb-app fnb-agent fnb-res fnb-msg
-fnb-todo fnb-loc fnb-storage fnb-location-datasets fnb-airports`; `fnb-agent` must precede
-`fnb-storage`/`fnb-location-datasets`/`fnb-airports` — `agent_worker` grants + `agent_fn` refs).
-`fnb-agent` is the agent run log (`agent.workflow_run` + the `agent_worker` service role; spec:
-`.claude/specs/agentic-workflow-engine/`). `fnb-res` is the URN registry (`res.resource` — business + identity objects
+**DB** (`db/`) — eleven sqitch packages (deploy order: `fnb-auth fnb-app fnb-agent fnb-n8n
+fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets fnb-airports`; `fnb-agent`
+must precede `fnb-storage`/`fnb-location-datasets`/`fnb-airports` — `agent_worker` grants +
+`agent_fn` refs). `fnb-agent` is the agent run log (`agent.workflow_run` + the `agent_worker`
+service role; spec: `.claude/specs/agentic-workflow-engine/`). `fnb-n8n` is the n8n run log
+(`n8n.workflow_run` + the `n8n_worker` service role — the **parallel n8n engine**, R22:
+per-workflow engine assignment in the `triggerWorkflow` registry; engine state in the separate
+`n8n_engine` DB, definitions in the repo `n8n/` dir; spec: `.claude/specs/n8n-parallel-engine/`). `fnb-res` is the URN registry (`res.resource` — business + identity objects
 register via `res_fn.register_resource`, enforced by deferred FKs; module resident references
 are `*_resident_urn` FKs into it; spec: `.claude/specs/urn-registry/`). `db/my-app` is cruft,
 not deployed.
@@ -59,7 +62,8 @@ is the outside-GraphQL carve-out. Details: security section of `.claude/specs/gr
 
 Nuxt 4 (Vue 3, SSR) · Nuxt UI 4 + Tailwind 4 (green/slate) · TypeScript 6 (strict) · Vitest ·
 ESLint + Prettier (no semis, single quotes, 100-char) · Turborepo · pnpm workspaces · PostgreSQL
-(PostGIS) · PostGraphile 5 · urql + graphql-codegen · Claude Agent SDK (agentic workflows).
+(PostGIS) · PostGraphile 5 · urql + graphql-codegen · Claude Agent SDK (agentic workflows) ·
+n8n (parallel workflow engine, self-hosted).
 
 ## Root Scripts
 

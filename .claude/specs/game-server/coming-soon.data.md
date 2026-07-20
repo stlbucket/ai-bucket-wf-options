@@ -1,4 +1,7 @@
-# games/tic-tac-toe + games/checkers — Coming Soon Data
+# games/tic-tac-toe — Coming Soon Data
+
+<!-- Checkers shipped 2026-07-20 (checkers/ sub-spec); this now covers only Tic-Tac-Toe. -->
+
 
 ## Status
 Draft — decisions locked 2026-07-19. No `[FILL IN]` markers.

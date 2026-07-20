@@ -2,8 +2,6 @@
 // game_fn.record_referee_result (output). Spec: .claude/specs/game-server/_shared.data.md.
 // Values use the DB's lowercase vocabulary (this code runs against jsonb, not GraphQL).
 
-import type { BattleshipPlayerView } from '@function-bucket/fnb-types'
-
 export type DbPlayerKind = 'human' | 'machine_algorithm' | 'machine_agent'
 export type DbGameStatus = 'lobby' | 'in_progress' | 'complete' | 'abandoned'
 export type DbEventType = 'setup' | 'move' | 'resign'
@@ -55,11 +53,19 @@ export type RefereeAction =
   | { kind: 'reject'; eventId: string; rejectionReason: string }
   | { kind: 'machine'; seat: number; eventType: 'move'; eventData: unknown; stateAfter: unknown; viewsAfter: unknown }
 
-/** What the agent branch needs: the acting seat's REDACTED view only (fairness lock). */
+/**
+ * What the agent branch needs: the acting seat's REDACTED view only (fairness lock), plus an
+ * ENGINE-SUPPLIED `system` prompt so the game-event workflow's HTTP node is game-agnostic
+ * (the anthropic-move node reads `$json.result.agentContext.system` — no game-specific text
+ * lives in the workflow JSON). `view`/`legalMoves` are game-specific shapes (battleship:
+ * BattleshipPlayerView + {row,col}[]; checkers: CheckersPlayerView + CheckersLegalMove[]) —
+ * the workflow only JSON-stringifies them, and each engine's completeAgentMove interprets them.
+ */
 export interface AgentMoveContext {
   seat: number
-  view: BattleshipPlayerView
-  legalMoves: Array<{ row: number; col: number }>
+  system: string
+  view: unknown
+  legalMoves: unknown
 }
 
 export interface RefereeResult {

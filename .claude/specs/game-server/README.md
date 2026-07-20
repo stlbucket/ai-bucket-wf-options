@@ -36,8 +36,11 @@ seat bounds, supported machine kinds, and per-type engine config — so per-game
 setup validation as defense-in-depth.
 
 A new **Games** menu section (DB-registered module, R14) carries one tool per game type.
-**Only battleship is implemented** (list + detail); Tic-Tac-Toe and Checkers are Coming Soon
-pages. The battleship engine is a single-board engine (`createInitialGameState` + `applyMove`,
+**Battleship and Checkers are implemented** (list + detail each); Tic-Tac-Toe is a Coming Soon
+page. Checkers (English/American draughts) was added 2026-07-20 as the second game type via the
+platform's "add a game type" path (registry seed flip + `game-engines` module + referee
+dispatch + UI page, zero DDL) — see the sub-spec `.claude/specs/game-server/checkers/`.
+The battleship engine is a single-board engine (`createInitialGameState` + `applyMove`,
 `PlacedShip.hits: Set<string>`) used per seat inside a two-board wrapper — **authored fresh in
 `packages/game-engines`** (user decision 2026-07-19 at implementation go/no-go: the originally
 referenced user-supplied `battleship.ts` was never added to the repo).
@@ -77,8 +80,8 @@ referenced user-supplied `battleship.ts` was never added to the repo).
 | Tenancy | Games are tenant-scoped: `tenant_id` + all human seats are residents of the same tenant (URN FKs into `res.resource`) | House model; cross-tenant play deferred with everything else multi-tenant |
 | Permissions | Module + tools gated `p:app-user`/`p:app-admin` (todo/locations precedent); no new permission key. RLS SELECT is tenant-scoped (msg precedent); mutations enforce seat membership in `_api`/`_fn` | No new license machinery for v1 |
 | URN registration | `game.game` is a registered business table (generated `urn`, deferred FK, `register_resource` in the create path, `game` module row); `game.game_player`, `game.game_event`, and `game.game_event_state` are unregistered children | urn-registry forward-only convention for new business tables |
-| Nav | New module `games` (`i-lucide-gamepad-2`) with tools Battleship (`i-lucide-ship`, live), Tic-Tac-Toe (`i-lucide-hash`), Checkers (`i-lucide-circle-dot`) — the latter two route to Coming Soon pages | R14; all four icons verified in lucide |
-| Scope of playable games | Battleship only: list + detail. Coming Soon pages for the other two tools share one `GamesComingSoon` component | User requirement |
+| Nav | New module `games` (`i-lucide-gamepad-2`) with tools Battleship (`i-lucide-ship`, live), Tic-Tac-Toe (`i-lucide-hash`, Coming Soon), Checkers (`i-lucide-circle-dot`, live as of 2026-07-20) | R14; all four icons verified in lucide |
+| Scope of playable games | Battleship + Checkers: list + detail each. Tic-Tac-Toe remains a Coming Soon page (the shared `GamesComingSoon` component now serves only it) | User requirement; Checkers added 2026-07-20 (`checkers/` sub-spec) |
 | List page freshness | The battleship list is fetch-on-load + manual refresh — **not** real-time; only the detail page holds a WS | One WS per open game matches the msg model; list-level LISTEN deferred |
 
 ## Files in this spec
@@ -176,8 +179,10 @@ referenced user-supplied `battleship.ts` was never added to the repo).
 - [ ] Spectating / tenant-admin read of finished games' full state
 - [ ] List pagination — no house convention yet (global-rules Known Gaps); fixed window + refresh
 - [ ] Agent model env-override + prompt tuning; per-move model usage/cost logging
-- [ ] Tic-Tac-Toe / Checkers engines (each: flip the registry row to `live` (+ seat
-      bounds/kinds/config) + `game-engines` module + referee dispatch + UI page — no DDL)
+- [x] **Checkers** — shipped 2026-07-20 (English/American draughts; `game-server/checkers/`
+      sub-spec): registry flip + `game-engines/src/checkers/` + referee dispatch + UI pages, no
+      DDL; the agent branch was generalized (engine-supplied `agentContext.system`) so future
+      game types need zero workflow edits. **Tic-Tac-Toe** engine remains open (same path).
 - [ ] Win/loss stats, leaderboards
 - [ ] `game.game_type` registry management (admin UI / API for flipping `status`, tuning
       `default_config`) — seed/deploy-only for now

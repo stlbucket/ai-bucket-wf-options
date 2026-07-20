@@ -1,7 +1,7 @@
 import { computed, onMounted, onUnmounted, ref, toRef, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 import { toValue } from 'vue'
-import type { BattleshipPlayerView } from '@function-bucket/fnb-types'
+import type { BattleshipPlayerView, CheckersPlayerView } from '@function-bucket/fnb-types'
 import type { GameEvent, GameSummary, SeatOutcome } from '@function-bucket/fnb-types'
 import {
   useGameByIdQuery,
@@ -12,8 +12,11 @@ import {
 import { toGameEvent, toGameSummary } from '../mappers/game'
 import { useTriggerWorkflow } from './useTriggerWorkflow'
 
+// The redacted per-seat view blob is game-type-specific jsonb; pages narrow by gameTypeId.
+export type GamePlayerView = BattleshipPlayerView | CheckersPlayerView
+
 export interface GameBoardEvent {
-  kind: 'hit' | 'miss' | 'sunk' | 'rejected'
+  kind: 'hit' | 'miss' | 'sunk' | 'rejected' | 'move' | 'capture'
   message: string
 }
 
@@ -53,7 +56,7 @@ export function useGame(gameId: MaybeRefOrGetter<string>, myResidentUrn: MaybeRe
       .map(toGameEvent),
   )
 
-  const liveView = computed<BattleshipPlayerView | null>(() => (data.value?.gameView as BattleshipPlayerView | null) ?? null)
+  const liveView = computed<GamePlayerView | null>(() => (data.value?.gameView as GamePlayerView | null) ?? null)
 
   const mySeat = computed<number | null>(() => {
     const urn = toValue(myResidentUrn)
@@ -78,8 +81,8 @@ export function useGame(gameId: MaybeRefOrGetter<string>, myResidentUrn: MaybeRe
     pause: computed(() => replayEvent.value === null),
   })
 
-  const view = computed<BattleshipPlayerView | null>(() =>
-    replayEvent.value === null ? liveView.value : ((replayData.value?.gameView as BattleshipPlayerView | null) ?? null),
+  const view = computed<GamePlayerView | null>(() =>
+    replayEvent.value === null ? liveView.value : ((replayData.value?.gameView as GamePlayerView | null) ?? null),
   )
 
   function stepBack() {
@@ -102,16 +105,34 @@ export function useGame(gameId: MaybeRefOrGetter<string>, myResidentUrn: MaybeRe
     replayEvent.value = null
   }
 
-  // --- move-result toasts: derived by diffing consecutive LIVE views (suppressed while
-  // replaying) — keeps diff logic + the transport out of components (R1/R2) ---
+  // --- move-result toasts: derived from consecutive LIVE views (suppressed while replaying) —
+  // keeps derivation + the transport out of components (R1/R2). Dispatched by game type. ---
   const lastEvents = ref<GameBoardEvent[]>([])
   watch(liveView, (next, prev) => {
-    if (isReplaying.value || !next || !prev) return
+    if (isReplaying.value || !next) return
+
+    // Checkers: moves are public and on the board, so a light narration from lastMove — only
+    // the opponent's move (mine I initiated). No hidden info to diff.
+    if (game.value?.gameTypeId === 'checkers') {
+      const lm = (next as CheckersPlayerView).lastMove
+      if (!lm || lm.seat === mySeat.value) {
+        lastEvents.value = []
+        return
+      }
+      const caps = lm.captured?.length ?? 0
+      lastEvents.value = [caps ? { kind: 'capture', message: `They captured ${caps}` } : { kind: 'move', message: 'They moved' }]
+      return
+    }
+
+    // Battleship (default): diff the redacted opponent board for hit/miss/sunk.
+    if (!prev) return
+    const bn = next as BattleshipPlayerView
+    const bp = prev as BattleshipPlayerView
     const found: GameBoardEvent[] = []
-    for (let r = 0; r < next.opponent.board.length; r++) {
-      for (let c = 0; c < next.opponent.board[r]!.length; c++) {
-        const before = prev.opponent.board[r]?.[c]
-        const after = next.opponent.board[r]![c]
+    for (let r = 0; r < bn.opponent.board.length; r++) {
+      for (let c = 0; c < bn.opponent.board[r]!.length; c++) {
+        const before = bp.opponent.board[r]?.[c]
+        const after = bn.opponent.board[r]![c]
         if (before === after) continue
         if (after === 'hit') found.push({ kind: 'hit', message: 'Hit!' })
         else if (after === 'sunk') found.push({ kind: 'sunk', message: 'You sank their ship!' })

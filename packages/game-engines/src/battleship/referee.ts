@@ -26,6 +26,11 @@ export interface BattleshipStateBlob {
   seats: Record<string, SerializedGameState>
 }
 
+// Engine-supplied agent system prompt (moved verbatim out of the workflow's anthropic-move
+// node so that node is game-agnostic — it reads agentContext.system). Wording unchanged.
+export const BATTLESHIP_AGENT_SYSTEM =
+  "You are playing Battleship. You will be given your view of the opponent board as JSON: a grid of 'unknown' | 'hit' | 'miss' | 'sunk' cells (your shots so far) plus the list of opponent ships already sunk and the legal moves. Choose the best next shot. Respond with ONLY a JSON object {\"row\": <0-9>, \"col\": <0-9>} targeting an 'unknown' cell. No prose."
+
 interface Working {
   boardSize: number
   seats: Record<string, GameState>
@@ -118,7 +123,10 @@ function runMachineLoop(w: Working, actions: RefereeAction[], rand: () => number
     if (kind === 'human') break
     if (kind === 'machine_agent') {
       const view = w.views[String(seat)]!
-      return { needsAgentMove: true, agentContext: { seat, view, legalMoves: legalMoves(view) } }
+      return {
+        needsAgentMove: true,
+        agentContext: { seat, system: BATTLESHIP_AGENT_SYSTEM, view, legalMoves: legalMoves(view) },
+      }
     }
     // machine_algorithm — selects from ITS OWN redacted view only (fairness lock)
     const cell = selectMachineMove(w.views[String(seat)]!, rand)

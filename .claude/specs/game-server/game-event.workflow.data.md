@@ -52,7 +52,8 @@ pendingEvents }` — `gameType` is the registry row (seat bounds, `supportedPlay
 `defaultConfig`), `players` the seat roster (seat, kind, outcome, resigned), `gameState`/
 `playerViews` the **latest applied snapshot** (null before setup), `pendingEvents` **all**
 pending events oldest-first — several seats may have one) + the webhook `op`. Dispatches on
-`gameType.id` (battleship only; unknown/unimplemented id → throw → error-handler).
+`gameType.id` (battleship + checkers today — see `checkers/engine-workflow.data.md`;
+unknown/unimplemented id → throw → error-handler).
 
 The referee builds an ordered **`actions` list** (the `record_referee_result` contract,
 `_shared.data.md`) — each applied action carries its own `stateAfter`/`viewsAfter` snapshot,
@@ -155,19 +156,26 @@ naturally ignores finished ships. `rand` is injectable for deterministic vitest 
 {
   "model": "claude-haiku-4-5-20251001",        // locked default; env-override deferred
   "max_tokens": 100,
-  "system": "You are playing Battleship. You will be given your view of the opponent board as JSON: a grid of 'unknown' | 'hit' | 'miss' | 'sunk' cells (your shots so far) plus the list of opponent ships already sunk. Choose the best next shot. Respond with ONLY a JSON object {\"row\": <0-9>, \"col\": <0-9>} targeting an 'unknown' cell. No prose.",
-  "messages": [{ "role": "user", "content": "{{ JSON.stringify($json.agentContext) }}" }]
+  "system": "{{ $json.result.agentContext.system }}",   // ENGINE-SUPPLIED per game type
+  "messages": [{ "role": "user", "content": "{{ JSON.stringify($json.result.agentContext) }}" }]
 }
 ```
 
-The prompt receives **only** `agentContext` (the machine seat's redacted view) — never
-`game_state` (fairness lock).
+**The system prompt is game-agnostic** (generalized when checkers landed, 2026-07-20): each
+engine's referee puts its own prompt on `agentContext.system` (battleship's wording lives
+verbatim in `game-engines/src/battleship/referee.ts` `BATTLESHIP_AGENT_SYSTEM`; checkers'
+in `checkers/referee.ts` `CHECKERS_AGENT_SYSTEM`), so this node carries **no** game-specific
+text and never changes when a new game type is added. The prompt receives **only**
+`agentContext` (the machine seat's redacted view + legal moves) — never `game_state`
+(fairness lock).
 
-**Code node `parse-agent-move`** (embedded from `game-engines` — shares the selector source):
-1. Extract the first JSON object from the response text; validate: integers in bounds and the
-   targeted cell is `'unknown'` in the machine's view.
-2. Invalid / unparseable / illegal → **fall back to `selectMachineMove`** (locked decision —
-   games never wedge on a bad completion). Record `agentFallback: true` in the result summary.
+**Code node `parse-agent-move`** (embedded from `game-engines` — dispatches by game type via
+`completeAgentMove(ctx, referee, text)`):
+1. Each engine parses + validates its own reply shape (battleship: `{row,col}` targeting an
+   `'unknown'` cell; checkers: `{moveIndex}` into the enumerated `legalMoves`).
+2. Invalid / unparseable / illegal → **fall back to the game's `selectMachineMove`** (locked
+   decision — games never wedge on a bad completion). Record `agentFallback: true` in the
+   result summary.
 3. Apply the chosen move exactly as the referee's algorithm path does (same embedded engine
    code) and append the `machine` action (with its `stateAfter`/`viewsAfter` snapshot) to the
    `actions` list flowing to `record_referee_result`.

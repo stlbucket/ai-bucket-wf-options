@@ -46,8 +46,9 @@ VALUES
    '{human,machine_algorithm,machine_agent}', '{"boardSize": 10}'::jsonb)
  ,('tic_tac_toe', 'Tic-Tac-Toe', 'Three in a row wins.',
    'i-lucide-hash', 1, 'coming_soon', 2, 2, '{human}', '{}'::jsonb)
- ,('checkers', 'Checkers', 'Diagonal capture classic.',
-   'i-lucide-circle-dot', 2, 'coming_soon', 2, 2, '{human}', '{}'::jsonb);
+ ,('checkers', 'Checkers', 'Diagonal capture classic — English draughts.',
+   'i-lucide-circle-dot', 2, 'live', 2, 2,
+   '{human,machine_algorithm,machine_agent}', '{"boardSize": 8}'::jsonb);
 
 ------------------------------------------------------------------------ game
 -- The agnostic game record (registered URN business table). No game-type columns, no

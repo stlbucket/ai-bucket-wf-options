@@ -60,3 +60,11 @@ export type {
   BattleshipFleetEntry,
   BattleshipPlayerView,
 } from '@/games/battleship-view'
+export type {
+  CheckersSquare,
+  CheckersPiece,
+  CheckersCell,
+  CheckersLegalMove,
+  CheckersMove,
+  CheckersPlayerView,
+} from '@/games/checkers-view'

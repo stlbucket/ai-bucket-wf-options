@@ -1,0 +1,7 @@
+%syntax-version=1.0.0
+%project=fnb-game
+
+00000000011300_game [fnb-res:00000000011010_res_fn fnb-app:00000000010250_app_policies] 2026-07-19T00:00:00Z Developer <dev@example.com> # Create game schemas, enums, game_type registry (+seeds), game/game_player/game_event/game_event_state tables, notify trigger
+00000000011310_game_fn [00000000011300_game] 2026-07-19T00:00:00Z Developer <dev@example.com> # Create game_fn functions (engine_context, record_referee_result, create_game, submit_event, resign_game, player_view)
+00000000011320_game_api [00000000011310_game_fn] 2026-07-19T00:00:00Z Developer <dev@example.com> # Create game_api surface (create_game, submit_event, resign_game, my_games, game_view) gated p:app-user/p:app-admin
+00000000011330_game_policies [00000000011320_game_api fnb-n8n:00000000011230_n8n_policies] 2026-07-19T00:00:00Z Developer <dev@example.com> # Grants (closed game_fn surface) + RLS policies (pending-visibility, deny-all snapshots) + n8n_worker referee grants

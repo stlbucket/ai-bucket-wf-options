@@ -210,7 +210,7 @@ here):
 **`nginx`** — Path-based proxy, port `${PORT:?}` (required; `.env` bakes the port into every
 `http://localhost:PORT/...` URL — no port hunting, `env-build.ts` only preflights that it's free):
 ```yaml
-depends_on: [auth-app, tenant-app, home-app, msg-app]  # add new apps here
+depends_on: [auth-app, tenant-app, home-app, msg-app, game-app]  # add new apps here
 volumes:
   - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
 ```
@@ -269,6 +269,7 @@ server {
     location /auth   { proxy_pass http://auth-app:3000; }
     location /tenant { proxy_pass http://tenant-app:3000; }
     location /msg    { proxy_pass http://msg-app:3000; }
+    location /game   { proxy_pass http://game-app:3000; }    # WS only — no user pages (game-server spec)
     location /       { proxy_pass http://home-app:3000; }    # catch-all must be last
 }
 ```

@@ -392,6 +392,18 @@ CREATE OR REPLACE FUNCTION app_fn.install_anchor_application()
               ,row('tenant-datasets-airports'::citext,'Airports'::citext,'{"p:app-user","p:app-admin"}'::citext[],'i-lucide-plane'::citext,'/tenant/datasets/airports',1)::app_fn.tool_info
             ]::app_fn.tool_info[]
           )::app_fn.module_info
+          ,row(
+            'games'::citext
+            ,'Games'::citext
+            ,'{"p:app-user","p:app-admin"}'::citext[]
+            ,'i-lucide-gamepad-2'::citext
+            ,35
+            ,array[
+              row('games-battleship'::citext,'Battleship'::citext,'{"p:app-user","p:app-admin"}'::citext[],'i-lucide-ship'::citext,'/tenant/games/battleship',0)::app_fn.tool_info
+              ,row('games-tic-tac-toe'::citext,'Tic-Tac-Toe'::citext,'{"p:app-user","p:app-admin"}'::citext[],'i-lucide-hash'::citext,'/tenant/games/tic-tac-toe',1)::app_fn.tool_info
+              ,row('games-checkers'::citext,'Checkers'::citext,'{"p:app-user","p:app-admin"}'::citext[],'i-lucide-circle-dot'::citext,'/tenant/games/checkers',2)::app_fn.tool_info
+            ]::app_fn.tool_info[]
+          )::app_fn.module_info
         ]::app_fn.module_info[]
       )::app_fn.application_info
     );

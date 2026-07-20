@@ -15,7 +15,14 @@ import { requiredEnv } from '../lib/required-env.js'
 // exercisers are diagnostic tools — super-admin only). Moving a workflow between engines is
 // a one-line edit here (plus whatever DB grants the workflow needs on the target side).
 type WorkflowEngine = 'agent' | 'n8n'
-const WORKFLOW_REGISTRY: Record<string, { engine: WorkflowEngine, permission: string | null }> = {
+// `permission`: null = any authenticated user; a single 'p:' key = require that key; an array =
+// any-of (parity with the DB's `jwt.enforce_any_permission`). game-event uses the array form
+// because the game module gates every DB/RLS layer on `{p:app-user, p:app-admin}` — an admin
+// without p:app-user can still create and play a game, so must also be able to trigger the referee.
+const WORKFLOW_REGISTRY: Record<
+  string,
+  { engine: WorkflowEngine, permission: string | string[] | null }
+> = {
   'sync-breweries': { engine: 'agent', permission: null },
   // moved to n8n 2026-07-20 (dataset-sync.workflow.data.md §Engine move); the agentic
   // definition stays in the tree dormant as the rollback
@@ -24,7 +31,12 @@ const WORKFLOW_REGISTRY: Record<string, { engine: WorkflowEngine, permission: st
   'n8n-exerciser': { engine: 'n8n', permission: 'p:app-admin-super' },
   // Parallel n8n twin of the agentic breweries sync — operator-triggered (the datasets UI
   // keeps the agentic key above); n8n-parallel-engine/dataset-sync.workflow.data.md.
-  'n8n-sync-breweries': { engine: 'n8n', permission: 'p:app-admin-super' }
+  'n8n-sync-breweries': { engine: 'n8n', permission: 'p:app-admin-super' },
+  // The game referee (game-server spec): { op: 'setup' | 'event', gameId }. Any app user may
+  // trigger — rogue/duplicate calls no-op in the referee, and record_referee_result's
+  // advisory lock + still-pending re-checks make concurrent duplicates harmless. Any-of gate
+  // mirrors the game module's `jwt.enforce_any_permission('{p:app-user,p:app-admin}')`.
+  'game-event': { engine: 'n8n', permission: ['p:app-user', 'p:app-admin'] }
 }
 
 interface TriggerClaims {
@@ -63,8 +75,14 @@ export const TriggerWorkflowPlugin = makeExtendSchemaPlugin(() => ({
             if (!entry) {
               throw new Error(`unknown workflow: ${workflowKey}`)
             }
-            if (entry.permission && !(claims.permissions ?? []).includes(entry.permission)) {
-              throw new Error('30000: NOT AUTHORIZED')
+            if (entry.permission) {
+              const required = Array.isArray(entry.permission)
+                ? entry.permission
+                : [entry.permission]
+              const held = claims.permissions ?? []
+              if (!required.some((p) => held.includes(p))) {
+                throw new Error('30000: NOT AUTHORIZED')
+              }
             }
 
             const body = JSON.stringify({

@@ -35,7 +35,8 @@ export default defineNuxtConfig({
     '/site-admin/**': { ssr: false },
     '/support/**': { ssr: false },
     '/tools/**': { ssr: false },
-    '/datasets/**': { ssr: false }
+    '/datasets/**': { ssr: false },
+    '/games/**': { ssr: false }
   },
 
   compatibilityDate: '2025-01-15',

@@ -75,7 +75,7 @@ then calls `msg_fn.upsert_topic(_topic_info, jwt.resident_id())`
 PostGraphile auto-generates the schema from the exposed schemas. Config in
 `server/graphile.config.ts`:
 - Presets: `PostGraphileAmberPreset`, `PgSimplifyInflectionPreset`, `makeV4Preset({ simpleCollections:'both', disableDefaultMutations:true, dynamicJson:true })`; plus `TagsFilePlugin` + local mutation hooks.
-- `pgServices` schemas: `app, app_api, msg, msg_api, loc, loc_api, todo, todo_api, agent, agent_api, storage, location_datasets, location_datasets_api, airports, airports_api, res, res_api` (never `res_fn` — registry writes stay behind the SECURITY DEFINER functions).
+- `pgServices` schemas: `app, app_api, msg, msg_api, loc, loc_api, todo, todo_api, agent, agent_api, n8n, n8n_api, storage, location_datasets, location_datasets_api, airports, airports_api, game, game_api, res, res_api` (never `res_fn`/`game_fn` — registry writes and the game referee surface stay behind SECURITY DEFINER functions, closed to the GraphQL surface).
 - Smart-tag overrides in `apps/graphql-api-app/postgraphile.tags.json5`.
 
 ### Auth: `grafast.context()` is the analog of `withClaims`

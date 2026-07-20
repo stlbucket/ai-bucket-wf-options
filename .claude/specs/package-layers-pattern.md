@@ -1,13 +1,18 @@
 # Package Layers Pattern
 
-This document describes the nine shared packages that every app is built on top of. These are
+This document describes the ten shared packages that every app is built on top of. These are
 not specced per-feature — they are the scaffold that features live inside of. Read this when
 recreating any package from scratch or when understanding what a layer provides.
 
-The nine: **type-only leaf** `fnb-types`; **compiled libs** `auth-server`, `auth-ui`, `db-access`,
-`graphql-client-api`; **Nuxt layers** `auth-layer`, `tenant-layer`, `msg-layer`, `storage-layer`.
-(`db-types` — the retired Kysely/Kanel package — has been replaced by `db-access` +
+The ten: **type-only leaf** `fnb-types`; **compiled libs** `auth-server`, `auth-ui`, `db-access`,
+`graphql-client-api`; **Nuxt layers** `auth-layer`, `tenant-layer`, `msg-layer`, `storage-layer`,
+`game-layer`. (`db-types` — the retired Kysely/Kanel package — has been replaced by `db-access` +
 `graphql-client-api`. See `.claude/specs/graphql-api-pattern.md` for the data stack.)
+
+A separate, eleventh package — **`game-engines`** — is *not* one of the ten: it is pure TS,
+vitest-covered, with **no runtime app consumer**. It holds the game-server referee/engine logic
+(spec `.claude/specs/game-server/`); its build output is embedded verbatim into the `game-event`
+n8n workflow's Code nodes by an embed script, never imported by a layer or app.
 
 **`fnb-types` is the shared type vocabulary** (global-rules R3): the UI and `db-access` import
 entity/view types only from it; generated GraphQL types are internal to `graphql-client-api` and
@@ -36,14 +41,18 @@ enforcement (`pnpm dep-audit`): `.claude/specs/workspace-dependency-integrity-pa
 auth-layer          ← base layer: Nuxt UI, auth composable, login UI
     └── tenant-layer    ← adds nav system, dashboard layout, tenant UI
             ├── msg-layer       ← adds WebSocket + msg server infrastructure
-            └── storage-layer   ← adds asset upload endpoint + asset UI
+            ├── storage-layer   ← adds asset upload endpoint + asset UI
+            └── game-layer      ← adds WebSocket + game-notify server infrastructure (msg-layer mirror)
 ```
 
 Every routed app extends one of these layers. `auth-app` extends `auth-layer`. `home-app`,
 `tenant-app`, and `graphql-api-app` extend `tenant-layer`. `msg-app` extends `msg-layer`.
-`storage-app` extends `storage-layer`. The exception is the headless `worker-app`, which extends
-**no layer** (no pages, no auth middleware — only the graphile-worker Nitro plugin; see
-`monorepo-bootstrap-pattern.md` → Headless apps).
+`storage-app` extends `storage-layer`. `game-app` extends `game-layer` (headless-ish: no
+user-facing pages — it exists only to serve `/game/_ws/games/[id]`; the game UI lives in
+tenant-app, exactly as msg-app's WS serves tenant-app's `/tenant/msg` pages). The exception is
+the headless `agent-app`, which extends **no layer** (no pages, no auth middleware — the
+Claude Agent SDK harness; see `monorepo-bootstrap-pattern.md` → Headless apps; the retired
+`worker-app`/graphile-worker this section used to describe is gone — R22).
 
 ---
 
@@ -327,6 +336,28 @@ Full spec: `.claude/specs/asset-storage/`.
 | `api/upload.post.ts` | `POST /storage/api/upload` — auth → parse/validate → PutObject to `quarantine/` → `withClaims`: `storage_api.insert_asset` + `wf_api.queue_workflow('asset-scan', …)` in one txn → 202 |
 | `lib/asset-validation.ts` | Context vocab maps, `ALLOWED_TYPES`, extension cross-check, magic-byte sniff |
 | `lib/s3.ts` | Lazy memoized S3 client (`getS3()`) — PutObject at upload only (scan Get/Copy/Delete live in worker-app). Lazy so apps extending the layer without S3 creds (tenant-app) don't crash at boot on the env check; compose `${S3_*:?}` stays storage-app's boot guard |
+
+---
+
+### `packages/game-layer`
+**Package name:** `@function-bucket/fnb-game-layer`
+**`main`:** `./nuxt.config.ts`
+**Extends:** `@function-bucket/fnb-tenant-layer`
+**Special:** a direct msg-layer mirror — provides **only** the WebSocket server infrastructure
+for the game server (spec `.claude/specs/game-server/`); no app-layer UI (the battleship
+pages live in tenant-app; nothing in `game-layer/app/` beyond the Nuxt scaffold). Enables
+`nitro.experimental.websocket: true`.
+
+**Server directory (`server/`) — WS carve-out only:**
+| File | Purpose |
+|------|---------|
+| `plugins/pg-notify-bridge.ts` | LISTEN/NOTIFY → WebSocket peer fanout — copied verbatim from msg-layer's bridge (generic, table-agnostic), including the `websocket.resolve` override for the same h3 auth-middleware-intercepts-upgrade bug (see msg-layer's note above) |
+| `routes/_ws/games/[id].ts` | WebSocket handler: auth on upgrade (session cookie → claims), subscribes to `game:{id}:state` |
+| `utils/getWsUpgradeClaims.ts` | Same session-cookie → `claimsForSession(sid)` pattern as msg-layer's |
+
+No `plugins/db.ts`/`createDb` and no `middleware/auth.ts` — same as every tenant-layer
+descendant (db access is `db-access`'s own pg pool; auth middleware is tenant-layer's
+`applyEventClaims`).
 
 ---
 

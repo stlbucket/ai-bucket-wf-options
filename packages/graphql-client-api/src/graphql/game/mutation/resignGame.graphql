@@ -1,0 +1,17 @@
+# resignGame returns the pending 'resign' GameEvent (not the Game) — the referee applies it
+# via the same op:'event' trigger as any other submitted event.
+mutation ResignGame($gameId: UUID!) {
+  resignGame(input: { _gameId: $gameId }) {
+    gameEvent {
+      id
+      gameId
+      eventType
+      seat
+      eventNumber
+      eventData
+      status
+      rejectionReason
+      createdAt
+    }
+  }
+}

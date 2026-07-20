@@ -1,0 +1,17 @@
+# The seats-2..N array (NewGamePlayer[] in fnb-types) — the caller becomes seat 1.
+# Battleship sends exactly one entry: { kind: 'HUMAN', residentUrn } or a machine kind.
+mutation CreateGame($gameTypeId: String!, $players: JSON!) {
+  createGame(input: { _gameTypeId: $gameTypeId, _players: $players }) {
+    game {
+      id
+      tenantId
+      gameTypeId
+      status
+      seatCount
+      expectingSeats
+      eventCount
+      createdAt
+      finishedAt
+    }
+  }
+}

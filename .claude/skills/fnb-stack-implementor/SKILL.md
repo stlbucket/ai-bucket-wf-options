@@ -97,18 +97,21 @@ apps/home-app          → nginx /             (port 3000 in Docker)   extends t
 apps/tenant-app        → nginx /tenant       (port 3000 in Docker)   extends tenant-layer — NO server/ dir
 apps/msg-app           → nginx /msg          (port 3000 in Docker)   extends msg-layer
 apps/storage-app       → nginx /storage      (port 3000 in Docker)   extends storage-layer
+apps/game-app          → nginx /game         (port 3000 in Docker)   extends game-layer — WS only, no user pages (game UI lives in tenant-app)
 apps/graphql-api-app   → nginx /graphql-api  (port 3000 in Docker)   PostGraphile 5 + extendSchema plugins (triggerWorkflow, downloadUrl)
 apps/agent-app         → HEADLESS (no nginx)                         primary workflow engine — Claude Agent SDK harness (exerciser, sync-breweries, asset-scan + reaper; sync-airports moved to n8n 2026-07-20); the PARALLEL n8n engine (R22 dual engines) is a compose service trio, not an app — n8n-parallel-engine spec, skill n8n-cli
 packages/auth-layer      Nuxt layer: layout, AppNav, LoginForm, UserProfile, useAuth; server/utils claims+cookies
 packages/tenant-layer    Nuxt layer: extends auth-layer; server/middleware/auth.ts (applyEventClaims)
 packages/msg-layer       Nuxt layer: extends tenant-layer; WebSocket carve-out server/
 packages/storage-layer   Nuxt layer: extends tenant-layer; upload endpoint carve-out server/api/upload.post.ts + asset UI
+packages/game-layer      Nuxt layer: extends tenant-layer; WebSocket carve-out server/ (msg-layer mirror — game-server spec)
 packages/fnb-types       type-only leaf: the shared type vocabulary (entities + enums); UI/db-access import types ONLY from here
 packages/auth-ui         compiled lib: useAuth() — claims in localStorage, fetched via GraphQL
 packages/db-access       compiled lib: pre-claims root of trust (raw pg), 2-arg withClaims; types come from fnb-types
 packages/graphql-client-api  compiled lib: .graphql docs + codegen hooks + mappers + composables (the default data layer)
-db/fnb-auth  fnb-app  fnb-agent  fnb-res  fnb-msg  fnb-todo  fnb-loc  fnb-storage  fnb-location-datasets  fnb-airports   sqitch packages
-docker/nginx.conf       path-based proxy: /auth→auth-app, /tenant→tenant-app, /graphql-api→graphql-api-app, /msg→msg-app, /storage→storage-app, /→home-app (agent-app not routed)
+packages/game-engines    pure TS, vitest-covered, NO runtime app consumer — the game referee/engine logic, embedded verbatim into the game-event n8n workflow's Code nodes (game-server spec)
+db/fnb-auth  fnb-app  fnb-agent  fnb-n8n  fnb-res  fnb-msg  fnb-todo  fnb-loc  fnb-storage  fnb-location-datasets  fnb-airports  fnb-game   sqitch packages
+docker/nginx.conf       path-based proxy: /auth→auth-app, /tenant→tenant-app, /graphql-api→graphql-api-app, /msg→msg-app, /storage→storage-app, /game→game-app, /→home-app (agent-app not routed)
 ```
 
 `db-types` is retired (was Kysely/Kanel) — `db-access` + `graphql-client-api` replaced it.
@@ -203,7 +206,9 @@ Deliberately NOT derived from GraphQL codegen (see global-rules R3).
 
 The `<module>_api` schemas are exposed to PostGraphile (`pgServices.schemas` in
 `apps/graphql-api-app/server/graphile.config.ts`: `app, app_api, msg, msg_api, loc,
-loc_api, todo, todo_api, agent, agent_api, storage, location_datasets, location_datasets_api, airports, airports_api, res, res_api` — never `res_fn`). Reads go through RLS-protected selects
+loc_api, todo, todo_api, agent, agent_api, n8n, n8n_api, storage, location_datasets,
+location_datasets_api, airports, airports_api, game, game_api, res, res_api` — never
+`res_fn`/`game_fn`). Reads go through RLS-protected selects
 PostGraphile generates from the tables; mutations go through `<module>_api.*`.
 
 **URN registry (`fnb-res` — spec `.claude/specs/urn-registry/`):** every registered business

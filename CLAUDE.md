@@ -17,9 +17,10 @@ stack in full here (global-rules R21).
 | `graphql-api-app` | `/graphql-api` | `tenant-layer` |
 | `storage-app` | `/storage` | `storage-layer` |
 | `msg-app` | `/msg` | `msg-layer` |
+| `game-app` | `/game` (WS only — no user pages) | `game-layer` |
 | `agent-app` | — (headless) | none — the agentic workflow engine (Claude Agent SDK harness; R22 dual engines — the parallel n8n engine is a compose service trio, not an app) |
 
-**Packages** (`packages/`) — nine shared packages (details:
+**Packages** (`packages/`) — ten shared packages (details:
 `.claude/specs/package-layers-pattern.md`):
 
 - `fnb-types` — the shared, type-only vocabulary (R3); everything imports entity types from here
@@ -27,18 +28,28 @@ stack in full here (global-rules R21).
 - `graphql-client-api` — default data layer: urql hooks (graphql-codegen) + shared composables
 - `auth-server` — server-side pg client factory (`useFnbPgClient`)
 - `auth-ui` — `useAuth()` composable (claims in localStorage)
-- `auth-layer` → `tenant-layer` → { `msg-layer`, `storage-layer` } — the Nuxt layer chain
+- `auth-layer` → `tenant-layer` → { `msg-layer`, `storage-layer`, `game-layer` } — the Nuxt layer chain
 
-**DB** (`db/`) — eleven sqitch packages (deploy order: `fnb-auth fnb-app fnb-agent fnb-n8n
-fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets fnb-airports`; `fnb-agent`
-must precede `fnb-storage`/`fnb-location-datasets`/`fnb-airports` — `agent_worker` grants +
-`agent_fn` refs). `fnb-agent` is the agent run log (`agent.workflow_run` + the `agent_worker`
-service role; spec: `.claude/specs/agentic-workflow-engine/`). `fnb-n8n` is the n8n run log
+Plus `game-engines` — pure TS, vitest-covered, **no runtime app consumer** (the game-server
+spec's referee/engine logic; its build is embedded verbatim into the `game-event` n8n workflow's
+Code nodes by an embed script, not imported by any app) — not one of the ten layer/lib
+packages above, but part of the game server (spec `.claude/specs/game-server/`).
+
+**DB** (`db/`) — twelve sqitch packages (deploy order: `fnb-auth fnb-app fnb-agent fnb-n8n
+fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets fnb-airports fnb-game`;
+`fnb-agent` must precede `fnb-storage`/`fnb-location-datasets`/`fnb-airports` — `agent_worker`
+grants + `agent_fn` refs; `fnb-game` is last — needs `fnb-res`'s registry, `fnb-app`'s
+policies, and `fnb-n8n`'s `n8n_worker` role). `fnb-agent` is the agent run log
+(`agent.workflow_run` + the `agent_worker` service role; spec:
+`.claude/specs/agentic-workflow-engine/`). `fnb-n8n` is the n8n run log
 (`n8n.workflow_run` + the `n8n_worker` service role — the **parallel n8n engine**, R22:
 per-workflow engine assignment in the `triggerWorkflow` registry; engine state in the separate
 `n8n_engine` DB, definitions in the repo `n8n/` dir; spec: `.claude/specs/n8n-parallel-engine/`). `fnb-res` is the URN registry (`res.resource` — business + identity objects
 register via `res_fn.register_resource`, enforced by deferred FKs; module resident references
-are `*_resident_urn` FKs into it; spec: `.claude/specs/urn-registry/`).
+are `*_resident_urn` FKs into it; spec: `.claude/specs/urn-registry/`). `fnb-game` is the
+event-sourced game platform (`game.game_type` registry, N-seat `game_player` roster,
+replayable `game_event` log + deny-all per-event snapshots; the `game-event` n8n workflow is
+the sole referee — see the security note in `.claude/specs/game-server/`).
 Full RLS/permission model. Infra + deploy config: `.claude/specs/monorepo-bootstrap-pattern.md`.
 
 ## Data stack

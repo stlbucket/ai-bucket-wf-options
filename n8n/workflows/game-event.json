@@ -1,0 +1,328 @@
+{
+  "id": "FnbGameEvent0001",
+  "name": "game-event",
+  "active": true,
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "game-event",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnbwebhooksecr01",
+          "name": "fnb-webhook-secret"
+        }
+      },
+      "id": "7f1f2a30-9f37-4f9e-8c69-2f6a3f1c9a01",
+      "webhookId": "b3f0a1c2-4d5e-4f60-9a7b-8c9d0e1f2a30"
+    },
+    {
+      "name": "Begin Run",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        420,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select n8n_fn.begin_run('game-event'::citext, $1, $2::jsonb, nullif($3, '')::uuid) as run_id",
+        "options": {
+          "queryReplacement": "={{ [ $execution.id, JSON.stringify($('Webhook').item.json.body ?? {}), $('Webhook').item.json.body?.tenantId ?? '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "0d3f9a12-6b7c-4d8e-9f01-2a3b4c5d6e02"
+    },
+    {
+      "name": "Engine Context",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        640,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select game_fn.engine_context(nullif($1, '')::uuid) as engine_context",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body?.gameId ?? '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "1e4a0b23-7c8d-4e9f-a012-3b4c5d6e7f03"
+    },
+    {
+      "name": "referee",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        860,
+        300
+      ],
+      "parameters": {
+        "jsCode": "\"use strict\";\n(() => {\n  // src/battleship/engine.ts\n  var STANDARD_FLEET = [\n    { name: \"Carrier\", size: 5 },\n    { name: \"Battleship\", size: 4 },\n    { name: \"Cruiser\", size: 3 },\n    { name: \"Submarine\", size: 3 },\n    { name: \"Destroyer\", size: 2 }\n  ];\n  function cellKey(row, col) {\n    return `${row},${col}`;\n  }\n  function isSunk(ship) {\n    return ship.cells.every((c) => ship.hits.has(c));\n  }\n  function createInitialGameState(boardSize = 10, fleet = STANDARD_FLEET, rand = Math.random) {\n    const occupied = /* @__PURE__ */ new Set();\n    const ships = [];\n    for (const ship of fleet) {\n      let placed = false;\n      for (let attempt = 0; attempt < 1e3 && !placed; attempt++) {\n        const horizontal = rand() < 0.5;\n        const maxRow = horizontal ? boardSize : boardSize - ship.size;\n        const maxCol = horizontal ? boardSize - ship.size : boardSize;\n        const row = Math.floor(rand() * maxRow);\n        const col = Math.floor(rand() * maxCol);\n        const cells = [];\n        for (let i = 0; i < ship.size; i++) {\n          cells.push(horizontal ? cellKey(row, col + i) : cellKey(row + i, col));\n        }\n        if (cells.some((c) => occupied.has(c))) continue;\n        cells.forEach((c) => occupied.add(c));\n        ships.push({ name: ship.name, size: ship.size, cells, hits: /* @__PURE__ */ new Set() });\n        placed = true;\n      }\n      if (!placed) {\n        throw new Error(`Could not place ship ${ship.name} (size ${ship.size}) on a ${boardSize}\\xD7${boardSize} board`);\n      }\n    }\n    return { boardSize, ships, shots: /* @__PURE__ */ new Set(), status: \"in_progress\" };\n  }\n  function applyMove(state, move) {\n    const { row, col } = move;\n    if (!Number.isInteger(row) || !Number.isInteger(col) || row < 0 || col < 0 || row >= state.boardSize || col >= state.boardSize) {\n      throw new RangeError(\"OUT_OF_BOUNDS\");\n    }\n    const key = cellKey(row, col);\n    if (state.shots.has(key)) {\n      throw new Error(\"ALREADY_FIRED\");\n    }\n    const shots = new Set(state.shots);\n    shots.add(key);\n    let outcome = \"miss\";\n    let sunkShip = null;\n    const ships = state.ships.map((ship) => {\n      if (!ship.cells.includes(key)) return ship;\n      const hits = new Set(ship.hits);\n      hits.add(key);\n      const next = { ...ship, hits };\n      if (isSunk(next)) {\n        outcome = \"sunk\";\n        sunkShip = { name: ship.name, size: ship.size };\n      } else {\n        outcome = \"hit\";\n      }\n      return next;\n    });\n    const status = ships.every(isSunk) ? \"won\" : \"in_progress\";\n    return { state: { boardSize: state.boardSize, ships, shots, status }, outcome, sunkShip };\n  }\n\n  // src/battleship/serialize.ts\n  function dehydrate(state) {\n    return {\n      boardSize: state.boardSize,\n      ships: state.ships.map((s) => ({ name: s.name, size: s.size, cells: [...s.cells], hits: [...s.hits].sort() })),\n      shots: [...state.shots].sort(),\n      status: state.status\n    };\n  }\n  function hydrate(s) {\n    const ships = s.ships.map((sh) => ({\n      name: sh.name,\n      size: sh.size,\n      cells: [...sh.cells],\n      hits: new Set(sh.hits)\n    }));\n    return { boardSize: s.boardSize, ships, shots: new Set(s.shots), status: s.status };\n  }\n\n  // src/battleship/views.ts\n  function computeSeatView(seat, own, opponent) {\n    const size = own.boardSize;\n    const ownBoard = [];\n    const ownShipCells = /* @__PURE__ */ new Map();\n    for (const ship of own.ships) {\n      const sunk = isSunk(ship);\n      for (const c of ship.cells) ownShipCells.set(c, { sunk });\n    }\n    for (let row = 0; row < size; row++) {\n      const line = [];\n      for (let col = 0; col < size; col++) {\n        const key = cellKey(row, col);\n        const ship = ownShipCells.get(key);\n        const shot = own.shots.has(key);\n        if (ship && shot) line.push(ship.sunk ? \"sunk\" : \"hit\");\n        else if (ship) line.push(\"ship\");\n        else if (shot) line.push(\"miss\");\n        else line.push(\"empty\");\n      }\n      ownBoard.push(line);\n    }\n    const oppBoard = [];\n    const oppShipCells = /* @__PURE__ */ new Map();\n    for (const ship of opponent.ships) {\n      const sunk = isSunk(ship);\n      for (const c of ship.cells) oppShipCells.set(c, { sunk });\n    }\n    for (let row = 0; row < size; row++) {\n      const line = [];\n      for (let col = 0; col < size; col++) {\n        const key = cellKey(row, col);\n        if (!opponent.shots.has(key)) {\n          line.push(\"unknown\");\n          continue;\n        }\n        const ship = oppShipCells.get(key);\n        if (!ship) line.push(\"miss\");\n        else line.push(ship.sunk ? \"sunk\" : \"hit\");\n      }\n      oppBoard.push(line);\n    }\n    return {\n      seat,\n      boardSize: size,\n      you: {\n        board: ownBoard,\n        fleet: own.ships.map((s) => ({\n          name: s.name,\n          size: s.size,\n          hitCount: s.hits.size,\n          sunk: isSunk(s)\n        }))\n      },\n      opponent: {\n        board: oppBoard,\n        sunkShips: opponent.ships.filter(isSunk).map((s) => ({ name: s.name, size: s.size }))\n      }\n    };\n  }\n  function computeViews(seats) {\n    const seatNumbers = Object.keys(seats).map(Number).sort((a2, b2) => a2 - b2);\n    if (seatNumbers.length !== 2) {\n      throw new Error(`battleship expects exactly 2 seats, got ${seatNumbers.length}`);\n    }\n    const [a, b] = seatNumbers;\n    return {\n      [String(a)]: computeSeatView(a, seats[String(a)], seats[String(b)]),\n      [String(b)]: computeSeatView(b, seats[String(b)], seats[String(a)])\n    };\n  }\n\n  // src/battleship/select-move.ts\n  function selectMachineMove(view, rand = Math.random) {\n    const size = view.boardSize;\n    const board = view.opponent.board;\n    const unknown = [];\n    const targets = [];\n    const inBounds = (r, c) => r >= 0 && r < size && c >= 0 && c < size;\n    for (let row = 0; row < size; row++) {\n      for (let col = 0; col < size; col++) {\n        if (board[row][col] === \"unknown\") unknown.push({ row, col });\n        if (board[row][col] === \"hit\") {\n          for (const [dr, dc] of [\n            [-1, 0],\n            [1, 0],\n            [0, -1],\n            [0, 1]\n          ]) {\n            const r = row + dr;\n            const c = col + dc;\n            if (inBounds(r, c) && board[r][c] === \"unknown\") targets.push({ row: r, col: c });\n          }\n        }\n      }\n    }\n    const pick = (cells) => cells[Math.floor(rand() * cells.length)];\n    if (targets.length) return pick(targets);\n    if (!unknown.length) throw new Error(\"No legal moves remain\");\n    const parity = unknown.filter(({ row, col }) => (row + col) % 2 === 0);\n    return pick(parity.length ? parity : unknown);\n  }\n\n  // src/battleship/referee.ts\n  function noop(ctx) {\n    return {\n      actions: [],\n      expectingSeats: ctx.game.expectingSeats,\n      gameStatus: ctx.game.status,\n      expectedEventCount: ctx.game.eventCount,\n      needsAgentMove: false\n    };\n  }\n  function dehydrateBlob(w) {\n    const seats = {};\n    for (const [k, s] of Object.entries(w.seats)) seats[k] = dehydrate(s);\n    return { gameType: \"battleship\", boardSize: w.boardSize, seats };\n  }\n  function activeSeats(players) {\n    return players.filter((p) => !p.resigned).map((p) => p.seat).sort((a, b) => a - b);\n  }\n  function nextSeatAfter(players, seat) {\n    const active = activeSeats(players);\n    const later = active.filter((s) => s > seat);\n    return later.length ? later[0] : active[0];\n  }\n  function opponentOf(w, seat) {\n    const other = Object.keys(w.seats).map(Number).filter((s) => s !== seat);\n    return other[0];\n  }\n  function applySeatMove(w, seat, cell) {\n    const opp = opponentOf(w, seat);\n    const applied = applyMove(w.seats[String(opp)], cell);\n    w.seats[String(opp)] = applied.state;\n    w.views = computeViews(w.seats);\n    if (applied.state.status === \"won\") {\n      w.status = \"complete\";\n      w.outcomes = { [String(seat)]: \"won\", [String(opp)]: \"lost\" };\n      w.expecting = [];\n    } else {\n      w.expecting = [nextSeatAfter(w.players, seat)];\n    }\n  }\n  function legalMoves(view) {\n    const out = [];\n    for (let row = 0; row < view.boardSize; row++) {\n      for (let col = 0; col < view.boardSize; col++) {\n        if (view.opponent.board[row][col] === \"unknown\") out.push({ row, col });\n      }\n    }\n    return out;\n  }\n  function kindOf(players, seat) {\n    return players.find((p) => p.seat === seat)?.kind ?? \"human\";\n  }\n  function runMachineLoop(w, actions, rand) {\n    while (w.status === \"in_progress\" && w.expecting.length === 1) {\n      const seat = w.expecting[0];\n      const kind = kindOf(w.players, seat);\n      if (kind === \"human\") break;\n      if (kind === \"machine_agent\") {\n        const view = w.views[String(seat)];\n        return { needsAgentMove: true, agentContext: { seat, view, legalMoves: legalMoves(view) } };\n      }\n      const cell = selectMachineMove(w.views[String(seat)], rand);\n      applySeatMove(w, seat, cell);\n      actions.push({\n        kind: \"machine\",\n        seat,\n        eventType: \"move\",\n        eventData: cell,\n        stateAfter: dehydrateBlob(w),\n        viewsAfter: w.views\n      });\n    }\n    return { needsAgentMove: false };\n  }\n  function workingFromContext(ctx) {\n    const blob = ctx.gameState;\n    if (!blob || !blob.seats) return null;\n    const seats = {};\n    for (const [k, s] of Object.entries(blob.seats)) seats[k] = hydrate(s);\n    const w = {\n      boardSize: blob.boardSize,\n      seats,\n      views: computeViews(seats),\n      players: ctx.players.map((p) => ({ ...p })),\n      expecting: [...ctx.game.expectingSeats],\n      status: ctx.game.status\n    };\n    return w;\n  }\n  function result(w, actions, agent, expectedEventCount) {\n    return {\n      actions,\n      expectingSeats: w.expecting,\n      gameStatus: w.status,\n      expectedEventCount,\n      ...w.outcomes ? { outcomes: w.outcomes } : {},\n      ...agent\n    };\n  }\n  function refereeBattleship(ctx, op, rand = Math.random) {\n    if (op === \"setup\") {\n      if (ctx.game.status !== \"lobby\") return noop(ctx);\n      const seatsOk = ctx.players.length === 2 && [1, 2].every((s) => ctx.players.some((p) => p.seat === s)) && ctx.players.every((p) => ctx.gameType.supportedPlayerKinds.includes(p.kind));\n      if (!seatsOk) {\n        return {\n          actions: [],\n          expectingSeats: [],\n          gameStatus: \"abandoned\",\n          abortReason: \"illegal_roster\",\n          expectedEventCount: ctx.game.eventCount,\n          needsAgentMove: false\n        };\n      }\n      const boardSize = Number(ctx.gameType.defaultConfig?.[\"boardSize\"] ?? 10);\n      const seats = {\n        \"1\": createInitialGameState(boardSize, void 0, rand),\n        \"2\": createInitialGameState(boardSize, void 0, rand)\n      };\n      const w2 = {\n        boardSize,\n        seats,\n        views: computeViews(seats),\n        players: ctx.players.map((p) => ({ ...p })),\n        expecting: [1],\n        status: \"in_progress\"\n      };\n      const blob = dehydrateBlob(w2);\n      const actions2 = [\n        // eventData is a non-secret marker only — game.game_event is tenant-readable once\n        // applied, so the full state (ship positions!) must NEVER land there. The real\n        // replay/authoritative record is stateAfter/viewsAfter, written to the deny-all\n        // game.game_event_state table (caught live in verification: a cross-seat RLS check\n        // showed the full blob leaking via event_data before this fix).\n        { kind: \"system\", eventType: \"setup\", eventData: { gameType: blob.gameType, boardSize: blob.boardSize }, stateAfter: blob, viewsAfter: w2.views }\n      ];\n      const agent2 = runMachineLoop(w2, actions2, rand);\n      return result(w2, actions2, agent2, ctx.game.eventCount);\n    }\n    if (ctx.game.status !== \"in_progress\" || ctx.pendingEvents.length === 0) return noop(ctx);\n    const w = workingFromContext(ctx);\n    if (!w) return noop(ctx);\n    const actions = [];\n    for (const ev of ctx.pendingEvents) {\n      if (w.status !== \"in_progress\") {\n        actions.push({ kind: \"reject\", eventId: ev.id, rejectionReason: \"game_not_in_progress\" });\n        continue;\n      }\n      if (ev.eventType === \"resign\") {\n        const player = w.players.find((p) => p.seat === ev.seat);\n        if (!player || player.resigned) {\n          actions.push({ kind: \"reject\", eventId: ev.id, rejectionReason: \"not_active_seat\" });\n          continue;\n        }\n        player.resigned = true;\n        const active = activeSeats(w.players);\n        if (active.length === 1) {\n          w.status = \"complete\";\n          w.outcomes = { [String(ev.seat)]: \"lost\", [String(active[0])]: \"won\" };\n          w.expecting = [];\n        } else if (w.expecting.includes(ev.seat)) {\n          w.expecting = [nextSeatAfter(w.players, ev.seat)];\n        }\n        actions.push({ kind: \"apply\", eventId: ev.id, stateAfter: dehydrateBlob(w), viewsAfter: w.views });\n        continue;\n      }\n      if (ev.seat == null || !w.expecting.includes(ev.seat)) {\n        actions.push({ kind: \"reject\", eventId: ev.id, rejectionReason: \"not_expected\" });\n        continue;\n      }\n      const data = ev.eventData;\n      const cell = { row: Number(data?.row), col: Number(data?.col) };\n      try {\n        applySeatMove(w, ev.seat, cell);\n      } catch (e) {\n        const reason = e instanceof RangeError ? \"out_of_bounds\" : e.message === \"ALREADY_FIRED\" ? \"already_fired\" : \"illegal_move\";\n        actions.push({ kind: \"reject\", eventId: ev.id, rejectionReason: reason });\n        continue;\n      }\n      actions.push({ kind: \"apply\", eventId: ev.id, stateAfter: dehydrateBlob(w), viewsAfter: w.views });\n    }\n    const agent = runMachineLoop(w, actions, rand);\n    return result(w, actions, agent, ctx.game.eventCount);\n  }\n  function completeBattleshipAgentMove(ctx, referee, agentText, rand = Math.random) {\n    if (!referee.needsAgentMove || !referee.agentContext) return referee;\n    const seat = referee.agentContext.seat;\n    const lastState = [...referee.actions].reverse().find((a) => \"stateAfter\" in a);\n    const blob = lastState?.stateAfter ?? ctx.gameState;\n    const seats = {};\n    for (const [k, s] of Object.entries(blob.seats)) seats[k] = hydrate(s);\n    const w = {\n      boardSize: blob.boardSize,\n      seats,\n      views: computeViews(seats),\n      players: ctx.players.map((p) => ({ ...p })),\n      expecting: [seat],\n      status: \"in_progress\"\n    };\n    const view = w.views[String(seat)];\n    let cell = null;\n    const match = /\\{[^{}]*\\}/.exec(agentText ?? \"\");\n    if (match) {\n      try {\n        const parsed = JSON.parse(match[0]);\n        const row = Number(parsed.row);\n        const col = Number(parsed.col);\n        if (Number.isInteger(row) && Number.isInteger(col) && row >= 0 && col >= 0 && row < view.boardSize && col < view.boardSize && view.opponent.board[row][col] === \"unknown\") {\n          cell = { row, col };\n        }\n      } catch {\n        cell = null;\n      }\n    }\n    let agentFallback = false;\n    if (!cell) {\n      cell = selectMachineMove(view, rand);\n      agentFallback = true;\n    }\n    applySeatMove(w, seat, cell);\n    const actions = [\n      ...referee.actions,\n      { kind: \"machine\", seat, eventType: \"move\", eventData: cell, stateAfter: dehydrateBlob(w), viewsAfter: w.views }\n    ];\n    const agent = runMachineLoop(w, actions, rand);\n    return {\n      ...result(w, actions, { needsAgentMove: false }, referee.expectedEventCount),\n      agentFallback,\n      ...agent.needsAgentMove ? { needsAgentMove: false } : {}\n    };\n  }\n\n  // src/referee.ts\n  function runReferee(ctx, op, rand = Math.random) {\n    switch (ctx.gameType.id) {\n      case \"battleship\":\n        return refereeBattleship(ctx, op, rand);\n      default:\n        throw new Error(`No engine implemented for game type '${ctx.gameType.id}'`);\n    }\n  }\n  function completeAgentMove(ctx, referee, agentText, rand = Math.random) {\n    switch (ctx.gameType.id) {\n      case \"battleship\":\n        return completeBattleshipAgentMove(ctx, referee, agentText, rand);\n      default:\n        throw new Error(`No engine implemented for game type '${ctx.gameType.id}'`);\n    }\n  }\n\n  // src/n8n-embed.ts\n  globalThis.GameEngines = { runReferee, completeAgentMove };\n})();\n\n\nconst item = $input.first().json;\nconst ctx = item.engine_context ?? item.engineContext ?? item;\nconst op = $('Webhook').first().json.body?.op ?? 'event';\nconst result = globalThis.GameEngines.runReferee(ctx, op);\nreturn [{ json: { context: ctx, result } }];\n"
+      },
+      "id": "2f5b1c34-8d9e-4fa0-b123-4c5d6e7f8a04"
+    },
+    {
+      "name": "If Agent",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1080,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.result.needsAgentMove }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3a6c2d45-9eaf-4ab1-c234-5d6e7f8a9b05"
+    },
+    {
+      "name": "anthropic-move",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1300,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 100, system: \"You are playing Battleship. You will be given your view of the opponent board as JSON: a grid of 'unknown' | 'hit' | 'miss' | 'sunk' cells (your shots so far) plus the list of opponent ships already sunk and the legal moves. Choose the best next shot. Respond with ONLY a JSON object {\\\"row\\\": <0-9>, \\\"col\\\": <0-9>} targeting an 'unknown' cell. No prose.\", messages: [{ role: 'user', content: JSON.stringify($json.result.agentContext) }] }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnbanthropickey1",
+          "name": "anthropic-api-key"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "id": "4b7d3e56-afb0-4bc2-d345-6e7f8a9bac06"
+    },
+    {
+      "name": "parse-agent-move",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        180
+      ],
+      "parameters": {
+        "jsCode": "\"use strict\";\n(() => {\n  // src/battleship/engine.ts\n  var STANDARD_FLEET = [\n    { name: \"Carrier\", size: 5 },\n    { name: \"Battleship\", size: 4 },\n    { name: \"Cruiser\", size: 3 },\n    { name: \"Submarine\", size: 3 },\n    { name: \"Destroyer\", size: 2 }\n  ];\n  function cellKey(row, col) {\n    return `${row},${col}`;\n  }\n  function isSunk(ship) {\n    return ship.cells.every((c) => ship.hits.has(c));\n  }\n  function createInitialGameState(boardSize = 10, fleet = STANDARD_FLEET, rand = Math.random) {\n    const occupied = /* @__PURE__ */ new Set();\n    const ships = [];\n    for (const ship of fleet) {\n      let placed = false;\n      for (let attempt = 0; attempt < 1e3 && !placed; attempt++) {\n        const horizontal = rand() < 0.5;\n        const maxRow = horizontal ? boardSize : boardSize - ship.size;\n        const maxCol = horizontal ? boardSize - ship.size : boardSize;\n        const row = Math.floor(rand() * maxRow);\n        const col = Math.floor(rand() * maxCol);\n        const cells = [];\n        for (let i = 0; i < ship.size; i++) {\n          cells.push(horizontal ? cellKey(row, col + i) : cellKey(row + i, col));\n        }\n        if (cells.some((c) => occupied.has(c))) continue;\n        cells.forEach((c) => occupied.add(c));\n        ships.push({ name: ship.name, size: ship.size, cells, hits: /* @__PURE__ */ new Set() });\n        placed = true;\n      }\n      if (!placed) {\n        throw new Error(`Could not place ship ${ship.name} (size ${ship.size}) on a ${boardSize}\\xD7${boardSize} board`);\n      }\n    }\n    return { boardSize, ships, shots: /* @__PURE__ */ new Set(), status: \"in_progress\" };\n  }\n  function applyMove(state, move) {\n    const { row, col } = move;\n    if (!Number.isInteger(row) || !Number.isInteger(col) || row < 0 || col < 0 || row >= state.boardSize || col >= state.boardSize) {\n      throw new RangeError(\"OUT_OF_BOUNDS\");\n    }\n    const key = cellKey(row, col);\n    if (state.shots.has(key)) {\n      throw new Error(\"ALREADY_FIRED\");\n    }\n    const shots = new Set(state.shots);\n    shots.add(key);\n    let outcome = \"miss\";\n    let sunkShip = null;\n    const ships = state.ships.map((ship) => {\n      if (!ship.cells.includes(key)) return ship;\n      const hits = new Set(ship.hits);\n      hits.add(key);\n      const next = { ...ship, hits };\n      if (isSunk(next)) {\n        outcome = \"sunk\";\n        sunkShip = { name: ship.name, size: ship.size };\n      } else {\n        outcome = \"hit\";\n      }\n      return next;\n    });\n    const status = ships.every(isSunk) ? \"won\" : \"in_progress\";\n    return { state: { boardSize: state.boardSize, ships, shots, status }, outcome, sunkShip };\n  }\n\n  // src/battleship/serialize.ts\n  function dehydrate(state) {\n    return {\n      boardSize: state.boardSize,\n      ships: state.ships.map((s) => ({ name: s.name, size: s.size, cells: [...s.cells], hits: [...s.hits].sort() })),\n      shots: [...state.shots].sort(),\n      status: state.status\n    };\n  }\n  function hydrate(s) {\n    const ships = s.ships.map((sh) => ({\n      name: sh.name,\n      size: sh.size,\n      cells: [...sh.cells],\n      hits: new Set(sh.hits)\n    }));\n    return { boardSize: s.boardSize, ships, shots: new Set(s.shots), status: s.status };\n  }\n\n  // src/battleship/views.ts\n  function computeSeatView(seat, own, opponent) {\n    const size = own.boardSize;\n    const ownBoard = [];\n    const ownShipCells = /* @__PURE__ */ new Map();\n    for (const ship of own.ships) {\n      const sunk = isSunk(ship);\n      for (const c of ship.cells) ownShipCells.set(c, { sunk });\n    }\n    for (let row = 0; row < size; row++) {\n      const line = [];\n      for (let col = 0; col < size; col++) {\n        const key = cellKey(row, col);\n        const ship = ownShipCells.get(key);\n        const shot = own.shots.has(key);\n        if (ship && shot) line.push(ship.sunk ? \"sunk\" : \"hit\");\n        else if (ship) line.push(\"ship\");\n        else if (shot) line.push(\"miss\");\n        else line.push(\"empty\");\n      }\n      ownBoard.push(line);\n    }\n    const oppBoard = [];\n    const oppShipCells = /* @__PURE__ */ new Map();\n    for (const ship of opponent.ships) {\n      const sunk = isSunk(ship);\n      for (const c of ship.cells) oppShipCells.set(c, { sunk });\n    }\n    for (let row = 0; row < size; row++) {\n      const line = [];\n      for (let col = 0; col < size; col++) {\n        const key = cellKey(row, col);\n        if (!opponent.shots.has(key)) {\n          line.push(\"unknown\");\n          continue;\n        }\n        const ship = oppShipCells.get(key);\n        if (!ship) line.push(\"miss\");\n        else line.push(ship.sunk ? \"sunk\" : \"hit\");\n      }\n      oppBoard.push(line);\n    }\n    return {\n      seat,\n      boardSize: size,\n      you: {\n        board: ownBoard,\n        fleet: own.ships.map((s) => ({\n          name: s.name,\n          size: s.size,\n          hitCount: s.hits.size,\n          sunk: isSunk(s)\n        }))\n      },\n      opponent: {\n        board: oppBoard,\n        sunkShips: opponent.ships.filter(isSunk).map((s) => ({ name: s.name, size: s.size }))\n      }\n    };\n  }\n  function computeViews(seats) {\n    const seatNumbers = Object.keys(seats).map(Number).sort((a2, b2) => a2 - b2);\n    if (seatNumbers.length !== 2) {\n      throw new Error(`battleship expects exactly 2 seats, got ${seatNumbers.length}`);\n    }\n    const [a, b] = seatNumbers;\n    return {\n      [String(a)]: computeSeatView(a, seats[String(a)], seats[String(b)]),\n      [String(b)]: computeSeatView(b, seats[String(b)], seats[String(a)])\n    };\n  }\n\n  // src/battleship/select-move.ts\n  function selectMachineMove(view, rand = Math.random) {\n    const size = view.boardSize;\n    const board = view.opponent.board;\n    const unknown = [];\n    const targets = [];\n    const inBounds = (r, c) => r >= 0 && r < size && c >= 0 && c < size;\n    for (let row = 0; row < size; row++) {\n      for (let col = 0; col < size; col++) {\n        if (board[row][col] === \"unknown\") unknown.push({ row, col });\n        if (board[row][col] === \"hit\") {\n          for (const [dr, dc] of [\n            [-1, 0],\n            [1, 0],\n            [0, -1],\n            [0, 1]\n          ]) {\n            const r = row + dr;\n            const c = col + dc;\n            if (inBounds(r, c) && board[r][c] === \"unknown\") targets.push({ row: r, col: c });\n          }\n        }\n      }\n    }\n    const pick = (cells) => cells[Math.floor(rand() * cells.length)];\n    if (targets.length) return pick(targets);\n    if (!unknown.length) throw new Error(\"No legal moves remain\");\n    const parity = unknown.filter(({ row, col }) => (row + col) % 2 === 0);\n    return pick(parity.length ? parity : unknown);\n  }\n\n  // src/battleship/referee.ts\n  function noop(ctx) {\n    return {\n      actions: [],\n      expectingSeats: ctx.game.expectingSeats,\n      gameStatus: ctx.game.status,\n      expectedEventCount: ctx.game.eventCount,\n      needsAgentMove: false\n    };\n  }\n  function dehydrateBlob(w) {\n    const seats = {};\n    for (const [k, s] of Object.entries(w.seats)) seats[k] = dehydrate(s);\n    return { gameType: \"battleship\", boardSize: w.boardSize, seats };\n  }\n  function activeSeats(players) {\n    return players.filter((p) => !p.resigned).map((p) => p.seat).sort((a, b) => a - b);\n  }\n  function nextSeatAfter(players, seat) {\n    const active = activeSeats(players);\n    const later = active.filter((s) => s > seat);\n    return later.length ? later[0] : active[0];\n  }\n  function opponentOf(w, seat) {\n    const other = Object.keys(w.seats).map(Number).filter((s) => s !== seat);\n    return other[0];\n  }\n  function applySeatMove(w, seat, cell) {\n    const opp = opponentOf(w, seat);\n    const applied = applyMove(w.seats[String(opp)], cell);\n    w.seats[String(opp)] = applied.state;\n    w.views = computeViews(w.seats);\n    if (applied.state.status === \"won\") {\n      w.status = \"complete\";\n      w.outcomes = { [String(seat)]: \"won\", [String(opp)]: \"lost\" };\n      w.expecting = [];\n    } else {\n      w.expecting = [nextSeatAfter(w.players, seat)];\n    }\n  }\n  function legalMoves(view) {\n    const out = [];\n    for (let row = 0; row < view.boardSize; row++) {\n      for (let col = 0; col < view.boardSize; col++) {\n        if (view.opponent.board[row][col] === \"unknown\") out.push({ row, col });\n      }\n    }\n    return out;\n  }\n  function kindOf(players, seat) {\n    return players.find((p) => p.seat === seat)?.kind ?? \"human\";\n  }\n  function runMachineLoop(w, actions, rand) {\n    while (w.status === \"in_progress\" && w.expecting.length === 1) {\n      const seat = w.expecting[0];\n      const kind = kindOf(w.players, seat);\n      if (kind === \"human\") break;\n      if (kind === \"machine_agent\") {\n        const view = w.views[String(seat)];\n        return { needsAgentMove: true, agentContext: { seat, view, legalMoves: legalMoves(view) } };\n      }\n      const cell = selectMachineMove(w.views[String(seat)], rand);\n      applySeatMove(w, seat, cell);\n      actions.push({\n        kind: \"machine\",\n        seat,\n        eventType: \"move\",\n        eventData: cell,\n        stateAfter: dehydrateBlob(w),\n        viewsAfter: w.views\n      });\n    }\n    return { needsAgentMove: false };\n  }\n  function workingFromContext(ctx) {\n    const blob = ctx.gameState;\n    if (!blob || !blob.seats) return null;\n    const seats = {};\n    for (const [k, s] of Object.entries(blob.seats)) seats[k] = hydrate(s);\n    const w = {\n      boardSize: blob.boardSize,\n      seats,\n      views: computeViews(seats),\n      players: ctx.players.map((p) => ({ ...p })),\n      expecting: [...ctx.game.expectingSeats],\n      status: ctx.game.status\n    };\n    return w;\n  }\n  function result(w, actions, agent, expectedEventCount) {\n    return {\n      actions,\n      expectingSeats: w.expecting,\n      gameStatus: w.status,\n      expectedEventCount,\n      ...w.outcomes ? { outcomes: w.outcomes } : {},\n      ...agent\n    };\n  }\n  function refereeBattleship(ctx, op, rand = Math.random) {\n    if (op === \"setup\") {\n      if (ctx.game.status !== \"lobby\") return noop(ctx);\n      const seatsOk = ctx.players.length === 2 && [1, 2].every((s) => ctx.players.some((p) => p.seat === s)) && ctx.players.every((p) => ctx.gameType.supportedPlayerKinds.includes(p.kind));\n      if (!seatsOk) {\n        return {\n          actions: [],\n          expectingSeats: [],\n          gameStatus: \"abandoned\",\n          abortReason: \"illegal_roster\",\n          expectedEventCount: ctx.game.eventCount,\n          needsAgentMove: false\n        };\n      }\n      const boardSize = Number(ctx.gameType.defaultConfig?.[\"boardSize\"] ?? 10);\n      const seats = {\n        \"1\": createInitialGameState(boardSize, void 0, rand),\n        \"2\": createInitialGameState(boardSize, void 0, rand)\n      };\n      const w2 = {\n        boardSize,\n        seats,\n        views: computeViews(seats),\n        players: ctx.players.map((p) => ({ ...p })),\n        expecting: [1],\n        status: \"in_progress\"\n      };\n      const blob = dehydrateBlob(w2);\n      const actions2 = [\n        // eventData is a non-secret marker only — game.game_event is tenant-readable once\n        // applied, so the full state (ship positions!) must NEVER land there. The real\n        // replay/authoritative record is stateAfter/viewsAfter, written to the deny-all\n        // game.game_event_state table (caught live in verification: a cross-seat RLS check\n        // showed the full blob leaking via event_data before this fix).\n        { kind: \"system\", eventType: \"setup\", eventData: { gameType: blob.gameType, boardSize: blob.boardSize }, stateAfter: blob, viewsAfter: w2.views }\n      ];\n      const agent2 = runMachineLoop(w2, actions2, rand);\n      return result(w2, actions2, agent2, ctx.game.eventCount);\n    }\n    if (ctx.game.status !== \"in_progress\" || ctx.pendingEvents.length === 0) return noop(ctx);\n    const w = workingFromContext(ctx);\n    if (!w) return noop(ctx);\n    const actions = [];\n    for (const ev of ctx.pendingEvents) {\n      if (w.status !== \"in_progress\") {\n        actions.push({ kind: \"reject\", eventId: ev.id, rejectionReason: \"game_not_in_progress\" });\n        continue;\n      }\n      if (ev.eventType === \"resign\") {\n        const player = w.players.find((p) => p.seat === ev.seat);\n        if (!player || player.resigned) {\n          actions.push({ kind: \"reject\", eventId: ev.id, rejectionReason: \"not_active_seat\" });\n          continue;\n        }\n        player.resigned = true;\n        const active = activeSeats(w.players);\n        if (active.length === 1) {\n          w.status = \"complete\";\n          w.outcomes = { [String(ev.seat)]: \"lost\", [String(active[0])]: \"won\" };\n          w.expecting = [];\n        } else if (w.expecting.includes(ev.seat)) {\n          w.expecting = [nextSeatAfter(w.players, ev.seat)];\n        }\n        actions.push({ kind: \"apply\", eventId: ev.id, stateAfter: dehydrateBlob(w), viewsAfter: w.views });\n        continue;\n      }\n      if (ev.seat == null || !w.expecting.includes(ev.seat)) {\n        actions.push({ kind: \"reject\", eventId: ev.id, rejectionReason: \"not_expected\" });\n        continue;\n      }\n      const data = ev.eventData;\n      const cell = { row: Number(data?.row), col: Number(data?.col) };\n      try {\n        applySeatMove(w, ev.seat, cell);\n      } catch (e) {\n        const reason = e instanceof RangeError ? \"out_of_bounds\" : e.message === \"ALREADY_FIRED\" ? \"already_fired\" : \"illegal_move\";\n        actions.push({ kind: \"reject\", eventId: ev.id, rejectionReason: reason });\n        continue;\n      }\n      actions.push({ kind: \"apply\", eventId: ev.id, stateAfter: dehydrateBlob(w), viewsAfter: w.views });\n    }\n    const agent = runMachineLoop(w, actions, rand);\n    return result(w, actions, agent, ctx.game.eventCount);\n  }\n  function completeBattleshipAgentMove(ctx, referee, agentText, rand = Math.random) {\n    if (!referee.needsAgentMove || !referee.agentContext) return referee;\n    const seat = referee.agentContext.seat;\n    const lastState = [...referee.actions].reverse().find((a) => \"stateAfter\" in a);\n    const blob = lastState?.stateAfter ?? ctx.gameState;\n    const seats = {};\n    for (const [k, s] of Object.entries(blob.seats)) seats[k] = hydrate(s);\n    const w = {\n      boardSize: blob.boardSize,\n      seats,\n      views: computeViews(seats),\n      players: ctx.players.map((p) => ({ ...p })),\n      expecting: [seat],\n      status: \"in_progress\"\n    };\n    const view = w.views[String(seat)];\n    let cell = null;\n    const match = /\\{[^{}]*\\}/.exec(agentText ?? \"\");\n    if (match) {\n      try {\n        const parsed = JSON.parse(match[0]);\n        const row = Number(parsed.row);\n        const col = Number(parsed.col);\n        if (Number.isInteger(row) && Number.isInteger(col) && row >= 0 && col >= 0 && row < view.boardSize && col < view.boardSize && view.opponent.board[row][col] === \"unknown\") {\n          cell = { row, col };\n        }\n      } catch {\n        cell = null;\n      }\n    }\n    let agentFallback = false;\n    if (!cell) {\n      cell = selectMachineMove(view, rand);\n      agentFallback = true;\n    }\n    applySeatMove(w, seat, cell);\n    const actions = [\n      ...referee.actions,\n      { kind: \"machine\", seat, eventType: \"move\", eventData: cell, stateAfter: dehydrateBlob(w), viewsAfter: w.views }\n    ];\n    const agent = runMachineLoop(w, actions, rand);\n    return {\n      ...result(w, actions, { needsAgentMove: false }, referee.expectedEventCount),\n      agentFallback,\n      ...agent.needsAgentMove ? { needsAgentMove: false } : {}\n    };\n  }\n\n  // src/referee.ts\n  function runReferee(ctx, op, rand = Math.random) {\n    switch (ctx.gameType.id) {\n      case \"battleship\":\n        return refereeBattleship(ctx, op, rand);\n      default:\n        throw new Error(`No engine implemented for game type '${ctx.gameType.id}'`);\n    }\n  }\n  function completeAgentMove(ctx, referee, agentText, rand = Math.random) {\n    switch (ctx.gameType.id) {\n      case \"battleship\":\n        return completeBattleshipAgentMove(ctx, referee, agentText, rand);\n      default:\n        throw new Error(`No engine implemented for game type '${ctx.gameType.id}'`);\n    }\n  }\n\n  // src/n8n-embed.ts\n  globalThis.GameEngines = { runReferee, completeAgentMove };\n})();\n\n\nconst item = $input.first().json;\nconst prior = $('referee').first().json;\nconst text = (item.content ?? []).map((c) => c.text ?? '').join('\\n');\nconst result = globalThis.GameEngines.completeAgentMove(prior.context, prior.result, text);\nreturn [{ json: { context: prior.context, result } }];\n"
+      },
+      "id": "5c8e4f67-b0c1-4cd3-e456-7f8a9bacbd07"
+    },
+    {
+      "name": "Record Result",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1740,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select (game_fn.record_referee_result(nullif($1, '')::uuid, $2::jsonb) || jsonb_build_object('agentFallback', coalesce(($2::jsonb)->>'agentFallback', 'false')::boolean)) as recorded",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body?.gameId ?? '', JSON.stringify($json.result) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "6d9f5a78-c1d2-4de4-f567-8a9bacbdce08"
+    },
+    {
+      "name": "Complete Run",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        1960,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select (n8n_fn.complete_run($1::uuid, $2::jsonb)).id as run_id",
+        "options": {
+          "queryReplacement": "={{ [ $('Begin Run').first().json.run_id, JSON.stringify($json.recorded ?? {}) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "7e0a6b89-d2e3-4ef5-a678-9bacbdcedf09"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Begin Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Begin Run": {
+      "main": [
+        [
+          {
+            "node": "Engine Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Engine Context": {
+      "main": [
+        [
+          {
+            "node": "referee",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "referee": {
+      "main": [
+        [
+          {
+            "node": "If Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Agent": {
+      "main": [
+        [
+          {
+            "node": "anthropic-move",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Record Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "anthropic-move": {
+      "main": [
+        [
+          {
+            "node": "parse-agent-move",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parse-agent-move": {
+      "main": [
+        [
+          {
+            "node": "Record Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Result": {
+      "main": [
+        [
+          {
+            "node": "Complete Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "errorWorkflow": "0E8QFQyYGSyHHq0g",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": {}
+}

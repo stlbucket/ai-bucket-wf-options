@@ -11,6 +11,7 @@ volumes:
   node_modules_tenant_app:
   node_modules_home_app:
   node_modules_msg_app:
+  node_modules_game_app:
   node_modules_graphql_api_app:
   node_modules_storage_app:
   node_modules_agent_app:
@@ -84,6 +85,7 @@ services:
       - node_modules_tenant_app:/app/apps/tenant-app/node_modules
       - node_modules_home_app:/app/apps/home-app/node_modules
       - node_modules_msg_app:/app/apps/msg-app/node_modules
+      - node_modules_game_app:/app/apps/game-app/node_modules
       - node_modules_graphql_api_app:/app/apps/graphql-api-app/node_modules
       - node_modules_storage_app:/app/apps/storage-app/node_modules
       - node_modules_agent_app:/app/apps/agent-app/node_modules
@@ -296,6 +298,7 @@ services:
       - tenant-app
       - home-app
       - msg-app
+      - game-app
       - graphql-api-app
       - storage-app
     ports:
@@ -441,6 +444,40 @@ services:
       - node_modules_msg_app:/app/apps/msg-app/node_modules
     working_dir: /app
     command: ["sh", "-c", "pnpm --filter @function-bucket/fnb-msg-app exec nuxt dev --host 0.0.0.0 --port 3000"]
+
+  # The game server's routed WS host (game-server spec): serves /game/_ws/games/[id] only —
+  # the game UI lives in tenant-app (msg topology mirror). DATABASE_URL feeds the layer's
+  # pg-notify bridge.
+  game-app:
+    build:
+      context: .
+      dockerfile: apps/auth-app/Dockerfile
+    networks:
+      - fnb-network
+    depends_on:
+      pnpm-install:
+        condition: service_completed_successfully
+      db-migrate:
+        condition: service_completed_successfully
+      packages-watch:
+        condition: service_healthy
+    environment:
+      NODE_ENV: "${NODE_ENV:?}"
+      NUXT_HOST: "0.0.0.0"
+      NUXT_PORT: "3000"
+      NUXT_APP_BASE_URL: "/game"
+      NUXT_PUBLIC_AUTH_APP_URL: "${NUXT_PUBLIC_AUTH_APP_URL:?}"
+      NUXT_PUBLIC_GRAPHQL_API_URL: "${NUXT_PUBLIC_GRAPHQL_API_URL:?}"
+      NUXT_AUTH_APP_INTERNAL_URL: "${NUXT_AUTH_APP_INTERNAL_URL:?}"
+      NUXT_SESSION_SECRET: "${NUXT_SESSION_SECRET:?}"
+      DATABASE_URL: "${DATABASE_URL:?}"
+      VITE_HMR_CLIENT_PORT: "${VITE_HMR_CLIENT_PORT:?}"
+    volumes:
+      - .:/app
+      - node_modules_root:/app/node_modules
+      - node_modules_game_app:/app/apps/game-app/node_modules
+    working_dir: /app
+    command: ["sh", "-c", "pnpm --filter @function-bucket/fnb-game-app exec nuxt dev --host 0.0.0.0 --port 3000"]
 
   graphql-api-app:
     build:
@@ -643,6 +680,10 @@ services:
       POSTGRES_DB: "${POSTGRES_DB:?}"
       N8N_WORKER_PG_PASSWORD: "${N8N_WORKER_PG_PASSWORD:?}"
       N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"
+      # game-event agent branch (game-server spec §4) — the agentic engine's existing key,
+      # rendered into the anthropic-api-key credential template; the n8n server itself
+      # doesn't need it (credentials are stored encrypted in n8n_engine)
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:?}"
     volumes:
       - ./n8n/workflows:/import/workflows:ro
       - ./n8n/credentials:/import/credentials:ro
@@ -716,6 +757,7 @@ services:
       - tenant-app
       - home-app
       - msg-app
+      - game-app
       - graphql-api-app
       - storage-app
     environment:

@@ -1,0 +1,15 @@
+mutation SubmitEvent($gameId: UUID!, $eventData: JSON!) {
+  submitEvent(input: { _gameId: $gameId, _eventData: $eventData }) {
+    gameEvent {
+      id
+      gameId
+      eventType
+      seat
+      eventNumber
+      eventData
+      status
+      rejectionReason
+      createdAt
+    }
+  }
+}

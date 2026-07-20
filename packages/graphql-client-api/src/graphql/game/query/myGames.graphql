@@ -1,0 +1,23 @@
+# The battleship list page (and any future per-game-type list). Games where the caller
+# holds a seat (game_api.my_games), newest first (fn orders) — includes the seat roster so
+# the page can derive "my seat" / opponent client-side.
+query MyGames($gameTypeId: String) {
+  myGamesList(_gameTypeId: $gameTypeId) {
+    id
+    tenantId
+    gameTypeId
+    status
+    seatCount
+    expectingSeats
+    eventCount
+    createdAt
+    finishedAt
+    gamePlayersList {
+      seat
+      playerKind
+      residentUrn
+      outcome
+      resignedAt
+    }
+  }
+}

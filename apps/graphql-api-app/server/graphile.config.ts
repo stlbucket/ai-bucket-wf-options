@@ -44,6 +44,8 @@ const preset: GraphileConfig.Preset = {
         'location_datasets_api',
         'airports',
         'airports_api',
+        'game',
+        'game_api',
         'res',
         'res_api'
       ]

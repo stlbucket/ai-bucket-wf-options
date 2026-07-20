@@ -25,16 +25,17 @@ packages/game-engines/
 │   ├── battleship/
 │   │   ├── engine.ts             # the user-supplied battleship.ts — VERBATIM (do not edit)
 │   │   ├── serialize.ts          # dehydrate/hydrate: PlacedShip.hits Set<string> ⇄ string[]
-│   │   ├── views.ts              # per-seat redacted view computation (player_views shapes)
-│   │   ├── referee.ts            # two-board wrapper: setup / validate+apply / turn+winner logic
+│   │   ├── views.ts              # per-seat redacted view computation (player_views_after shapes)
+│   │   ├── referee.ts            # two-board wrapper: setup / validate+apply / expectation +
+│   │   │                         #   outcome logic — emits the ordered actions list w/ snapshots
 │   │   └── select-move.ts        # the machine move-selection script (hunt/target — full source
-│   │                             #   in game-move.workflow.data.md §Algorithm)
+│   │                             #   in game-event.workflow.data.md §Algorithm)
 │   ├── referee.ts                # game-type dispatcher: (context, op) → record_referee_result
-│   │                             #   payload (game_type switch; battleship only for now)
+│   │                             #   payload (game_type_id switch; battleship only for now)
 │   └── index.ts
 ├── scripts/embed.ts              # builds a single-file IIFE-ish bundle of referee + selector and
 │                                 #   rewrites the `jsCode` of the named Code nodes in
-│                                 #   n8n/workflows/game-move.json (drift-proof sync)
+│                                 #   n8n/workflows/game-event.json (drift-proof sync)
 └── test/                         # vitest: engine adapters, referee validation/rejection, turn +
                                   #   win detection, redaction (no ships leak into opponent view),
                                   #   selector legality (never repeats a shot, targets hits)
@@ -43,7 +44,7 @@ packages/game-engines/
 - `engine.ts` is the supplied file byte-for-byte; all adaptation lives around it
   (`serialize.ts`, `views.ts`).
 - `scripts/embed.ts` is deliberately dumb: bundle (esbuild via `tsx`/plain `esbuild` —
-  implementor's choice, declared per R24), then JSON-parse `game-move.json`, replace the
+  implementor's choice, declared per R24), then JSON-parse `game-event.json`, replace the
   `jsCode` string of nodes named `referee` and `parse-agent-move`, write back, fail if a node
   is missing. Run via `pnpm --filter @function-bucket/fnb-game-engines embed`; the task list
   requires re-running it whenever `src/` changes (and CI-less parity is asserted by a vitest
@@ -112,7 +113,7 @@ Handler contract (sockets-pattern):
   service environment (the render step reads it). The `n8n` server service does not need it
   (credentials are stored encrypted in `n8n_engine`).
 - The `anthropic-version: 2023-06-01` header is set as a plain node header on the HTTP Request
-  node (not a secret — `game-move.workflow.data.md`).
+  node (not a secret — `game-event.workflow.data.md`).
 
 ## 5. Env / config summary (no new secrets)
 
@@ -123,10 +124,19 @@ Handler contract (sockets-pattern):
 | Smart-tag block for `game.*` | `apps/graphql-api-app/postgraphile.tags.json5` (`_shared.data.md`) |
 | `ANTHROPIC_API_KEY` into `n8n-import` env | `docker-compose.yml` |
 | game-app service + volumes + nginx `/game` + pinger | `docker-compose.yml`, `docker/nginx.conf` |
-| Registry entry `game-move` | `apps/graphql-api-app/server/graphile/trigger-workflow.plugin.ts` |
+| Registry entry `game-event` | `apps/graphql-api-app/server/graphile/trigger-workflow.plugin.ts` |
+| `routeRules: { '/games/**': { ssr: false } }` | `apps/tenant-app/nuxt.config.ts` — **required**, not optional: tenant-app's urql plugin is client-only (`urql.client.ts`), same as every other data-driven section (`/msg`, `/loc`, `/tools`, `/datasets`, …). Missing this crashes every `/tenant/games/**` page with `500 — No urql Client was provided` on first SSR request (caught live in Phase 5 verification) |
 
 No new host ports; the n8n engine, editor exposure, webhook secret, and `n8n_worker` password
 plumbing are all unchanged from `n8n-parallel-engine/infrastructure.md`.
+
+**Dev-server gotcha (observed live, Phase 5):** brand-new page *directories* under `app/pages/`
+are not always picked up by the Nuxt dev server's file watcher on Docker Desktop for Mac —
+client-side HMR regenerates the route table, but Nitro's server-side page manifest still
+404s until the `tenant-app` service is restarted. A `nuxt.config.ts` edit (e.g. the
+`routeRules` change above) triggers Nuxt's own internal restart and is not affected. If new
+game pages 404 after landing Phase 4, ask the user for one `docker compose restart
+tenant-app` before it's treated as a real bug.
 
 ---
 
@@ -134,11 +144,17 @@ plumbing are all unchanged from `n8n-parallel-engine/infrastructure.md`.
 
 After the user rebuilds with Phases 1–2 landed:
 
-1. **Schema**: `\dn game*` shows the trio; `\d game.game` has the generated `urn`;
-   `game.game_engine_state` shows RLS enabled with zero policies.
+1. **Schema**: `\dn game*` shows the trio; `select * from game.game_type` returns the 3 seed
+   rows (battleship `live`, the other two `coming_soon`); `\d game.game` has the generated
+   `urn` + `seat_count` + `expecting_seats` + `event_count` + `game_type_id` FK (no per-seat
+   columns); `\d game.game_player` shows the roster (seat, `player_kind`, nullable
+   `resident_urn`, `outcome`, `resigned_at`); `\d game.game_event` shows the log (dense
+   `event_number` unique per game, one-pending-per-seat partial unique index);
+   `game.game_event_state` shows RLS enabled with zero policies.
 2. **Deny-all negative**: as a simulated authenticated role
-   (`set role authenticated; set request.jwt.claims=...`), `SELECT * FROM game.game_engine_state`
-   → permission denied; `SELECT * FROM game.game` → allowed, no secret columns exist on it.
+   (`set role authenticated; set request.jwt.claims=...`), `SELECT * FROM game.game_event_state`
+   → permission denied; `SELECT * FROM game.game` → allowed, no secret columns exist on it;
+   another seat's `pending` `game.game_event` row is invisible (pending-visibility policy).
 3. **`n8n_worker` grants**: `SET ROLE n8n_worker` can execute `game_fn.engine_context` /
    `game_fn.record_referee_result` (against a seeded game), cannot `SELECT` any `game.*` table.
 4. **Nav**: the Games module + three tools appear for a dev user (`p:app-user`); links resolve
@@ -146,5 +162,8 @@ After the user rebuilds with Phases 1–2 landed:
 5. **WS**: `curl` upgrade on `/game/_ws/games/<uuid>` without a session cookie → 401; with a
    dev session → 101.
 6. **Credential**: n8n editor shows `anthropic-api-key` imported; `n8n-import` one-shot exited 0.
-7. **GraphQL**: GraphiQL shows `Game`, `myGamesList`, `gameView`, `createGame`, `submitMove`,
-   `resignGame`; `GameEngineState` type absent.
+7. **GraphQL**: GraphiQL shows `Game` (with the `gamePlayers` and `gameEvents` relations),
+   `GameType` as an **object type** with a root `gameTypeList`, `myGamesList`,
+   `gameView(gameId, eventNumber)`, `createGame` (`gameTypeId: String!, players: JSON!`),
+   `submitEvent`, `resignGame`; `GameEventState` type absent; `GamePlayer`/`GameEvent` have
+   no root-level list/connection.

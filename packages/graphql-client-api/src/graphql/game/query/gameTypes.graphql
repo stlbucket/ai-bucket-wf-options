@@ -1,0 +1,16 @@
+# The game-type registry — powers the New Game modal's machine-kind gating and any future
+# Games hub. Reference data, ordered by ordinal.
+query GameTypes {
+  gameTypesList(orderBy: [ORDINAL_ASC]) {
+    id
+    name
+    description
+    icon
+    ordinal
+    status
+    minPlayerSeats
+    maxPlayerSeats
+    supportedPlayerKinds
+    defaultConfig
+  }
+}

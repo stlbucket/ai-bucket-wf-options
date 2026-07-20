@@ -1,0 +1,35 @@
+# The battleship detail page. ONE document, two roots (battleship-[id].data.md): the Game
+# single lookup (summary fields + the seat roster + the applied event log for the replay
+# scrubber) plus gameView (the caller's redacted LIVE view blob, jsonb — no eventNumber).
+query GameById($id: UUID!) {
+  game(id: $id) {
+    id
+    tenantId
+    gameTypeId
+    status
+    seatCount
+    expectingSeats
+    eventCount
+    createdAt
+    finishedAt
+    gamePlayersList {
+      seat
+      playerKind
+      residentUrn
+      outcome
+      resignedAt
+    }
+    gameEventsList(orderBy: EVENT_NUMBER_ASC) {
+      id
+      gameId
+      eventType
+      seat
+      eventNumber
+      eventData
+      status
+      rejectionReason
+      createdAt
+    }
+  }
+  gameView(_gameId: $id)
+}

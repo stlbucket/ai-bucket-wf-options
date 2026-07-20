@@ -22,6 +22,7 @@ catalog:
   croner: ^10.0.1
   csv-parse: ^7.0.1
   dotenv: ^16.6.1
+  esbuild: ^0.25.0
   eslint: ^10.2.0
   h3: ^1.15.11
   nuxt: ^4.4.2

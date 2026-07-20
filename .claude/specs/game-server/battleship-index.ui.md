@@ -20,11 +20,11 @@ UCard as the page container (UC4):
 
 | Column | Content |
 |---|---|
-| Opponent | Resident display name (via residents lookup) or "Machine — algorithm" / "Machine — agent" (`i-lucide-bot` inline) |
+| Opponent | The other seat from the `players` roster: resident display name (via residents lookup) or "Machine — algorithm" / "Machine — agent" from `playerKind` (`i-lucide-bot` inline) |
 | Status | UBadge — see colors |
-| Turn | "Your turn" (`color="primary"` UBadge) / "Their turn" (neutral) — only when `IN_PROGRESS` |
-| Result | on `COMPLETE`: "Won" (`success`) / "Lost" (`error`) from `winnerSeat` vs my seat; `ABANDONED`: neutral "Abandoned" |
-| Moves | `moveCount` |
+| Turn | "Your turn" (`color="primary"` UBadge, when `expectingSeats` includes my seat) / "Their turn" (neutral) — only when `IN_PROGRESS` |
+| Result | on `COMPLETE`: "Won" (`success`) / "Lost" (`error`) from my `players` entry's `outcome`; `ABANDONED`: neutral "Abandoned" |
+| Events | `eventCount` |
 | Started | `createdAt` (relative) |
 
 Row click → `/tenant/games/battleship/{id}`.
@@ -41,7 +41,9 @@ Row click → `/tenant/games/battleship/{id}`.
 ### New Game modal (UModal)
 
 - **Opponent** — URadioGroup, three options: "Another player" / "Machine — algorithm" /
-  "Machine — agent" (maps to `OpponentKind`).
+  "Machine — agent" (maps to the single seat-2 `NewGamePlayer` entry — battleship is always
+  2-seat; the N-seat roster model needs no UI here). Machine options render only if present in
+  the battleship registry row's `supportedPlayerKinds` (`useGameTypes()` — both are, today).
 - **Player picker** — USelectMenu over active tenant residents (shared residents list, excluding
   self); visible + required only for "Another player".
 - Actions: cancel (ghost) / "Start Game" (primary, loading state while create+setup trigger
@@ -49,14 +51,14 @@ Row click → `/tenant/games/battleship/{id}`.
 
 ## Reactive state
 
-`{ games: GameSummary[], fetching, error }` from `useGames('BATTLESHIP')`; modal state local to
+`{ games: GameSummary[], fetching, error }` from `useGames('battleship')`; modal state local to
 the page. Not real-time (README lock) — refresh button re-queries `network-only`.
 
 ## Interactions
 
 | Interaction | Behavior |
 |---|---|
-| New Game → Start | `createGame(...)` → triggers `game-move` setup → toast + navigate to detail |
+| New Game → Start | `createGame(...)` → triggers `game-event` setup → toast + navigate to detail |
 | Refresh | re-execute list query `network-only` |
 | Row click | navigate to detail |
 | Create failure | error toast (UC7); modal stays open |

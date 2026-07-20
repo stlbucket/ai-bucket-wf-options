@@ -198,12 +198,16 @@ Data layer is **urql GraphQL → PostGraphile** across the board (composables in
 | `site-admin` | index (placeholder), tenant/index, tenant/[id], user/index, user/[id], application/index, application/[key] | Implemented — GraphQL |
 | `support` | tickets/index, tickets/new, tickets/[id] | Implemented — GraphQL |
 | `loc` | index, [id] | Implemented — GraphQL (`useLocations`) |
+| `games` | battleship/index, battleship/[id], tic-tac-toe/index (Coming Soon), checkers/index (Coming Soon) | Implemented — GraphQL (`useGames`/`useGame`/`useGameTypes`) + n8n referee (`game-event` workflow) |
 
 Other app spec trees: `auth-app/` (login, current-profile-claims, profile), `msg-app/`,
 `graphql-api-app/` (`_overview.md`, `server-pattern.md`, tombstoned `worker-pattern.md`),
-`home-app/`, `agentic-workflow-engine/` (the workflow engine — `apps/agent-app`, R22), and
+`home-app/`, `agentic-workflow-engine/` (the workflow engine — `apps/agent-app`, R22),
 `asset-storage/` (implemented 2026-07-06: storage-layer/storage-app + quarantine-first
-`asset-scan`, now running on the agentic engine). Some per-page
+`asset-scan`, now running on the agentic engine), and `game-server/` (implemented
+2026-07-20: `db/fnb-game` + `packages/game-engines` + `game-layer`/`game-app` + the
+`game-event` n8n referee — event-sourced N-seat game platform, battleship is the only
+playable game type). Some per-page
 `.data.md` files are still being reconciled from the REST era — apply Mode 4 (legacy cleanup)
 when you touch one.
 

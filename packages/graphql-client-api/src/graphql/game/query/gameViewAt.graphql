@@ -1,0 +1,5 @@
+# The replay scrubber's step query — the caller's redacted view AT one event. Separate from
+# GameById so the scrubber can step without re-fetching the whole game/roster/event list.
+query GameViewAt($gameId: UUID!, $eventNumber: Int!) {
+  gameView(_gameId: $gameId, _eventNumber: $eventNumber)
+}

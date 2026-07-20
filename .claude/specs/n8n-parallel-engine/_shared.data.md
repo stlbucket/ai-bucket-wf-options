@@ -171,7 +171,12 @@ USAGE must not widen); full table in `dataset-sync.workflow.data.md` → DB chan
 
 ```ts
 type Engine = 'agent' | 'n8n'
-const WORKFLOW_REGISTRY: Record<string, { engine: Engine; permission: string | null }> = {
+// `permission`: null = any authenticated user; a string = require that key; a string[] = any-of
+// (parity with `jwt.enforce_any_permission`, added for game-event — game-server/_shared.data.md).
+const WORKFLOW_REGISTRY: Record<
+  string,
+  { engine: Engine; permission: string | string[] | null }
+> = {
   'sync-breweries': { engine: 'agent', permission: null },
   'sync-airports': { engine: 'n8n', permission: null }, // moved 2026-07-20 (dataset-sync §Status)
   exerciser: { engine: 'agent', permission: 'p:app-admin-super' },

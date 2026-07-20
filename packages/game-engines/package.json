@@ -1,0 +1,21 @@
+{
+  "name": "@function-bucket/fnb-game-engines",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "embed": "node scripts/embed.mjs"
+  },
+  "dependencies": {
+    "@function-bucket/fnb-types": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

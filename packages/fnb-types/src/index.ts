@@ -40,3 +40,23 @@ export type {
   AirportSyncStatus,
 } from '@/airport'
 export type { Asset, AssetMeta, ScanStatus, AssetStatus } from '@/asset'
+export type {
+  GameTypeId,
+  GameTypeStatus,
+  GameStatus,
+  PlayerKind,
+  GameEventType,
+  GameEventStatus,
+  SeatOutcome,
+  GameTypeInfo,
+  GamePlayer,
+  NewGamePlayer,
+  GameSummary,
+  GameEvent,
+} from '@/game'
+export type {
+  BattleshipOwnCell,
+  BattleshipTargetCell,
+  BattleshipFleetEntry,
+  BattleshipPlayerView,
+} from '@/games/battleship-view'

@@ -75,6 +75,27 @@
       },
 
       /*
+       * Game server (game-server spec, _shared.data.md §PostGraphile exposure):
+       * - game_event_state holds authoritative state + per-seat snapshots (ship
+       *   positions!) — never in the graph; reads only via game_api.game_view.
+       * - game/game_event: list reads go through game_api.my_games / the Game relations;
+       *   root all-rows fields dropped, single lookups + FK relations stay.
+       * - game_type keeps its root list (gameTypeList) — reference data for the UI.
+       */
+      'game.game_event_state': {
+        tags: { behavior: '-*' },
+      },
+      'game.game': {
+        tags: { behavior: '-query:resource:list -query:resource:connection' },
+      },
+      'game.game_event': {
+        tags: { behavior: '-query:resource:list -query:resource:connection' },
+      },
+      'game.game_player': {
+        tags: { behavior: '-query:resource:list -query:resource:connection' },
+      },
+
+      /*
        * URN registry: res.module_permission is pure RLS plumbing — never served.
        * (urn-registry spec, client.data.md §1. Hub-relation renames, e.g.
        * assetsBySubjectUrn → assets on Resource, land after first codegen once the

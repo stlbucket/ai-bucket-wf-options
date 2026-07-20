@@ -1,0 +1,76 @@
+# Build + push the 8 prod app images, git-SHA tagged (spec terraform-and-cicd.md §4).
+# DESIGN ONLY — the repo owner wires the referenced secrets / AWS OIDC role and owns all commits.
+# The image build happens inside Docker; pnpm/turbo run in the container, not on the runner.
+name: build-images
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment (selects the registry)
+        type: choice
+        options: [do-prod, aws-prod]
+        required: true
+  push:
+    tags: ['v*']
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # AWS OIDC assume-role
+      contents: read
+    strategy:
+      matrix:
+        environment: [do-prod, aws-prod]
+    # On manual dispatch, only build the chosen environment; on tag push, build both.
+    steps:
+      - name: Skip unselected environment (dispatch)
+        id: gate
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && \
+             [ "${{ matrix.environment }}" != "${{ inputs.environment }}" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.gate.outputs.skip == 'false'
+        uses: actions/checkout@v4
+
+      - if: steps.gate.outputs.skip == 'false'
+        uses: docker/setup-buildx-action@v3
+
+      # ── DigitalOcean Container Registry ──
+      - if: steps.gate.outputs.skip == 'false' && matrix.environment == 'do-prod'
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - if: steps.gate.outputs.skip == 'false' && matrix.environment == 'do-prod'
+        name: DOCR login + REGISTRY
+        run: |
+          doctl registry login --expiry-seconds 1200
+          echo "REGISTRY=${{ secrets.DOCR_REGISTRY }}" >> "$GITHUB_ENV"   # registry.digitalocean.com/<name>
+
+      # ── AWS Elastic Container Registry (OIDC, no static keys) ──
+      - if: steps.gate.outputs.skip == 'false' && matrix.environment == 'aws-prod'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - if: steps.gate.outputs.skip == 'false' && matrix.environment == 'aws-prod'
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - if: steps.gate.outputs.skip == 'false' && matrix.environment == 'aws-prod'
+        name: REGISTRY
+        run: echo "REGISTRY=${{ steps.ecr.outputs.registry }}" >> "$GITHUB_ENV"
+
+      - if: steps.gate.outputs.skip == 'false'
+        name: build + push (8 apps, git-SHA tag)
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: infra/scripts/build-images.sh

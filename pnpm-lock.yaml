@@ -89,6 +89,9 @@ importers:
       nx:
         specifier: ^23.0.1
         version: 23.0.1
+      skills:
+        specifier: ^1.5.19
+        version: 1.5.19
     devDependencies:
       '@nuxt/eslint':
         specifier: 'catalog:'
@@ -8552,6 +8555,11 @@ packages:
 
   sisteransi@1.0.5:
     resolution: {integrity: sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==}
+
+  skills@1.5.19:
+    resolution: {integrity: sha512-SR05cbNk+R17GfaCFv94Hlq5EXDpUCbG0ZL9+EYi5UEHzUPAAl+kls2LxCT+67wAWlOAanUwzZekIVQvpCmp5w==}
+    engines: {node: '>=22.20.0'}
+    hasBin: true
 
   slash@3.0.0:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
@@ -19490,6 +19498,10 @@ snapshots:
       totalist: 3.0.1
 
   sisteransi@1.0.5: {}
+
+  skills@1.5.19:
+    dependencies:
+      yaml: 2.9.0
 
   slash@3.0.0: {}
 

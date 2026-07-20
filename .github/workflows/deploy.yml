@@ -1,0 +1,136 @@
+# Provision/refresh infra + deploy the stack to the box (spec terraform-and-cicd.md §4).
+# DESIGN ONLY — the repo owner wires the referenced secrets / AWS OIDC role, decides whether apply
+# is gated for prod (spec §6 open item), and owns all commits. The assistant never runs git/apply.
+name: deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy
+        type: choice
+        options: [do-prod, aws-prod]
+        required: true
+      image_tag:
+        description: Image tag (git SHA) built by build-images
+        required: true
+      run_apply:
+        description: Run `terraform apply` (else init+plan only — prod gate, spec §6)
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploy-${{ inputs.environment }}   # serialize applies per env (also the practical state lock)
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      TF_DIR: infra/terraform/environments/${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5   # >= 1.10 for the S3 use_lockfile backend
+
+      # ── Cloud credentials (branch by environment) ──
+      - if: inputs.environment == 'do-prod'
+        name: DO credentials
+        run: |
+          echo "DIGITALOCEAN_TOKEN=${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}" >> "$GITHUB_ENV"
+          # Spaces key doubles as the state-backend + bucket-resource creds.
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.SPACES_ACCESS_KEY_ID }}" >> "$GITHUB_ENV"
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.SPACES_SECRET_ACCESS_KEY }}" >> "$GITHUB_ENV"
+          echo "SPACES_ACCESS_KEY_ID=${{ secrets.SPACES_ACCESS_KEY_ID }}" >> "$GITHUB_ENV"
+          echo "SPACES_SECRET_ACCESS_KEY=${{ secrets.SPACES_SECRET_ACCESS_KEY }}" >> "$GITHUB_ENV"
+      - if: inputs.environment == 'aws-prod'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # ── Terraform provision ──
+      - name: terraform init
+        run: terraform -chdir="$TF_DIR" init -input=false
+      - name: terraform apply
+        if: inputs.run_apply
+        env:
+          TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}   # RDS master (aws-prod); ignored on do-prod
+        run: terraform -chdir="$TF_DIR" apply -input=false -auto-approve -var-file="${{ inputs.environment }}.tfvars"
+      - name: terraform plan (no-apply gate)
+        if: ${{ !inputs.run_apply }}
+        run: terraform -chdir="$TF_DIR" plan -input=false -var-file="${{ inputs.environment }}.tfvars"
+
+      # ── Export Terraform outputs into the environment for render-env ──
+      - name: export tf outputs
+        if: inputs.run_apply
+        run: |
+          terraform -chdir="$TF_DIR" output -json > tf.json
+          to_env() { v=$(jq -r --arg k "$1" '.[$k].value // empty' tf.json); [ -n "$v" ] && echo "$2=$v" >> "$GITHUB_ENV" || true; }
+          to_env registry_endpoint  REGISTRY
+          to_env domain             DOMAIN
+          to_env pg_host            MANAGED_PG_HOST
+          to_env pg_port            MANAGED_PG_PORT
+          to_env pg_admin_user      MANAGED_PG_ADMIN_USER
+          to_env pg_admin_db        MANAGED_PG_ADMIN_DB
+          to_env app_pg_user        APP_PG_USER
+          to_env s3_endpoint        S3_ENDPOINT
+          to_env s3_public_base_url S3_PUBLIC_BASE_URL
+          to_env s3_region          S3_REGION
+          to_env s3_bucket          S3_BUCKET
+          # DO exposes the PG password as a TF output; AWS uses the DB_PASSWORD secret (below).
+          to_env pg_admin_password  MANAGED_PG_ADMIN_PASSWORD
+          to_env app_pg_password    APP_PG_PASSWORD
+
+      # ── Render the box .env (secrets + tf outputs) and deploy ──
+      - name: render .env
+        if: inputs.run_apply
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          MANAGED_PG_ADMIN_DB: ${{ inputs.environment == 'aws-prod' && 'fnb' || '' }}
+          # aws-prod PG passwords come from the secret (DO set them above from tf outputs)
+          MANAGED_PG_ADMIN_PASSWORD: ${{ inputs.environment == 'aws-prod' && secrets.DB_PASSWORD || '' }}
+          APP_PG_PASSWORD: ${{ inputs.environment == 'aws-prod' && secrets.DB_PASSWORD || '' }}
+          ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
+          ZITADEL_DB_PASSWORD: ${{ secrets.ZITADEL_DB_PASSWORD }}
+          N8N_ENGINE_DB_PASSWORD: ${{ secrets.N8N_ENGINE_DB_PASSWORD }}
+          AGENT_WORKER_PG_PASSWORD: ${{ secrets.AGENT_WORKER_PG_PASSWORD }}
+          N8N_WORKER_PG_PASSWORD: ${{ secrets.N8N_WORKER_PG_PASSWORD }}
+          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+          S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+          NUXT_SESSION_SECRET: ${{ secrets.NUXT_SESSION_SECRET }}
+          ZITADEL_MASTERKEY: ${{ secrets.ZITADEL_MASTERKEY }}
+          N8N_ENCRYPTION_KEY: ${{ secrets.N8N_ENCRYPTION_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AGENT_TRIGGER_SECRET: ${{ secrets.AGENT_TRIGGER_SECRET }}
+          N8N_WEBHOOK_SECRET: ${{ secrets.N8N_WEBHOOK_SECRET }}
+          ZITADEL_ADMIN_USERNAME: ${{ secrets.ZITADEL_ADMIN_USERNAME }}
+          ZITADEL_ADMIN_EMAIL: ${{ secrets.ZITADEL_ADMIN_EMAIL }}
+          ZITADEL_ADMIN_PASSWORD: ${{ secrets.ZITADEL_ADMIN_PASSWORD }}
+          MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
+        run: node infra/env/render-env.mjs infra/env/.env.prod.tpl "$RUNNER_TEMP/.env"
+
+      - name: deploy to the box
+        if: inputs.run_apply
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          ENV_FILE: ${{ runner.temp }}/.env
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          SSH_KEY: ${{ secrets.BOX_SSH_PRIVATE_KEY }}   # private key matching the box's authorized key
+        run: |
+          # BOX_HOST + REGISTRY come from the tf outputs exported above (reserved_ip/eip; registry_endpoint).
+          echo "$SSH_KEY" > "$RUNNER_TEMP/id" && chmod 600 "$RUNNER_TEMP/id"
+          export SSH_OPTS="-i $RUNNER_TEMP/id -o StrictHostKeyChecking=accept-new"
+          export BOX_HOST="$(jq -r '(.reserved_ip // .eip).value' tf.json)"
+          infra/scripts/deploy.sh
+        # SSH_KEY is the private key matching the box's authorized key (a secret).
+      - name: health verify
+        if: inputs.run_apply
+        run: DOMAIN="$DOMAIN" infra/scripts/health-verify.sh

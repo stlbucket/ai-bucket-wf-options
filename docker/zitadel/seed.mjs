@@ -24,14 +24,26 @@ import { setTimeout as sleep } from 'node:timers/promises'
 const BASE = requiredEnv('ZITADEL_INTERNAL_URL') // http://zitadel:8080
 const HOST_HEADER = requiredEnv('ZITADEL_EXTERNAL_HOST') // instance resolution (ExternalDomain)
 const ISSUER = requiredEnv('ZITADEL_ISSUER') // external issuer, written to the handoff JSON
-const APP_PORT = requiredEnv('APP_PORT') // nginx host port — redirect URIs embed it
 const PAT_FILE = requiredEnv('PAT_FILE') // written by ZITADEL FirstInstance PatPath
 const SEED_FILE = requiredEnv('SEED_FILE') // { issuer, clientId } handoff for auth-app
 
+// SEED_MODE=prod (deployment spec .claude/specs/deployment/production-runtime.md §6): register the
+// app against the https origin with devMode OFF and seed NO dev users — the console admin comes from
+// ZITADEL FirstInstance, and password complexity is left at ZITADEL defaults by NOT relaxing it in
+// the prod compose. Unset (or anything else) = the dev behavior below, byte-for-byte.
+const SEED_MODE = process.env.ZITADEL_SEED_MODE ?? 'dev'
+const IS_PROD = SEED_MODE === 'prod'
+
+// Dev embeds the nginx host port; prod uses the public https origin (APP_ORIGIN=https://<domain>,
+// terminated by Caddy). APP_PORT stays required in dev only.
+const APP_ORIGIN = IS_PROD
+  ? requiredEnv('APP_ORIGIN')
+  : `http://localhost:${requiredEnv('APP_PORT')}`
+
 const PROJECT_NAME = 'fnb'
 const APP_NAME = 'fnb-web'
-const REDIRECT_URI = `http://localhost:${APP_PORT}/auth/api/auth/oidc/callback`
-const POST_LOGOUT_URI = `http://localhost:${APP_PORT}/`
+const REDIRECT_URI = `${APP_ORIGIN}/auth/api/auth/oidc/callback`
+const POST_LOGOUT_URI = `${APP_ORIGIN}/`
 
 // Mirrors db/seed.sql — same emails, same dev password ('poiuytre'; the instance's
 // password-complexity policy is relaxed in docker-compose.yml to keep this parity).
@@ -194,7 +206,7 @@ async function ensureWebApp(projectId) {
     appType: 'OIDC_APP_TYPE_WEB',
     authMethodType: 'OIDC_AUTH_METHOD_TYPE_NONE', // public client — PKCE, no secret
     accessTokenType: 'OIDC_TOKEN_TYPE_BEARER',
-    devMode: true, // dev only: allows the http:// redirect URIs above
+    devMode: !IS_PROD, // dev: allows the http:// redirect URIs above; prod: OFF (https origin)
   })
   if (created.status !== 200 || !created.json?.clientId) fail('create app', created)
   console.log(`zitadel-seed: created app '${APP_NAME}' (clientId ${created.json.clientId})`)
@@ -224,7 +236,11 @@ console.log(`zitadel-seed: org ${orgId}`)
 
 const projectId = await ensureProject()
 const clientId = await ensureWebApp(projectId)
-for (const user of SEED_USERS) await ensureUser(user)
+if (IS_PROD) {
+  console.log('zitadel-seed: prod mode — skipping dev user seeding (admin comes from FirstInstance)')
+} else {
+  for (const user of SEED_USERS) await ensureUser(user)
+}
 
 writeFileSync(SEED_FILE, JSON.stringify({ issuer: ISSUER, clientId }, null, 2))
 console.log(`zitadel-seed: wrote ${SEED_FILE} — issuer ${ISSUER}, clientId ${clientId}`)

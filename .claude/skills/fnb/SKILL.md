@@ -50,13 +50,43 @@ directly only for a pure "how does this technology work?" question.
 | 14 | **vue-use-expert** | VueUse composables for reactive/browser/DOM utility needs (user-level skill) |
 | 15 | **breweries-expert** | Open Brewery DB API — endpoints, filters, sort syntax, brewery types, response schema (the first `<dataset>-expert` produced by #3) |
 | 16 | **airports-expert** | OurAirports dataset — seven bulk CSVs (no API), live column lists/enum vocab/nullability, parsing gotchas (produced by #3) |
+| 17 | **terraform-export** | Terraform/HCL for the `infra/terraform/` deployment code: HCL blocks, reusable modules + per-env tfvars, remote state / `s3` backend (AWS **and** DO Spaces), provider version constraints, `init→plan→apply`, `output -json` → `render-env.mjs` |
+| 18 | **n8n-cli** | Operator loop for the **parallel n8n engine** (R22): workflow build + export-to-repo (`n8n/workflows/*.json`), credentials, executions — `N8N_URL`/`N8N_API_KEY` from `.env` (user-level skill) |
+
+**Retired reference:** **graphile-worker-expert** — the workflow engine it documented is gone (R22:
+now #11 claude-agent-sdk + #18 n8n-cli). Read only when spelunking old branches/history; never for new work.
+
+## Deployment & infra — the DigitalOcean toolkit
+
+The **`.claude/specs/deployment/`** spec (prod **DigitalOcean + AWS** via Terraform + Caddy,
+Compose-on-a-box) is planned/built by **#2**, using **#17 terraform-export** for the HCL.
+
+Bundled alongside is DigitalOcean's own **App Platform skill pack**
+(`digitalocean-labs/do-app-platform-skills`, pinned in `skills-lock.json`) — a vendored set whose
+content lives together on disk under **`.agents/skills/`**, surfaced into `.claude/skills/` as
+symlinks. These are **not fnb skills** and sit outside the spec→implementor→specialist tiering;
+read one directly when a deploy task hits its DO service.
+
+**🟢 Worth reaching for** — on-path for our droplet + Managed-PG/Spaces deploy:
+
+| Skill | Plain-English |
+|-------|---------------|
+| **postgres** | DO Managed Postgres — users, roles, multi-tenant schemas, connectivity |
+| **spaces** | Spaces (S3-compatible) — buckets, CORS, lifecycle, CDN, per-app creds |
+| **managed-db-services** | the other managed engines — MySQL / Mongo / Valkey / Kafka / OpenSearch |
+| **app-platform-networking** | VPC, custom domains, CORS, static IPs |
+
+**⚪ Off-path** — App-Platform-only, and the spec **rejected** App Platform (Compose-on-a-droplet
+instead): `app-platform-designer`, `deployment`, `app-platform-migration`, `app-platform-sandbox`,
+`app-platform-troubleshooting`, `devcontainers`, `planner`, `ai-services`. Reach for these only if
+the App-Platform path is ever revisited.
 
 ## How it fits together
 
 ```
 you ──> /fnb (this menu)
 you ──> fnb-stack-spec ──────┐ authors the contract
-you ──> fnb-stack-implementor ┘ executes it, engaging #4–#15 per step
+you ──> fnb-stack-implementor ┘ executes it, engaging #4–#18 per step
 you ──> fnb-acquire-dataset ──> recon, then implicitly invokes #1 (spec) and hands to #2 (build)
 routing rules + tiebreaks: .claude/skills/skill-map.md
 ```

@@ -1,0 +1,73 @@
+# Caddy — the prod TLS front door. Replaces docker/nginx.conf (spec production-runtime.md §5).
+# Three jobs: automatic Let's Encrypt TLS, path routing (identical prefixes to nginx), and
+# WebSocket passthrough (msg + game upgrades — Caddy handles Upgrade/Connection automatically).
+#
+# {$DOMAIN} is substituted from the container env at start (set in docker-compose.prod.yml from the
+# rendered .env). Mounted, not baked. ACME account + certs persist in the caddy_data volume so
+# restarts don't re-issue.
+#
+# RULE preserved from nginx: new app blocks go BEFORE the `/` catch-all; the reverse_proxy upstream
+# is the Compose service name on :3000. agent-app has NO route (headless).
+
+{
+	# ACME contact for Let's Encrypt expiry notices.
+	email {$ACME_EMAIL}
+}
+
+# ── Main site: the 7 routed apps + home catch-all (mirrors docker/nginx.conf) ──
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Streaming GraphQL (SSE) — must come before the general /graphql-api block, no buffering.
+	handle /graphql-api/api/graphql/stream* {
+		reverse_proxy graphql-api-app:3000 {
+			flush_interval -1
+		}
+	}
+
+	handle /auth* {
+		reverse_proxy auth-app:3000
+	}
+	handle /tenant* {
+		reverse_proxy tenant-app:3000
+	}
+	handle /msg* {
+		reverse_proxy msg-app:3000
+	}
+	handle /game* {
+		reverse_proxy game-app:3000
+	}
+	handle /storage* {
+		# Upload cap: keep aligned with MAX_BODY_BYTES (packages/storage-layer/server/api/
+		# upload.post.ts, 6 MB) and the dev nginx `client_max_body_size 6m`.
+		request_body {
+			max_size 6MB
+		}
+		reverse_proxy storage-app:3000
+	}
+	handle /graphql-api* {
+		reverse_proxy graphql-api-app:3000
+	}
+	handle /ruru-static* {
+		reverse_proxy graphql-api-app:3000
+	}
+
+	# Catch-all LAST — home-app (no base URL).
+	handle {
+		reverse_proxy home-app:3000
+	}
+}
+
+# ── ZITADEL — own origin on a subdomain (issuer can't live under a path prefix). ──
+# Caddy terminates TLS; ZITADEL speaks plain HTTP behind it (EXTERNALSECURE=true tells it its
+# public origin is https). h2c upstream: ZITADEL's gRPC-web needs HTTP/2 cleartext to the backend.
+id.{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy h2c://zitadel:8080
+}
+
+# ── n8n editor + webhooks — own subdomain (same reason). ──
+n8n.{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy n8n:5678
+}

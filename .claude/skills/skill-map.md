@@ -55,6 +55,27 @@ user-invoked workflow that does its own recon (producing a `<dataset>-expert` sp
 | `vue-use-expert` | reactive/browser/DOM utility needs a VueUse composable likely covers |
 | `breweries-expert` | fetching/filtering/searching brewery data via the Open Brewery DB API (endpoints, filters, sort syntax, response schema) |
 | `airports-expert` | fetching/parsing/importing OurAirports data — the seven bulk CSVs, real column lists, live enum vocab, nullability, CSV gotchas (no API) |
+| `terraform-export` | authoring/operating the `infra/terraform/` deployment code (spec `.claude/specs/deployment/`): HCL blocks + meta-args, reusable modules + per-env tfvars, remote state & the `s3` backend (AWS **and** DigitalOcean Spaces), provider version constraints + lock file, and the `init→plan→apply` CLI incl. `output -json` → `render-env.mjs`. General Terraform reference — the spec owns *what* fnb provisions |
+
+## Vendored external skills (outside the tiering)
+
+Not fnb skills and **not** in the orchestrator→specialist dependency graph — a third-party bundle
+pinned in `skills-lock.json` (`digitalocean-labs/do-app-platform-skills`), symlinked under
+`.agents/skills/` and mirrored into `.claude/skills/`. Read them **directly** as DO-service
+references when a deployment task touches the matching surface; never route to them as a spec
+specialist. The fnb deployment spec (`.claude/specs/deployment/`) **rejected DO App Platform**
+(Compose-on-a-droplet + Managed PG/Spaces), so most of this bundle is **off-path**.
+
+| Skill | On-path? | Engage when… |
+|---|---|---|
+| `postgres` | ✅ | configuring DO **Managed Postgres** — users, permissions, multi-tenant schemas, connectivity (the deployment spec's Phase 3/4 managed-PG bootstrap) |
+| `spaces` | ✅ | DO **Spaces** (S3-compatible) — bucket policy, CORS, lifecycle, CDN, per-app creds |
+| `managed-db-services` | ➖ | non-Postgres managed data (MySQL/Mongo/Valkey/Kafka/OpenSearch) — reference only; fnb uses Managed PG |
+| `app-platform-networking` | ➖ | VPC / domains / CORS / static-IP concepts — useful vocabulary even though routing is Caddy, not App Platform |
+| `app-platform-designer`, `deployment`, `app-platform-migration`, `app-platform-sandbox`, `app-platform-troubleshooting`, `devcontainers`, `planner`, `ai-services` | ❌ | App-Platform-only — apply **only** if the rejected App-Platform path is ever revisited |
+
+`sheep` also surfaces in the skill list but belongs to a **different project**
+(`sheep-prototype/.claude/skills/`); it is intentionally **not** registered here.
 
 ## Tiebreaks
 

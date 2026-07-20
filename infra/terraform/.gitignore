@@ -1,0 +1,10 @@
+# Terraform working dirs + state — never commit these (state holds secrets in plaintext).
+**/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+crash.log
+crash.*.log
+*.tfplan
+
+# Keep committed: *.tf, *.tfvars (non-secret knobs only), and .terraform.lock.hcl (pins providers).

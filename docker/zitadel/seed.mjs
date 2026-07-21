@@ -26,6 +26,7 @@ const HOST_HEADER = requiredEnv('ZITADEL_EXTERNAL_HOST') // instance resolution 
 const ISSUER = requiredEnv('ZITADEL_ISSUER') // external issuer, written to the handoff JSON
 const PAT_FILE = requiredEnv('PAT_FILE') // written by ZITADEL FirstInstance PatPath
 const SEED_FILE = requiredEnv('SEED_FILE') // { issuer, clientId } handoff for auth-app
+const BRAND_ASSETS_DIR = process.env.BRAND_ASSETS_DIR ?? '/brand-assets' // mounted handoff logos/icons (plan 0500)
 
 // SEED_MODE=prod (deployment spec .claude/specs/deployment/production-runtime.md §6): register the
 // app against the https origin with devMode OFF and seed NO dev users — the console admin comes from
@@ -230,6 +231,126 @@ async function ensureUser({ email, givenName, familyName }) {
   }
 }
 
+// ── Branding (plan 0500) ───────────────────────────────────────────────────
+// Apply the fnb brand mark to ZITADEL's hosted login. We target the INSTANCE
+// label policy (admin API + instance asset endpoints), not the org policy,
+// because our OIDC authorize requests are NOT org-scoped — the hosted login
+// therefore renders the instance default branding. This needs the seed PAT to
+// hold IAM_OWNER, which the FirstInstance machine user is granted at setup.
+//   Fallback if these 403: the PAT lacks IAM_OWNER — either grant it, or switch
+//   to the org label policy (/management/v1/policies/label, already org-scoped
+//   via x-zitadel-orgid) AND org-scope the authorize request in
+//   apps/auth-app/server/utils/oidc.ts (scope += ' urn:zitadel:iam:org:id:'+orgId).
+// Colors/logos/mapping come from the brand handoff (design_handoff_fn_bucket_brand).
+const BRAND = {
+  primaryColor: '#156f41', // green-600 prompt glyph
+  primaryColorDark: '#50986b', // green-400 (prompt glyph on dark)
+  backgroundColor: '#f0f4f7',
+  backgroundColorDark: '#0e1216',
+  fontColor: '#1b2025',
+  fontColorDark: '#eceff2',
+  disableWatermark: true,
+  hideLoginNameSuffix: true,
+  themeMode: 'THEME_MODE_AUTO', // follow the visitor's system light/dark
+}
+
+// Like api(), but WITHOUT the x-zitadel-orgid header — instance/admin + assets
+// endpoints are instance-scoped. Same Host-header + Bearer transport (node:http).
+function instanceRequest(method, path, { headers = {}, body } = {}) {
+  const url = new URL(path, BASE)
+  return new Promise((resolve, reject) => {
+    const request = http.request(
+      {
+        hostname: url.hostname,
+        port: url.port,
+        path: url.pathname + url.search,
+        method,
+        headers: { host: HOST_HEADER, authorization: `Bearer ${pat}`, ...headers },
+      },
+      (res) => {
+        const chunks = []
+        res.on('data', (chunk) => chunks.push(chunk))
+        res.on('end', () => {
+          const raw = Buffer.concat(chunks).toString('utf8')
+          let json = null
+          try {
+            json = raw ? JSON.parse(raw) : null
+          } catch {
+            json = { raw }
+          }
+          resolve({ status: res.statusCode ?? 0, json })
+        })
+      },
+    )
+    request.on('error', reject)
+    if (body) request.write(body)
+    request.end()
+  })
+}
+
+function jsonBody(obj) {
+  const payload = JSON.stringify(obj)
+  return {
+    headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(payload) },
+    body: payload,
+  }
+}
+
+async function uploadAsset(path, fileName, contentType) {
+  const filePath = `${BRAND_ASSETS_DIR}/${fileName}`
+  if (!existsSync(filePath)) {
+    fail(`branding asset ${filePath}`, { status: 0, json: 'not found — is the assets dir mounted?' })
+  }
+  const file = readFileSync(filePath)
+  const boundary = `----fnbBrand${Date.now().toString(16)}`
+  const head = Buffer.from(
+    `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${fileName}"\r\n` +
+      `Content-Type: ${contentType}\r\n\r\n`,
+  )
+  const tail = Buffer.from(`\r\n--${boundary}--\r\n`)
+  const body = Buffer.concat([head, file, tail])
+  const res = await instanceRequest('POST', path, {
+    headers: { 'content-type': `multipart/form-data; boundary=${boundary}`, 'content-length': body.length },
+    body,
+  })
+  if (res.status < 200 || res.status >= 300) fail(`upload ${fileName}`, res)
+  console.log(`zitadel-seed: uploaded ${fileName} → ${path}`)
+}
+
+async function ensureBranding() {
+  // Merge onto the current policy so we never blank fields we don't set (warn colors, etc.).
+  const current = await instanceRequest('GET', '/admin/v1/policies/label')
+  if (current.status < 200 || current.status >= 300) fail('get label policy', current)
+  const merged = { ...(current.json?.policy ?? {}), ...BRAND }
+  const update = {
+    primaryColor: merged.primaryColor,
+    hideLoginNameSuffix: merged.hideLoginNameSuffix,
+    warnColor: merged.warnColor,
+    backgroundColor: merged.backgroundColor,
+    fontColor: merged.fontColor,
+    primaryColorDark: merged.primaryColorDark,
+    backgroundColorDark: merged.backgroundColorDark,
+    warnColorDark: merged.warnColorDark,
+    fontColorDark: merged.fontColorDark,
+    disableWatermark: merged.disableWatermark,
+    themeMode: merged.themeMode,
+  }
+  const put = await instanceRequest('PUT', '/admin/v1/policies/label', jsonBody(update))
+  if (put.status < 200 || put.status >= 300) fail('update label policy', put)
+  console.log('zitadel-seed: label policy colors updated')
+
+  // Per-theme logo (login card) + icon (console/compact). Handoff mapping.
+  await uploadAsset('/assets/v1/instance/policy/label/logo', 'logo-light.png', 'image/png')
+  await uploadAsset('/assets/v1/instance/policy/label/logo/dark', 'logo-dark.png', 'image/png')
+  await uploadAsset('/assets/v1/instance/policy/label/icon', 'icon-light-512.png', 'image/png')
+  await uploadAsset('/assets/v1/instance/policy/label/icon/dark', 'icon-512.png', 'image/png')
+
+  // Promote the edited preview policy to active (colors + freshly uploaded assets).
+  const activate = await instanceRequest('POST', '/admin/v1/policies/label/_activate', jsonBody({}))
+  if (activate.status < 200 || activate.status >= 300) fail('activate label policy', activate)
+  console.log('zitadel-seed: label policy activated')
+}
+
 pat = await waitForPat()
 orgId = await resolveOrg()
 console.log(`zitadel-seed: org ${orgId}`)
@@ -241,6 +362,9 @@ if (IS_PROD) {
 } else {
   for (const user of SEED_USERS) await ensureUser(user)
 }
+
+// Instance branding (plan 0500) — runs in dev AND prod (not a dev-only seed step).
+await ensureBranding()
 
 writeFileSync(SEED_FILE, JSON.stringify({ issuer: ISSUER, clientId }, null, 2))
 console.log(`zitadel-seed: wrote ${SEED_FILE} — issuer ${ISSUER}, clientId ${clientId}`)

@@ -128,6 +128,11 @@ design constraints and hard-won gotchas:
   `http://localhost:${PORT}/`); dev human users mirroring `db/seed.sql` (same emails/password —
   ZITADEL owns credentials now); writes `{ issuer, clientId }` to the handoff file. Uses
   node:http with `Host: localhost` for the same undici reason as the transport above.
+  **Also applies instance branding** (`ensureBranding()`, plan 0500 / spec
+  `.claude/specs/brand-identity/`): the fnb brand mark on the hosted login via the **instance**
+  label policy (admin API colors + `/assets/v1/instance/policy/label/*` logo/icon uploads +
+  `_activate`) — instance-scoped because our authorize requests are not org-scoped. Runs in dev
+  **and** prod; brand assets are mounted read-only at `/brand-assets` (`BRAND_ASSETS_DIR`).
 
 ### Env additions (.env)
 

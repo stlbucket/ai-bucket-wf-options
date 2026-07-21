@@ -283,9 +283,11 @@ services:
       APP_PORT: "${PORT:?}"                      # redirect URIs embed the Caddy port
       PAT_FILE: /zitadel-seed/admin.pat
       SEED_FILE: "${NUXT_ZITADEL_SEED_FILE:?}"
+      BRAND_ASSETS_DIR: /brand-assets            # instance label-policy logo/icon uploads (plan 0500)
     volumes:
       - zitadel-seed:/zitadel-seed
       - ./docker/zitadel/seed.mjs:/seed.mjs:ro
+      - ./.claude/design-implementations/design_handoff_fn_bucket_brand/assets:/brand-assets:ro
     command: ["node", "/seed.mjs"]
     restart: "no"
 

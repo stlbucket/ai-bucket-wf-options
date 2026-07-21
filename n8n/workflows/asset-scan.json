@@ -1,0 +1,983 @@
+{
+  "id": "Rms7mUoUBqX7Cscw",
+  "name": "asset-scan",
+  "active": true,
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        400
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "asset-scan",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnbwebhooksecr01",
+          "name": "fnb-webhook-secret"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-000000000001",
+      "webhookId": "c0000000-0000-4000-8000-0000000000a1"
+    },
+    {
+      "name": "Begin Run",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        220,
+        400
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select n8n_fn.begin_run('asset-scan'::citext, $1, $2::jsonb, nullif($3, '')::uuid) as run_id",
+        "options": {
+          "queryReplacement": "={{ [ $execution.id, JSON.stringify($json.body ?? {}), $json.body?.tenantId ?? '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-000000000002"
+    },
+    {
+      "name": "Get Asset",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        440,
+        400
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select to_jsonb(storage_fn.asset_for_scan($1::uuid)) as asset",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body.assetId ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-000000000003"
+    },
+    {
+      "name": "Is Pending",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.asset.scan_status }}",
+              "rightValue": "pending",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c0000000-0000-4000-8000-000000000004"
+    },
+    {
+      "name": "Complete Already",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        880,
+        200
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select (n8n_fn.complete_run($1::uuid, $2::jsonb)).id as run_id",
+        "options": {
+          "queryReplacement": "={{ [ $('Begin Run').first().json.run_id, JSON.stringify({ verdict: $('Get Asset').item.json.asset.scan_status, note: 'already-resolved' }) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-000000000005"
+    },
+    {
+      "name": "Download Quarantine",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        880,
+        560
+      ],
+      "parameters": {
+        "operation": "download",
+        "bucketName": "={{ $('Get Asset').item.json.asset.bucket }}",
+        "fileKey": "={{ $('Get Asset').item.json.asset.storage_key }}",
+        "binaryPropertyName": "data"
+      },
+      "credentials": {
+        "s3": {
+          "id": "fnbminios3cred1",
+          "name": "fnb-minio"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-000000000006"
+    },
+    {
+      "name": "Write Scan File",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        560
+      ],
+      "parameters": {
+        "fileName": "=/home/node/.n8n-files/scan-{{ $('Webhook').item.json.body.assetId }}",
+        "dataPropertyName": "data",
+        "options": {}
+      },
+      "id": "c0000000-0000-4000-8000-000000000007"
+    },
+    {
+      "name": "Clamdscan",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        1320,
+        560
+      ],
+      "parameters": {
+        "executeOnce": true,
+        "command": "=clamdscan --config-file=/etc/clamav/clamd-remote.conf --no-summary --stream /home/node/.n8n-files/scan-{{ $('Webhook').item.json.body.assetId }} 2>&1; echo \"CLAMEXIT:$?\""
+      },
+      "id": "c0000000-0000-4000-8000-000000000008"
+    },
+    {
+      "name": "Parse Verdict",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        560
+      ],
+      "parameters": {
+        "jsCode": "const out = $json.stdout || ''\nconst m = out.match(/CLAMEXIT:(\\d+)/)\nconst code = m ? parseInt(m[1], 10) : 2\nconst asset = $('Get Asset').first().json.asset\nconst finalKey = asset.storage_key.replace(/^quarantine\\//, asset.is_public ? 'public/' : 'private/')\nlet verdict = 'error'\nlet signature = null\nif (code === 0) verdict = 'clean'\nelse if (code === 1) { verdict = 'infected'; const s = out.match(/:\\s*(.+?)\\s+FOUND/); signature = s ? s[1] : 'unknown' }\nreturn [{ json: { verdict, signature, finalKey, clamExit: code, clamOut: out.trim() } }]"
+      },
+      "id": "c0000000-0000-4000-8000-000000000009"
+    },
+    {
+      "name": "If Clean",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        560
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.verdict }}",
+              "rightValue": "clean",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c0000000-0000-4000-8000-00000000000a"
+    },
+    {
+      "name": "If Infected",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1980,
+        760
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $('Parse Verdict').item.json.verdict }}",
+              "rightValue": "infected",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c0000000-0000-4000-8000-00000000000b"
+    },
+    {
+      "name": "Read Scan File",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        1980,
+        440
+      ],
+      "parameters": {
+        "filePath": "=/home/node/.n8n-files/scan-{{ $('Webhook').item.json.body.assetId }}",
+        "dataPropertyName": "data"
+      },
+      "id": "c0000000-0000-4000-8000-00000000000c"
+    },
+    {
+      "name": "Upload Final",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        2200,
+        440
+      ],
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "={{ $('Get Asset').item.json.asset.bucket }}",
+        "fileName": "={{ $('Parse Verdict').item.json.finalKey }}",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "additionalFields": {},
+        "tagsUi": {}
+      },
+      "credentials": {
+        "s3": {
+          "id": "fnbminios3cred1",
+          "name": "fnb-minio"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-00000000000d"
+    },
+    {
+      "name": "Promote Delete Quarantine",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        2420,
+        440
+      ],
+      "parameters": {
+        "operation": "delete",
+        "bucketName": "={{ $('Get Asset').item.json.asset.bucket }}",
+        "fileKey": "={{ $('Get Asset').item.json.asset.storage_key }}",
+        "options": {}
+      },
+      "credentials": {
+        "s3": {
+          "id": "fnbminios3cred1",
+          "name": "fnb-minio"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-00000000000e"
+    },
+    {
+      "name": "Resolve Clean",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2640,
+        440
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select storage_fn.resolve_asset_scan($1::uuid, $2::storage.scan_status, $3, $4)",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body.assetId, 'clean', null, $('Parse Verdict').item.json.finalKey ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-00000000000f"
+    },
+    {
+      "name": "If Image",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2860,
+        440
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ ['image/png','image/jpeg','image/webp','image/gif'].includes($('Get Asset').item.json.asset.content_type) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c0000000-0000-4000-8000-000000000020"
+    },
+    {
+      "name": "Make Thumbnail",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3080,
+        340
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "executeOnce": true,
+        "command": "=ffmpeg -y -i /home/node/.n8n-files/scan-{{ $('Webhook').item.json.body.assetId }} -vf \"scale=w=256:h=256:force_original_aspect_ratio=decrease\" /home/node/.n8n-files/thumb-{{ $('Webhook').item.json.body.assetId }}.webp >/dev/null 2>&1 && sha256sum /home/node/.n8n-files/thumb-{{ $('Webhook').item.json.body.assetId }}.webp | cut -d' ' -f1 && stat -c%s /home/node/.n8n-files/thumb-{{ $('Webhook').item.json.body.assetId }}.webp"
+      },
+      "id": "c0000000-0000-4000-8000-000000000021"
+    },
+    {
+      "name": "Prep Thumb",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3300,
+        340
+      ],
+      "parameters": {
+        "jsCode": "const out = ($json.stdout || '').trim()\nconst lines = out.split('\\n').map(s => s.trim()).filter(Boolean)\nconst checksum = lines[0] && /^[0-9a-f]{64}$/.test(lines[0]) ? lines[0] : null\nconst size = checksum && lines[1] ? parseInt(lines[1], 10) : null\nif (!checksum || !size) return [{ json: { skip: true } }]\nconst finalKey = $('Parse Verdict').first().json.finalKey\nconst dir = finalKey.slice(0, finalKey.lastIndexOf('/'))\nconst thumbId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16) })\nreturn [{ json: { skip: false, thumbId, childKey: `${dir}/${thumbId}.webp`, checksum, size } }]"
+      },
+      "id": "c0000000-0000-4000-8000-000000000022"
+    },
+    {
+      "name": "If Thumb OK",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3520,
+        340
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c0000000-0000-4000-8000-000000000023"
+    },
+    {
+      "name": "Read Thumb",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        3740,
+        240
+      ],
+      "parameters": {
+        "filePath": "=/home/node/.n8n-files/thumb-{{ $('Webhook').item.json.body.assetId }}.webp",
+        "dataPropertyName": "data"
+      },
+      "id": "c0000000-0000-4000-8000-000000000024"
+    },
+    {
+      "name": "Upload Thumb",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        3960,
+        240
+      ],
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "={{ $('Get Asset').item.json.asset.bucket }}",
+        "fileName": "={{ $('Prep Thumb').item.json.childKey }}",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "additionalFields": {},
+        "tagsUi": {}
+      },
+      "credentials": {
+        "s3": {
+          "id": "fnbminios3cred1",
+          "name": "fnb-minio"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-000000000025"
+    },
+    {
+      "name": "Insert Derived",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        4180,
+        240
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select storage_fn.insert_derived_asset($1::uuid, $2::uuid, $3, $4, $5, $6::bigint, $7, $8::citext[])",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body.assetId, $('Prep Thumb').item.json.thumbId, $('Prep Thumb').item.json.childKey, 'webp', 'image/webp', $('Prep Thumb').item.json.size, $('Prep Thumb').item.json.checksum, '{thumbnail}' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-000000000026"
+    },
+    {
+      "name": "If AiTags",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        4400,
+        440
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $('Webhook').item.json.body.aiTagsRequested === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c0000000-0000-4000-8000-000000000027"
+    },
+    {
+      "name": "Add Tags",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        4620,
+        340
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select storage_fn.add_asset_tags($1::uuid, $2::citext[])",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body.assetId, '{ai-tags-coming-soon}' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-000000000028"
+    },
+    {
+      "name": "Purge Delete Quarantine",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        2200,
+        760
+      ],
+      "parameters": {
+        "operation": "delete",
+        "bucketName": "={{ $('Get Asset').item.json.asset.bucket }}",
+        "fileKey": "={{ $('Get Asset').item.json.asset.storage_key }}",
+        "options": {}
+      },
+      "credentials": {
+        "s3": {
+          "id": "fnbminios3cred1",
+          "name": "fnb-minio"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-000000000010"
+    },
+    {
+      "name": "Resolve Infected",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2420,
+        760
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select storage_fn.resolve_asset_scan($1::uuid, $2::storage.scan_status, $3, $4)",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body.assetId, 'infected', $('Parse Verdict').item.json.signature, null ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-000000000011"
+    },
+    {
+      "name": "Resolve Error",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2200,
+        940
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select storage_fn.resolve_asset_scan($1::uuid, $2::storage.scan_status, $3, $4)",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body.assetId, 'error', null, null ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-000000000012"
+    },
+    {
+      "name": "Complete Run",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        4840,
+        560
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select (n8n_fn.complete_run($1::uuid, $2::jsonb)).id as run_id",
+        "options": {
+          "queryReplacement": "={{ [ $('Begin Run').first().json.run_id, JSON.stringify({ verdict: $('Parse Verdict').first().json.verdict, signature: $('Parse Verdict').first().json.signature }) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "c0000000-0000-4000-8000-000000000013"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Begin Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Begin Run": {
+      "main": [
+        [
+          {
+            "node": "Get Asset",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Asset": {
+      "main": [
+        [
+          {
+            "node": "Is Pending",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Pending": {
+      "main": [
+        [
+          {
+            "node": "Download Quarantine",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Complete Already",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Quarantine": {
+      "main": [
+        [
+          {
+            "node": "Write Scan File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Scan File": {
+      "main": [
+        [
+          {
+            "node": "Clamdscan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clamdscan": {
+      "main": [
+        [
+          {
+            "node": "Parse Verdict",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Verdict": {
+      "main": [
+        [
+          {
+            "node": "If Clean",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Clean": {
+      "main": [
+        [
+          {
+            "node": "Read Scan File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If Infected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Scan File": {
+      "main": [
+        [
+          {
+            "node": "Upload Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Final": {
+      "main": [
+        [
+          {
+            "node": "Promote Delete Quarantine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Promote Delete Quarantine": {
+      "main": [
+        [
+          {
+            "node": "Resolve Clean",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Clean": {
+      "main": [
+        [
+          {
+            "node": "If Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Image": {
+      "main": [
+        [
+          {
+            "node": "Make Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If AiTags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Prep Thumb",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prep Thumb": {
+      "main": [
+        [
+          {
+            "node": "If Thumb OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Thumb OK": {
+      "main": [
+        [
+          {
+            "node": "Read Thumb",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If AiTags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Thumb": {
+      "main": [
+        [
+          {
+            "node": "Upload Thumb",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload Thumb": {
+      "main": [
+        [
+          {
+            "node": "Insert Derived",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Derived": {
+      "main": [
+        [
+          {
+            "node": "If AiTags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If AiTags": {
+      "main": [
+        [
+          {
+            "node": "Add Tags",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Complete Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Tags": {
+      "main": [
+        [
+          {
+            "node": "Complete Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Infected": {
+      "main": [
+        [
+          {
+            "node": "Purge Delete Quarantine",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resolve Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Purge Delete Quarantine": {
+      "main": [
+        [
+          {
+            "node": "Resolve Infected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Infected": {
+      "main": [
+        [
+          {
+            "node": "Complete Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Error": {
+      "main": [
+        [
+          {
+            "node": "Complete Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "errorWorkflow": "0E8QFQyYGSyHHq0g",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": null
+}

@@ -14,8 +14,6 @@ volumes:
   node_modules_game_app:
   node_modules_graphql_api_app:
   node_modules_storage_app:
-  node_modules_agent_app:
-  agent-transcripts:                 # per-run JSONL transcripts — the agent engine's step-level record
   n8n-data:                          # n8n instance settings; state of record is the n8n_engine DB
   minio-data:
   clamav-db:
@@ -65,11 +63,9 @@ services:
       DB_URL: "${DB_URL:?}"
       PG_URL: "${PG_URL:?}"
       # Full ordered list — graphile.config.ts exposes every module schema, so all packages
-      # must deploy or PostGraphile fails at boot. fnb-agent must precede fnb-storage /
-      # fnb-location-datasets / fnb-airports (agent_worker grants + agent_fn refs).
+      # must deploy or PostGraphile fails at boot. fnb-n8n must precede fnb-storage /
+      # fnb-location-datasets / fnb-airports (n8n_worker grants for the asset-scan + sync workflows).
       DEPLOY_PACKAGES: "${DEPLOY_PACKAGES:?}"
-      # fnb-agent creates the agent_worker role with this password (sqitch --set).
-      AGENT_WORKER_PG_PASSWORD: "${AGENT_WORKER_PG_PASSWORD:?}"
       # fnb-n8n creates the n8n_worker role with this password (sqitch --set).
       N8N_WORKER_PG_PASSWORD: "${N8N_WORKER_PG_PASSWORD:?}"
     restart: "no"
@@ -88,7 +84,6 @@ services:
       - node_modules_game_app:/app/apps/game-app/node_modules
       - node_modules_graphql_api_app:/app/apps/graphql-api-app/node_modules
       - node_modules_storage_app:/app/apps/storage-app/node_modules
-      - node_modules_agent_app:/app/apps/agent-app/node_modules
     working_dir: /app
     command: ["pnpm", "install"]
     restart: "no"
@@ -514,11 +509,8 @@ services:
       S3_ACCESS_KEY: "${MINIO_ROOT_USER:?}"
       S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD:?}"
       S3_FORCE_PATH_STYLE: "${S3_FORCE_PATH_STYLE:?}"
-      # agent-app trigger surface (triggerWorkflow extendSchema plugin — Phase 5)
-      AGENT_INTERNAL_URL: "${AGENT_INTERNAL_URL:?}"
-      AGENT_TRIGGER_SECRET: "${AGENT_TRIGGER_SECRET:?}"
-      # n8n parallel engine — the trigger plugin's engine registry routes n8n-engine
-      # workflow keys to the webhook URL with the shared secret (n8n-parallel-engine spec)
+      # n8n workflow engine — the trigger plugin routes every workflow key to the webhook URL
+      # with the shared secret (agentic-decommission spec)
       N8N_INTERNAL_URL: "${N8N_INTERNAL_URL:?}"
       N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"
     volumes:
@@ -564,9 +556,10 @@ services:
       S3_ACCESS_KEY: "${MINIO_ROOT_USER:?}"
       S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD:?}"
       S3_FORCE_PATH_STYLE: "${S3_FORCE_PATH_STYLE:?}"
-      # agent-app trigger surface (upload endpoint post-commit asset-scan POST — Phase 5)
-      AGENT_INTERNAL_URL: "${AGENT_INTERNAL_URL:?}"
-      AGENT_TRIGGER_SECRET: "${AGENT_TRIGGER_SECRET:?}"
+      # n8n trigger surface (upload endpoint post-commit asset-scan webhook POST —
+      # agentic-decommission)
+      N8N_INTERNAL_URL: "${N8N_INTERNAL_URL:?}"
+      N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"
     volumes:
       - .:/app
       - node_modules_root:/app/node_modules
@@ -574,68 +567,11 @@ services:
     working_dir: /app
     command: ["sh", "-c", "pnpm --filter @function-bucket/fnb-storage-app exec nuxt dev --host 0.0.0.0 --port 3000"]
 
-  agent-app:
-    build:
-      context: .
-      dockerfile: apps/agent-app/Dockerfile   # dedicated image — ffmpeg + clamav-clients (asset-scan tools)
-    container_name: fnb_agent_app
-    networks:
-      - fnb-network
-    depends_on:
-      pnpm-install:
-        condition: service_completed_successfully
-      db-migrate:
-        condition: service_completed_successfully   # fnb-agent schema + agent_worker role must exist
-      packages-watch:
-        condition: service_healthy
-      minio-init:
-        condition: service_completed_successfully   # asset-scan reads/moves bucket objects
-      clamav:
-        condition: service_started                  # SOFT gate — scan tool retries + reaper own the horizon
-    environment:
-      NODE_ENV: "${NODE_ENV:?}"
-      NUXT_HOST: "0.0.0.0"
-      NUXT_PORT: "3000"
-      # Claude Agent SDK — the headless workflow engine (no Caddy route; reachable only at
-      # http://agent-app:3000 == AGENT_INTERNAL_URL, trigger routes gated by the shared secret)
-      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:?}"
-      AGENT_MODEL_DEFAULT: "${AGENT_MODEL_DEFAULT:-claude-haiku-4-5}"
-      AGENT_TRIGGER_SECRET: "${AGENT_TRIGGER_SECRET:?}"
-      AGENT_WORKER_PG_PASSWORD: "${AGENT_WORKER_PG_PASSWORD:?}"
-      AGENT_RUN_TIMEOUT_MINUTES: "${AGENT_RUN_TIMEOUT_MINUTES:-15}"
-      # agent_worker pg pool — held by tool handlers + the harness only
-      PGHOST: db
-      PGPORT: "5432"
-      PGDATABASE: "${POSTGRES_DB:?}"
-      # Full S3 set — asset-scan tools: GetObject (scan stream), Copy/Delete (promote/purge)
-      S3_ENDPOINT: "${S3_ENDPOINT:?}"
-      S3_PUBLIC_BASE_URL: "${S3_PUBLIC_BASE_URL:?}"
-      S3_REGION: "${S3_REGION:?}"
-      S3_BUCKET: "${S3_BUCKET:?}"
-      S3_ACCESS_KEY: "${MINIO_ROOT_USER:?}"
-      S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD:?}"
-      S3_FORCE_PATH_STYLE: "${S3_FORCE_PATH_STYLE:?}"
-      # ClamAV — consumed by the scan_and_resolve tool handler only
-      CLAMAV_HOST: "${CLAMAV_HOST:?}"
-      CLAMAV_PORT: "${CLAMAV_PORT:?}"
-      # asset-scan tunables — reaper croner job reads ASSET_SCAN_REAPER_CRON (retained)
-      ASSET_SCAN_MAX_WF_ATTEMPTS: "${ASSET_SCAN_MAX_WF_ATTEMPTS:?}"
-      ASSET_SCAN_STUCK_MINUTES: "${ASSET_SCAN_STUCK_MINUTES:?}"
-      ASSET_SCAN_REAPER_CRON: "${ASSET_SCAN_REAPER_CRON:?}"
-    volumes:
-      - .:/app
-      - node_modules_root:/app/node_modules
-      - node_modules_agent_app:/app/apps/agent-app/node_modules
-      - agent-transcripts:/data/transcripts       # per-run JSONL — the deep step-level record
-    working_dir: /app
-    command: ["sh", "-c", "pnpm --filter @function-bucket/fnb-agent-app exec nuxt dev --host 0.0.0.0 --port 3000"]
-    restart: unless-stopped
-
-  # ─── n8n parallel workflow engine (spec: .claude/specs/n8n-parallel-engine/) ───
-  # Coexists with agent-app (dual engines — R22). State lives in the separate n8n_engine
-  # database in the shared postgis cluster; editor + webhooks on their own host port
-  # (ZITADEL own-port precedent — no Caddy route). Official pinned image: the demo-only
-  # inventory has no binary steps, so no custom Dockerfile.
+  # ─── n8n workflow engine (spec: .claude/specs/agentic-decommission/) ───
+  # The sole workflow engine (R22). State lives in the separate n8n_engine database in the
+  # shared postgis cluster; editor + webhooks on their own host port (ZITADEL own-port
+  # precedent — no Caddy route). Custom image (docker/n8n/Dockerfile) adds ffmpeg + clamdscan
+  # for the asset-scan workflow's Execute Command nodes.
 
   n8n-db-init:
     image: postgis/postgis
@@ -682,10 +618,15 @@ services:
       POSTGRES_DB: "${POSTGRES_DB:?}"
       N8N_WORKER_PG_PASSWORD: "${N8N_WORKER_PG_PASSWORD:?}"
       N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"
-      # game-event agent branch (game-server spec §4) — the agentic engine's existing key,
-      # rendered into the anthropic-api-key credential template; the n8n server itself
-      # doesn't need it (credentials are stored encrypted in n8n_engine)
+      # rendered into the anthropic-api-key credential template (game-event AI + any HTTP
+      # x-api-key node); the server stores credentials encrypted in n8n_engine
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:?}"
+      # rendered into the fnb-minio S3 credential template (asset-scan S3 nodes)
+      S3_ENDPOINT: "${S3_ENDPOINT:?}"
+      S3_REGION: "${S3_REGION:?}"
+      S3_FORCE_PATH_STYLE: "${S3_FORCE_PATH_STYLE:?}"
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER:?}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:?}"
     volumes:
       - ./n8n/workflows:/import/workflows:ro
       - ./n8n/credentials:/import/credentials:ro
@@ -710,7 +651,8 @@ services:
     restart: "no"
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:2.30.7
+    build:
+      context: docker/n8n            # custom image — ffmpeg + clamdscan for asset-scan
     container_name: fnb_n8n
     networks:
       - fnb-network
@@ -719,6 +661,10 @@ services:
         condition: service_completed_successfully
       db-migrate:
         condition: service_completed_successfully   # fnb-n8n schema + n8n_worker role must exist
+      minio-init:
+        condition: service_completed_successfully   # asset-scan reads/moves bucket objects
+      clamav:
+        condition: service_started                  # SOFT gate — node retry + reaper own the horizon
     environment:
       DB_TYPE: postgresdb
       DB_POSTGRESDB_HOST: db
@@ -735,6 +681,19 @@ services:
       N8N_PERSONALIZATION_ENABLED: "false"
       N8N_RUNNERS_ENABLED: "true"
       GENERIC_TIMEZONE: "${TZ:-UTC}"
+      # Re-enable the Execute Command node (clamdscan + ffmpeg) — n8n 2.0 disables it +
+      # localFileTrigger by default; NODES_EXCLUDE=[] restores them. Safe here: the commands are
+      # fixed workflow JSON and assetId is uuid-cast by Get Asset before Clamdscan runs (no shell
+      # injection surface). (agentic-decommission spec)
+      NODES_EXCLUDE: "[]"
+      # asset-scan workflow: $env.* in the S3 nodes, the clamdscan/ffmpeg Execute Command nodes,
+      # and the asset-scan-reaper Schedule Trigger. (agentic-decommission spec)
+      S3_ENDPOINT: "${S3_ENDPOINT:?}"
+      S3_BUCKET: "${S3_BUCKET:?}"
+      CLAMAV_HOST: "${CLAMAV_HOST:?}"
+      CLAMAV_PORT: "${CLAMAV_PORT:?}"
+      ASSET_SCAN_MAX_WF_ATTEMPTS: "${ASSET_SCAN_MAX_WF_ATTEMPTS:?}"
+      ASSET_SCAN_STUCK_MINUTES: "${ASSET_SCAN_STUCK_MINUTES:?}"
     ports:
       - "${N8N_HOST_PORT:?}:5678"                  # editor + webhooks (ZITADEL own-port precedent)
     volumes:

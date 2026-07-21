@@ -6,11 +6,8 @@ import { DB_URL, PG_URL, REPO_ROOT, requiredEnv } from './_env'
 // db-migrate). Paths are db/<name>.
 const deployPackages = requiredEnv('DEPLOY_PACKAGES').split(/\s+/).filter(Boolean)
 
-// fnb-agent's policies change creates the agent_worker login role with this password
-// (psql var :'agent_worker_password' — passed to every package deploy; unused vars are harmless).
-const agentWorkerPassword = requiredEnv('AGENT_WORKER_PG_PASSWORD')
-
-// fnb-n8n's policies change creates the n8n_worker login role the same way.
+// fnb-n8n's policies change creates the n8n_worker login role with this password
+// (psql var :'n8n_worker_password' — passed to every package deploy; unused vars are harmless).
 const n8nWorkerPassword = requiredEnv('N8N_WORKER_PG_PASSWORD')
 
 const docker = (args: string) => execSync(`docker ${args}`, { stdio: 'inherit' })
@@ -25,7 +22,7 @@ for (const role of ['anon', 'authenticated', 'service_role']) {
 
 for (const pkg of deployPackages) {
   docker(
-    `run --rm --network fnb-network -v "${resolve(REPO_ROOT, 'db', pkg)}:/repo" sqitch/sqitch deploy --set agent_worker_password="${agentWorkerPassword}" --set n8n_worker_password="${n8nWorkerPassword}" "${DB_URL}"`,
+    `run --rm --network fnb-network -v "${resolve(REPO_ROOT, 'db', pkg)}:/repo" sqitch/sqitch deploy --set n8n_worker_password="${n8nWorkerPassword}" "${DB_URL}"`,
   )
 }
 

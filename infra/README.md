@@ -30,7 +30,6 @@ infra/
 ├── compose/docker-compose.prod.yml   # the prod stack (17 services; images from registry, managed PG/S3, Caddy)
 ├── docker/
 │   ├── app.Dockerfile                # multi-stage per-app build (ARG APP, ARG BASE_URL baked at build)
-│   ├── agent.Dockerfile              # headless agent-app image (+ ffmpeg + clamdscan)
 │   ├── Caddyfile                     # TLS + path routing + id./n8n. subdomains
 │   └── pg-bootstrap.sh               # idempotent managed-PG bootstrap (zitadel/n8n_engine DBs + PostGIS)
 ├── env/
@@ -71,10 +70,10 @@ them.** `render-env.mjs` fails loudly if any is missing.
 | `NUXT_SESSION_SECRET` | ≥ 32 chars |
 | `ZITADEL_MASTERKEY` | **exactly 32 chars, IMMUTABLE per environment** |
 | `N8N_ENCRYPTION_KEY` | **IMMUTABLE per environment** |
-| `ANTHROPIC_API_KEY` | agent-app + n8n game-event branch |
-| `AGENT_TRIGGER_SECRET`, `N8N_WEBHOOK_SECRET` | engine trigger/webhook shared secrets |
+| `ANTHROPIC_API_KEY` | n8n `anthropic-api-key` credential (game-event AI) |
+| `N8N_WEBHOOK_SECRET` | n8n webhook shared secret |
 | `ZITADEL_DB_PASSWORD`, `N8N_ENGINE_DB_PASSWORD` | owner-role passwords (pg-bootstrap) |
-| `AGENT_WORKER_PG_PASSWORD`, `N8N_WORKER_PG_PASSWORD` | sqitch-created worker roles |
+| `N8N_WORKER_PG_PASSWORD` | sqitch-created worker role |
 | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Spaces key / scoped IAM key (NOT MinIO root) |
 | `ZITADEL_ADMIN_USERNAME/EMAIL/PASSWORD` | prod console admin (FirstInstance) |
 | `MAPBOX_ACCESS_TOKEN` | tenant-app maps |
@@ -159,8 +158,8 @@ a laptop if CI is unavailable.
 
 `db-migrate` deploys all 12 sqitch packages · `zitadel-seed` (prod branch — no dev users) runs ·
 `n8n-import` imports + publishes (error-handler ACTIVE) · Caddy serves TLS on `<domain>` /
-`id.<domain>` / `n8n.<domain>` · the login ceremony works · an upload scans+promotes (agent-app +
-ClamAV) · a game plays (n8n referee).
+`id.<domain>` / `n8n.<domain>` · the login ceremony works · an upload scans+promotes (n8n
+asset-scan + ClamAV) · a game plays (n8n referee).
 
 ## Immutable-per-environment secrets
 `ZITADEL_MASTERKEY` (exactly 32 chars) and `N8N_ENCRYPTION_KEY` are generated **once per

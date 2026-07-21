@@ -2,41 +2,25 @@ import { makeExtendSchemaPlugin, gql } from 'postgraphile/utils'
 import { context, lambda } from 'postgraphile/grafast'
 import { requiredEnv } from '../lib/required-env.js'
 
-// The app-originated trigger surface (agentic-workflow-engine/_shared.data.md →
-// triggerWorkflow; engine routing per n8n-parallel-engine/_shared.data.md). Replaces the
-// retired queue-workflow mutation. R7-thin transport code: claims 401 gate → registry check →
-// POST to the workflow's engine with that engine's shared secret → pass { accepted, runId }
-// through. asset-scan is deliberately ABSENT from the registry — only the upload endpoint
-// fires it.
+// The app-originated trigger surface (agentic-decommission/_shared.data.md → triggerWorkflow).
+// n8n is the sole workflow engine (R22): claims 401 gate → registry check → POST the n8n webhook
+// with the shared secret → pass { accepted, runId } through. asset-scan is deliberately ABSENT
+// from the registry — only the upload endpoint + reaper fire it.
 //
-// Registry: engine 'agent' POSTs the agent-app trigger route (202 { accepted, runId });
-// engine 'n8n' POSTs the n8n webhook (respond-immediately 200, no runId → runId stays null).
-// permission null = any authenticated user; a 'p:' key = require that permission (the
-// exercisers are diagnostic tools — super-admin only). Moving a workflow between engines is
-// a one-line edit here (plus whatever DB grants the workflow needs on the target side).
-type WorkflowEngine = 'agent' | 'n8n'
 // `permission`: null = any authenticated user; a single 'p:' key = require that key; an array =
 // any-of (parity with the DB's `jwt.enforce_any_permission`). game-event uses the array form
 // because the game module gates every DB/RLS layer on `{p:app-user, p:app-admin}` — an admin
 // without p:app-user can still create and play a game, so must also be able to trigger the referee.
-const WORKFLOW_REGISTRY: Record<
-  string,
-  { engine: WorkflowEngine, permission: string | string[] | null }
-> = {
-  'sync-breweries': { engine: 'agent', permission: null },
-  // moved to n8n 2026-07-20 (dataset-sync.workflow.data.md §Engine move); the agentic
-  // definition stays in the tree dormant as the rollback
-  'sync-airports': { engine: 'n8n', permission: null },
-  'exerciser': { engine: 'agent', permission: 'p:app-admin-super' },
-  'n8n-exerciser': { engine: 'n8n', permission: 'p:app-admin-super' },
-  // Parallel n8n twin of the agentic breweries sync — operator-triggered (the datasets UI
-  // keeps the agentic key above); n8n-parallel-engine/dataset-sync.workflow.data.md.
-  'n8n-sync-breweries': { engine: 'n8n', permission: 'p:app-admin-super' },
+const WORKFLOW_REGISTRY: Record<string, { permission: string | string[] | null }> = {
+  'sync-breweries': { permission: null },
+  'sync-airports': { permission: null },
+  // the sole diagnostic exerciser (rekeyed from n8n-exerciser at the agentic decommission)
+  'exerciser': { permission: 'p:app-admin-super' },
   // The game referee (game-server spec): { op: 'setup' | 'event', gameId }. Any app user may
   // trigger — rogue/duplicate calls no-op in the referee, and record_referee_result's
   // advisory lock + still-pending re-checks make concurrent duplicates harmless. Any-of gate
   // mirrors the game module's `jwt.enforce_any_permission('{p:app-user,p:app-admin}')`.
-  'game-event': { engine: 'n8n', permission: ['p:app-user', 'p:app-admin'] }
+  'game-event': { permission: ['p:app-user', 'p:app-admin'] }
 }
 
 interface TriggerClaims {
@@ -90,33 +74,22 @@ export const TriggerWorkflowPlugin = makeExtendSchemaPlugin(() => ({
               tenantId: claims.tenantId,
               profileId: claims.profileId
             })
-            const response
-              = entry.engine === 'n8n'
-                ? await fetch(`${requiredEnv('N8N_INTERNAL_URL')}/webhook/${workflowKey}`, {
-                    method: 'POST',
-                    headers: {
-                      'content-type': 'application/json',
-                      'x-fnb-webhook-secret': requiredEnv('N8N_WEBHOOK_SECRET')
-                    },
-                    body
-                  })
-                : await fetch(`${requiredEnv('AGENT_INTERNAL_URL')}/api/trigger/${workflowKey}`, {
-                    method: 'POST',
-                    headers: {
-                      'content-type': 'application/json',
-                      'x-fnb-trigger-secret': requiredEnv('AGENT_TRIGGER_SECRET')
-                    },
-                    body
-                  })
-            if (!response.ok && response.status !== 202) {
+            const response = await fetch(
+              `${requiredEnv('N8N_INTERNAL_URL')}/webhook/${workflowKey}`,
+              {
+                method: 'POST',
+                headers: {
+                  'content-type': 'application/json',
+                  'x-fnb-webhook-secret': requiredEnv('N8N_WEBHOOK_SECRET')
+                },
+                body
+              }
+            )
+            if (!response.ok) {
               throw new Error(`workflow trigger failed: ${response.status}`)
             }
-            if (entry.engine === 'n8n') {
-              // respond-immediately webhook: 200 = accepted, no runId in the response
-              return { accepted: response.ok, runId: null }
-            }
-            const result = (await response.json()) as { accepted?: boolean, runId?: string }
-            return { accepted: result.accepted === true, runId: result.runId ?? null }
+            // respond-immediately webhook: 200 = accepted, no runId in the response
+            return { accepted: response.ok, runId: null }
           }
         )
       }

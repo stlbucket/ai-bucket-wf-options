@@ -115,8 +115,10 @@ CREATE OR REPLACE FUNCTION n8n_fn.error_run_by_execution(
   end;
   $$;
 
----------------------------------------------- running_count -- future singleton guards /
--- status fns (parity with agent_fn.running_count)
+---------------------------------------------- running_count -- singleton guards / sync-status
+-- fns. n8n is the sole workflow engine (agentic-decommission spec): the dataset-sync workflows'
+-- pre-begin_run guard node calls this directly (select n8n_fn.running_count(<key>) > 0), and the
+-- brewery/airport sync-status fns read it for `in_progress`.
 CREATE OR REPLACE FUNCTION n8n_fn.running_count(_workflow_key citext)
   RETURNS int
   LANGUAGE plpgsql
@@ -132,25 +134,6 @@ CREATE OR REPLACE FUNCTION n8n_fn.running_count(_workflow_key citext)
       and status = 'running';
 
     return _count;
-  end;
-  $$;
-
----------------------------------------------- dataset_sync_busy -- cross-engine dataset guard
--- for the n8n dataset-sync twins (n8n-parallel-engine/dataset-sync.workflow.data.md): the
--- first Postgres node of a twin checks both engines before begin_run. Lives here as SECURITY
--- DEFINER instead of granting n8n_worker usage on agent_fn — schema USAGE is what keeps the
--- PUBLIC-executable _fn surfaces closed, so it must not widen.
-CREATE OR REPLACE FUNCTION n8n_fn.dataset_sync_busy(
-    _agent_workflow_key citext
-    ,_n8n_workflow_key citext
-  )
-  RETURNS int
-  LANGUAGE plpgsql
-  STABLE
-  SECURITY DEFINER
-  AS $$
-  BEGIN
-    return agent_fn.running_count(_agent_workflow_key) + n8n_fn.running_count(_n8n_workflow_key);
   end;
   $$;
 

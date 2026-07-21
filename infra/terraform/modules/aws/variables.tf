@@ -106,6 +106,7 @@ variable "app_images" {
   description = "ECR repository names (one per app image)."
   default = [
     "fnb-auth-app", "fnb-home-app", "fnb-tenant-app", "fnb-msg-app",
-    "fnb-game-app", "fnb-graphql-api-app", "fnb-storage-app", "fnb-agent-app",
+    "fnb-game-app", "fnb-graphql-api-app", "fnb-storage-app",
+    # TODO (plan 0010): add "fnb-n8n" once the custom n8n image is built + pushed (asset-scan).
   ]
 }

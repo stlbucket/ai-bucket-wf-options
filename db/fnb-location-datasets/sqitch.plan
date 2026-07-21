@@ -2,6 +2,6 @@
 %project=fnb-location-datasets
 
 00000000010700_location_datasets [fnb-app:00000000010250_app_policies fnb-loc:00000000010340_loc_public_locations] 2026-07-09T00:00:00Z Developer <dev@example.com> # Create location_datasets schemas, brewery_type enum, and brewery table
-00000000010710_location_datasets_fn [00000000010700_location_datasets fnb-agent:00000000011130_agent_policies fnb-n8n:00000000011230_n8n_policies fnb-loc:00000000010350_loc_geolocated] 2026-07-09T00:00:00Z Developer <dev@example.com> # Create location_datasets_fn types and functions (upsert_breweries, brewery_sync_status) + agent_worker grants
+00000000010710_location_datasets_fn [00000000010700_location_datasets fnb-n8n:00000000011230_n8n_policies fnb-loc:00000000010350_loc_geolocated] 2026-07-09T00:00:00Z Developer <dev@example.com> # Create location_datasets_fn types and functions (upsert_breweries, brewery_sync_status) + n8n_worker grants
 00000000010715_location_datasets_api [00000000010710_location_datasets_fn] 2026-07-09T00:00:00Z Developer <dev@example.com> # Create location_datasets_api functions (search_breweries, brewery_map_points, brewery_sync_status)
 00000000010720_location_datasets_policies [00000000010715_location_datasets_api] 2026-07-09T00:00:00Z Developer <dev@example.com> # Apply grants and RLS policies

@@ -178,24 +178,17 @@ CREATE OR REPLACE FUNCTION location_datasets_fn.brewery_sync_status()
     into _retval.last_synced_at, _retval.brewery_count
     from location_datasets.brewery b;
 
-    -- either engine syncing this dataset counts (n8n-parallel-engine/dataset-sync.workflow.data.md)
-    _retval.in_progress := agent_fn.running_count('sync-breweries') > 0
-      or n8n_fn.running_count('n8n-sync-breweries') > 0;
+    -- n8n is the sole workflow engine (agentic-decommission spec): in_progress means the n8n
+    -- sync-breweries workflow is running.
+    _retval.in_progress := n8n_fn.running_count('sync-breweries') > 0;
 
     return _retval;
   end;
   $$;
 
----------------------------------------------- agent_worker grants (agentic workflow engine)
--- The sync-breweries workflow's tool handlers connect as agent_worker and call
--- upsert_breweries per page — same jsonb payload the retired worker handler sent.
-grant usage on schema location_datasets to agent_worker;
-grant usage on schema location_datasets_fn to agent_worker;
-grant execute on function location_datasets_fn.upsert_breweries(jsonb) to agent_worker;
-
----------------------------------------------- n8n_worker grants (n8n dataset-sync twin)
--- The n8n-sync-breweries workflow's Postgres nodes connect as n8n_worker and call
--- upsert_breweries per page (n8n-parallel-engine/dataset-sync.workflow.data.md).
+---------------------------------------------- n8n_worker grants (sync-breweries workflow)
+-- The sync-breweries workflow's Postgres nodes connect as n8n_worker and call
+-- upsert_breweries per page (agentic-decommission spec).
 grant usage on schema location_datasets to n8n_worker;
 grant usage on schema location_datasets_fn to n8n_worker;
 grant execute on function location_datasets_fn.upsert_breweries(jsonb) to n8n_worker;

@@ -9,12 +9,12 @@
 > contract: `.claude/specs/urn-registry/stacking-v2.data.md`. `context`/`owning_entity_id`
 > mentions below are historical.
 
-> **Engine superseded 2026-07-17:** the wf/graphile-worker engine (and `apps/worker-app`) is
-> retired — the asset-scan pipeline now runs as an **agentic workflow** in `apps/agent-app`
-> (R22; `.claude/specs/agentic-workflow-engine/asset-scan.workflow.data.md`). The upload
-> endpoint fires a post-commit trigger POST instead of `wf_api.queue_workflow`; the reaper is a
-> croner job in agent-app; run visibility is `agent.workflow_run` + per-run transcripts (the
-> Workflow Dashboard is gone). Worker/wf mentions below are historical.
+> **Engine superseded:** the wf/graphile-worker engine (and the later agentic `apps/agent-app`)
+> are retired — the asset-scan pipeline runs on **n8n** (R22, the sole engine;
+> `.claude/specs/agentic-decommission/asset-scan.workflow.data.md`). The upload endpoint fires a
+> post-commit webhook POST instead of `wf_api.queue_workflow`; the reaper is the n8n
+> `asset-scan-reaper` Schedule Trigger; run visibility is `n8n.workflow_run` + the n8n editor's
+> execution log. Worker/wf mentions below are historical.
 
 ## Status
 **Implemented 2026-07-06.** Phases 1–10 complete (standalone `storage-app` + `storage-layer`,

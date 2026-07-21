@@ -172,21 +172,22 @@ export default defineEventHandler(async (event): Promise<AssetMeta> => {
     throw createError({ statusCode: 500, statusMessage: 'Failed to record upload' })
   }
 
-  // 6b. TRIGGER (post-commit, fire-and-forget) — POST to the agent engine. Failures are logged
-  //     and SWALLOWED: the asset stays scan_status='pending' and the reaper owns strays.
+  // 6b. TRIGGER (post-commit, fire-and-forget) — POST the n8n asset-scan webhook. Failures are
+  //     logged and SWALLOWED: the asset stays scan_status='pending' and the reaper owns strays.
+  //     (agentic-decommission/asset-scan.workflow.data.md → Trigger.)
   try {
     const response = await fetch(
-      `${requiredEnv('AGENT_INTERNAL_URL')}/api/trigger/asset-scan`,
+      `${requiredEnv('N8N_INTERNAL_URL')}/webhook/asset-scan`,
       {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          'x-fnb-trigger-secret': requiredEnv('AGENT_TRIGGER_SECRET'),
+          'x-fnb-webhook-secret': requiredEnv('N8N_WEBHOOK_SECRET'),
         },
         body: JSON.stringify({ assetId, tenantId: claims.tenantId, aiTagsRequested }),
       },
     )
-    if (!response.ok && response.status !== 202) {
+    if (!response.ok) {
       console.error(`[storage:upload] asset-scan trigger failed: ${response.status}`)
     }
   } catch (err) {

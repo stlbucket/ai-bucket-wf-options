@@ -1,9 +1,9 @@
 # Asset Storage — Infrastructure (MinIO + ClamAV)
 
-> **Engine superseded 2026-07-17:** `apps/worker-app` is retired — the scan pipeline (S3
-> Get/Copy/Delete, clamdscan, ffmpeg) now runs inside `apps/agent-app`'s tool handlers (R22;
-> `.claude/specs/agentic-workflow-engine/infrastructure.md` for the current compose service,
-> image, and env). worker-app mentions below are historical.
+> **Engine superseded:** `apps/worker-app` (and the later agentic `apps/agent-app`) are retired —
+> the scan pipeline (S3 download/upload/delete, clamdscan, ffmpeg) runs as **n8n** Execute Command
+> + S3 nodes on the custom n8n image (R22; `.claude/specs/agentic-decommission/infrastructure.md`
+> for the compose service, custom image, and env). worker-app/agent-app mentions below are historical.
 
 
 > **URN stacking v2 (2026-07-10):** `storage.asset.context` (+ the `asset_context` enum) and

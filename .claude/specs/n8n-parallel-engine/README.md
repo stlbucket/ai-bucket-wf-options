@@ -5,6 +5,14 @@
 # n8n Parallel Engine — n8n alongside the agentic engine + site-admin workflow tools
 
 ## Status
+> **n8n is now the SOLE workflow engine (2026-07-21).** The "parallel"/coexistence framing below
+> is historical: the agentic engine was retired in the **agentic-decommission**
+> (`.claude/specs/agentic-decommission/`, plan 0017) once every workflow — including asset-scan —
+> moved to n8n. The engine registry is n8n-only (no `engine` field), `dataset_sync_busy`
+> collapsed to single-engine `running_count`, and this spec's `wf-agentic` page + `AgentWorkflowRun`
+> client layer are deleted. Read this spec for how n8n was stood up; read agentic-decommission for
+> the end state.
+
 **Implemented 2026-07-19** (plan `0015__wf________n8n-parallel-engine_____________MED__`,
 executed and verified the same day). Version pins resolved at implementation: n8n **2.30.7**
 (official image, `docker.n8n.io/n8nio/n8n`). Corrections from the build are folded into each

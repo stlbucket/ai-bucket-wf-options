@@ -10,10 +10,10 @@ const { runs, fetching, error, refresh } = useN8nWorkflowRuns()
 const { triggerWorkflow, fetching: triggering } = useTriggerWorkflow()
 const editorUrl = useRuntimeConfig().public.n8nEditorUrl
 
-// Mirrors the n8n-engine entries of the trigger plugin's WORKFLOW_REGISTRY — grows as
-// workflows move between engines.
-const triggerableKeys = ['n8n-exerciser', 'n8n-sync-breweries', 'sync-airports']
-const selectedKey = ref('n8n-exerciser')
+// Mirrors the triggerable entries of the trigger plugin's WORKFLOW_REGISTRY (n8n is the sole
+// engine — agentic-decommission spec). asset-scan is absent (upload-endpoint + reaper only).
+const triggerableKeys = ['exerciser', 'sync-breweries', 'sync-airports']
+const selectedKey = ref('exerciser')
 const inputJson = ref('')
 
 async function onTrigger() {

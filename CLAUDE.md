@@ -18,7 +18,10 @@ stack in full here (global-rules R21).
 | `storage-app` | `/storage` | `storage-layer` |
 | `msg-app` | `/msg` | `msg-layer` |
 | `game-app` | `/game` (WS only — no user pages) | `game-layer` |
-| `agent-app` | — (headless) | none — the agentic workflow engine (Claude Agent SDK harness; R22 dual engines — the parallel n8n engine is a compose service trio, not an app) |
+
+The workflow engine is **n8n** (R22) — a compose service trio (`n8n-db-init`, `n8n-import`,
+`n8n`), not an app. Definitions live in `n8n/workflows/*.json`; specs
+`.claude/specs/n8n-parallel-engine/` + `.claude/specs/agentic-decommission/`.
 
 **Packages** (`packages/`) — ten shared packages (details:
 `.claude/specs/package-layers-pattern.md`):
@@ -35,16 +38,15 @@ spec's referee/engine logic; its build is embedded verbatim into the `game-event
 Code nodes by an embed script, not imported by any app) — not one of the ten layer/lib
 packages above, but part of the game server (spec `.claude/specs/game-server/`).
 
-**DB** (`db/`) — twelve sqitch packages (deploy order: `fnb-auth fnb-app fnb-agent fnb-n8n
+**DB** (`db/`) — eleven sqitch packages (deploy order: `fnb-auth fnb-app fnb-n8n
 fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets fnb-airports fnb-game`;
-`fnb-agent` must precede `fnb-storage`/`fnb-location-datasets`/`fnb-airports` — `agent_worker`
-grants + `agent_fn` refs; `fnb-game` is last — needs `fnb-res`'s registry, `fnb-app`'s
-policies, and `fnb-n8n`'s `n8n_worker` role). `fnb-agent` is the agent run log
-(`agent.workflow_run` + the `agent_worker` service role; spec:
-`.claude/specs/agentic-workflow-engine/`). `fnb-n8n` is the n8n run log
-(`n8n.workflow_run` + the `n8n_worker` service role — the **parallel n8n engine**, R22:
-per-workflow engine assignment in the `triggerWorkflow` registry; engine state in the separate
-`n8n_engine` DB, definitions in the repo `n8n/` dir; spec: `.claude/specs/n8n-parallel-engine/`). `fnb-res` is the URN registry (`res.resource` — business + identity objects
+`fnb-n8n` must precede `fnb-storage`/`fnb-location-datasets`/`fnb-airports` — `n8n_worker`
+grants for the asset-scan + sync workflows; `fnb-game` is last — needs `fnb-res`'s registry,
+`fnb-app`'s policies, and `fnb-n8n`'s `n8n_worker` role). `fnb-n8n` is the n8n run log
+(`n8n.workflow_run` + the `n8n_worker` service role — the **sole workflow engine**, R22:
+trigger routing in the `triggerWorkflow` registry; engine state in the separate
+`n8n_engine` DB, definitions in the repo `n8n/` dir; specs: `.claude/specs/n8n-parallel-engine/`
++ `.claude/specs/agentic-decommission/`). `fnb-res` is the URN registry (`res.resource` — business + identity objects
 register via `res_fn.register_resource`, enforced by deferred FKs; module resident references
 are `*_resident_urn` FKs into it; spec: `.claude/specs/urn-registry/`). `fnb-game` is the
 event-sourced game platform (`game.game_type` registry, N-seat `game_player` roster,
@@ -72,8 +74,8 @@ is the outside-GraphQL carve-out. Details: security section of `.claude/specs/gr
 
 Nuxt 4 (Vue 3, SSR) · Nuxt UI 4 + Tailwind 4 (green/slate) · TypeScript 6 (strict) · Vitest ·
 ESLint + Prettier (no semis, single quotes, 100-char) · Turborepo · pnpm workspaces · PostgreSQL
-(PostGIS) · PostGraphile 5 · urql + graphql-codegen · Claude Agent SDK (agentic workflows) ·
-n8n (parallel workflow engine, self-hosted).
+(PostGIS) · PostGraphile 5 · urql + graphql-codegen ·
+n8n (sole workflow engine, self-hosted).
 
 ## Root Scripts
 

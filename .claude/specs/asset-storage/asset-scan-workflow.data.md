@@ -1,12 +1,13 @@
 # Asset Scan — wf Workflow (v1 + v2 image-processing draft)
 
-> **SUPERSEDED 2026-07-17** by
-> `.claude/specs/agentic-workflow-engine/asset-scan.workflow.data.md` — the wf engine and
-> worker-app are retired (R22); the asset-scan pipeline now runs as an agentic workflow in
-> `apps/agent-app` (atomic `scan_and_resolve` tool + agent-orchestrated thumbnail/tag branches +
-> deterministic croner reaper). The **contract** below (quarantine-first, one terminal verdict,
-> idempotent re-runs, reads gated on clean, no stranded assets) is inherited unchanged; the
-> execution shape described in this file is historical.
+> **SUPERSEDED** by
+> `.claude/specs/agentic-decommission/asset-scan.workflow.data.md` — the asset-scan pipeline runs
+> on **n8n** (R22, the sole engine; the wf/graphile-worker and agentic engines are both retired).
+> It is a fixed n8n node graph: webhook → begin_run → asset_for_scan → S3 download → clamdscan →
+> verdict IF → promote/purge + resolve → thumbnail (ffmpeg webp) / ai-tag → complete_run, with an
+> `asset-scan-reaper` Schedule Trigger. The **contract** below (quarantine-first, one terminal
+> verdict, idempotent re-runs, reads gated on clean, no stranded assets) is inherited unchanged;
+> the execution shape described in this file is historical.
 
 ## Status
 **Implemented 2026-07-06** (Phase 6 + Plans A/D); clean private/public paths verified end-to-end.

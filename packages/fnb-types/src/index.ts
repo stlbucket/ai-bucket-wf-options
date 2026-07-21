@@ -24,7 +24,7 @@ export type { Application, Module, Tool } from '@/application'
 export type { Todo, TodoStatus, TodoType } from '@/todo'
 export type { SupportTicket, SupportTicketComment, SupportTicketStatus } from '@/support-ticket'
 export type { LocationInfoInput } from '@/location-input'
-export type { WorkflowRunStatus, AgentWorkflowRun, N8nWorkflowRun } from '@/workflow-run'
+export type { WorkflowRunStatus, N8nWorkflowRun } from '@/workflow-run'
 export type { Brewery, BreweryType, BreweryMapPoint, BrewerySyncStatus } from '@/brewery'
 export type {
   Airport,

@@ -47,8 +47,7 @@ user-invoked workflow that does its own recon (producing a `<dataset>-expert` sp
 | Skill | Engage when… |
 |---|---|
 | `postgraphile-5-expert` | PostGraphile config/smart tags/behaviors/inflection/plugins, grafast context, grafserv path-prefix deployment, schema-design-for-GraphQL questions |
-| `claude-agent-sdk` | the agent-app workflow engine: `query()` options, custom `tool()`/`createSdkMcpServer` toolboxes, toolbox closure (`tools: []`), permission/session semantics, harness patterns — R22 house infrastructure (the agentic side of the dual engines) |
-| `n8n-cli` (global skill) | the parallel n8n engine's operator loop (R22; spec `.claude/specs/n8n-parallel-engine/`): workflow build/export-to-repo (`n8n/workflows/*.json`), credentials, executions — `N8N_URL=http://localhost:$N8N_HOST_PORT` + `N8N_API_KEY` from `.env` |
+| `n8n-cli` (global skill) | the n8n engine's operator loop (R22 — the sole workflow engine; specs `.claude/specs/n8n-parallel-engine/` + `.claude/specs/agentic-decommission/`): workflow build/export-to-repo (`n8n/workflows/*.json`), credentials, executions — `N8N_URL=http://localhost:$N8N_HOST_PORT` + `N8N_API_KEY` from `.env`. Node schemas live in the container; the asset-scan build hit 4 n8n-2.x gotchas (memory `project_n8n_hardened_image`) |
 | `graphile-worker-expert` | LEGACY — graphile-worker is retired from the stack (R22). Engage only when reading old history/branches; never for new work |
 | `zitadel-expert` | the OIDC ceremony, ZITADEL org/project/app config, service accounts, token validation, Actions, self-hosting |
 | `vue-flow-expert` | Vue Flow canvases (nodes/edges/composables) and elkjs auto-layout (generic — the wf UOW canvas that used it is retired; no vue-flow consumers remain in-repo) |

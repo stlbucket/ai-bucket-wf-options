@@ -1,27 +1,23 @@
 ---
 name: graphql-api-app-worker-pattern
-description: TOMBSTONE — graphile-worker and the wf module are retired (2026-07-17). The stack's workflow engine is the agentic apps/agent-app; see .claude/specs/agentic-workflow-engine/.
+description: TOMBSTONE — graphile-worker and the wf module are retired. The stack's workflow engine is n8n (R22); see .claude/specs/n8n-parallel-engine/ + .claude/specs/agentic-decommission/.
 metadata:
   type: reference
 ---
 
 ## Status
-**Retired 2026-07-17** — the graphile-worker runner (`apps/worker-app`), the `wf` module
-(`db/fnb-wf`), and every task handler this file described were decommissioned when the
-**agentic workflow engine** replaced them (full-replacement decision, plan
-`0015__wf________agentic-workflow-engine_________MED__`).
+**Retired** — the graphile-worker runner (`apps/worker-app`) + the `wf` module (`db/fnb-wf`) were
+decommissioned 2026-07-17, replaced briefly by an agentic engine (`apps/agent-app`), which was
+itself retired 2026-07-21 (agentic-decommission) once every workflow moved to n8n.
 
-The successor system:
+The current system:
 
-- **Spec:** `.claude/specs/agentic-workflow-engine/` (README + `_shared.data.md` +
-  `infrastructure.md` + per-workflow files + `decommission.data.md`)
-- **Rule:** `global-rules.md` → **R22** (agent-app is the stack's only workflow engine)
-- **Engine:** `apps/agent-app` — headless Claude Agent SDK harness
-  (`server/lib/agent-harness.ts`), workflow definitions as code
-  (`server/lib/agent-workflows/`), closed zod-validated toolboxes
-  (`server/lib/agent-tools/`), croner scheduler + reaper (`server/plugins/agent-scheduler.ts`)
-- **Run log:** `agent.workflow_run` (`db/fnb-agent`); step-level record = per-run transcript
-  JSONL on the `agent-transcripts` volume
+- **Spec:** `.claude/specs/n8n-parallel-engine/` (standup) + `.claude/specs/agentic-decommission/`
+  (the migration + retirement of the agentic engine)
+- **Rule:** `global-rules.md` → **R22** (n8n is the sole workflow engine)
+- **Engine:** the **n8n** container trio (`n8n-db-init` / `n8n-import` / `n8n`, custom image);
+  definitions as code in `n8n/workflows/*.json`; state in the separate `n8n_engine` DB
+- **Run log:** `n8n.workflow_run` (`db/fnb-n8n`); step-level record = the n8n editor's execution log
 - **App trigger surface:** the `triggerWorkflow` extendSchema plugin — see `server-pattern.md`
 
 Nothing in this file applies to the current stack.

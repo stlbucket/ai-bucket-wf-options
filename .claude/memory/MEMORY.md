@@ -1,5 +1,6 @@
 # Memory Index
 
+- [n8n images are Docker Hardened (no apk)](project_n8n_hardened_image.md) — n8n 2.30.x = hardened Alpine, apk removed; custom images need a multi-stage ldd-copy, not `apk add`; clamdscan pkg is `clamav-clamdscan`
 - [Cross-schema CREATE OR REPLACE in sqitch reverts](feedback_sqitch_cross_schema_replace.md) — DROP is correct for foreign-schema OR REPLACE functions; user confirmed this is expected
 - [Explicit imports required in layer packages](feedback_explicit_imports_in_layers.md) — all imports must be explicit in packages/ layers; no auto-imports, no ambient types
 - [Nuxt UI v4 API — all components](feedback_nuxt_ui_v4_table_api.md) — always check v4 docs before using any U* component; UTable: `accessorKey`/`header`, `#*-cell`, `row.original.*`, `:data`, `v-model:sorting`

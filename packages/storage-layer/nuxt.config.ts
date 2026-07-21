@@ -2,8 +2,8 @@ import { defineNuxtConfig } from 'nuxt/config'
 
 // storage-layer extends tenant-layer → inherits the claims middleware (applyEventClaims),
 // nav system, and dashboard layout. No WebSocket (unlike msg-layer); the layer's server/ dir
-// hosts the upload endpoint only — the asset-scan pipeline runs in apps/agent-app (the
-// agentic workflow engine; triggered post-commit by the upload endpoint).
+// hosts the upload endpoint only — the asset-scan pipeline runs on the n8n engine
+// (the `asset-scan` workflow; triggered post-commit by the upload endpoint's webhook POST).
 export default defineNuxtConfig({
   extends: ['@function-bucket/fnb-tenant-layer'],
   runtimeConfig: {

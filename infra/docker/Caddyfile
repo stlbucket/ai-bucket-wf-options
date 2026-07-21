@@ -7,7 +7,7 @@
 # restarts don't re-issue.
 #
 # RULE preserved from nginx: new app blocks go BEFORE the `/` catch-all; the reverse_proxy upstream
-# is the Compose service name on :3000. agent-app has NO route (headless).
+# is the Compose service name on :3000. (The n8n engine has NO Caddy route — its own host port.)
 
 {
 	# ACME contact for Let's Encrypt expiry notices.

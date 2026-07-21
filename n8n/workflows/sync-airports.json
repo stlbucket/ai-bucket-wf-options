@@ -37,7 +37,7 @@
       ],
       "parameters": {
         "operation": "executeQuery",
-        "query": "select n8n_fn.dataset_sync_busy('sync-airports'::citext, 'sync-airports'::citext) as busy",
+        "query": "select n8n_fn.running_count('sync-airports'::citext)::int as busy",
         "options": {}
       },
       "credentials": {

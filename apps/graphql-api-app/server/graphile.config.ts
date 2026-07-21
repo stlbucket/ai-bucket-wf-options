@@ -35,8 +35,6 @@ const preset: GraphileConfig.Preset = {
         'loc_api',
         'todo',
         'todo_api',
-        'agent',
-        'agent_api',
         'n8n',
         'n8n_api',
         'storage',

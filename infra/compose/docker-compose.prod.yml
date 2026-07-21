@@ -18,7 +18,6 @@ networks:
     name: fnb-network
 
 volumes:
-  agent-transcripts:   # per-run JSONL transcripts (agent engine step record)
   n8n-data:            # n8n instance settings; state of record is the n8n_engine DB
   clamav-db:           # virus signature DB
   zitadel-seed:        # PAT + { issuer, clientId } handoff (zitadel → seed job → auth-app)
@@ -64,7 +63,6 @@ services:
       DB_URL: "${DB_URL:?}"        # db:pg://…@<managed-host>:<port>/fnb?sslmode=require
       PG_URL: "${PG_URL:?}"        # postgresql://…@<managed-host>:<port>/fnb?sslmode=require
       DEPLOY_PACKAGES: "${DEPLOY_PACKAGES:?}"
-      AGENT_WORKER_PG_PASSWORD: "${AGENT_WORKER_PG_PASSWORD:?}"
       N8N_WORKER_PG_PASSWORD: "${N8N_WORKER_PG_PASSWORD:?}"
     restart: "no"
 
@@ -386,8 +384,6 @@ services:
       S3_ACCESS_KEY: "${S3_ACCESS_KEY:?}"
       S3_SECRET_KEY: "${S3_SECRET_KEY:?}"
       S3_FORCE_PATH_STYLE: "${S3_FORCE_PATH_STYLE:?}"
-      AGENT_INTERNAL_URL: "${AGENT_INTERNAL_URL:?}"
-      AGENT_TRIGGER_SECRET: "${AGENT_TRIGGER_SECRET:?}"
       N8N_INTERNAL_URL: "${N8N_INTERNAL_URL:?}"
       N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"
     restart: unless-stopped
@@ -418,49 +414,15 @@ services:
       S3_ACCESS_KEY: "${S3_ACCESS_KEY:?}"
       S3_SECRET_KEY: "${S3_SECRET_KEY:?}"
       S3_FORCE_PATH_STYLE: "${S3_FORCE_PATH_STYLE:?}"
-      AGENT_INTERNAL_URL: "${AGENT_INTERNAL_URL:?}"
-      AGENT_TRIGGER_SECRET: "${AGENT_TRIGGER_SECRET:?}"
+      N8N_INTERNAL_URL: "${N8N_INTERNAL_URL:?}"
+      N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"
     restart: unless-stopped
 
-  # Headless agentic engine (no Caddy route) — KEPT for now (removal is a later effort).
-  agent-app:
-    image: "${REGISTRY:?}/fnb-agent-app:${IMAGE_TAG:?}"
-    networks:
-      - fnb-network
-    depends_on:
-      db-migrate:
-        condition: service_completed_successfully
-      clamav:
-        condition: service_started
-    environment:
-      NODE_ENV: production
-      NUXT_HOST: "0.0.0.0"
-      NUXT_PORT: "3000"
-      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:?}"
-      AGENT_MODEL_DEFAULT: "${AGENT_MODEL_DEFAULT:-claude-haiku-4-5}"
-      AGENT_TRIGGER_SECRET: "${AGENT_TRIGGER_SECRET:?}"
-      AGENT_WORKER_PG_PASSWORD: "${AGENT_WORKER_PG_PASSWORD:?}"
-      AGENT_RUN_TIMEOUT_MINUTES: "${AGENT_RUN_TIMEOUT_MINUTES:-15}"
-      # agent_worker pg pool — MANAGED cluster (not the dev `db` host), TLS required.
-      PGHOST: "${MANAGED_PG_HOST:?}"
-      PGPORT: "${MANAGED_PG_PORT:?}"
-      PGDATABASE: "${POSTGRES_DB:?}"
-      PGSSLMODE: require
-      S3_ENDPOINT: "${S3_ENDPOINT:?}"
-      S3_PUBLIC_BASE_URL: "${S3_PUBLIC_BASE_URL:?}"
-      S3_REGION: "${S3_REGION:?}"
-      S3_BUCKET: "${S3_BUCKET:?}"
-      S3_ACCESS_KEY: "${S3_ACCESS_KEY:?}"
-      S3_SECRET_KEY: "${S3_SECRET_KEY:?}"
-      S3_FORCE_PATH_STYLE: "${S3_FORCE_PATH_STYLE:?}"
-      CLAMAV_HOST: "${CLAMAV_HOST:?}"
-      CLAMAV_PORT: "${CLAMAV_PORT:?}"
-      ASSET_SCAN_MAX_WF_ATTEMPTS: "${ASSET_SCAN_MAX_WF_ATTEMPTS:?}"
-      ASSET_SCAN_STUCK_MINUTES: "${ASSET_SCAN_STUCK_MINUTES:?}"
-      ASSET_SCAN_REAPER_CRON: "${ASSET_SCAN_REAPER_CRON:?}"
-    volumes:
-      - agent-transcripts:/data/transcripts
-    restart: unless-stopped
+  # NOTE (agentic-decommission): the agent-app service is retired — n8n is the sole workflow
+  # engine. TODO for the deployment effort (plan 0010): the prod `n8n` service above must move
+  # to the custom image (CI build + push `${REGISTRY}/fnb-n8n:${IMAGE_TAG}` from docker/n8n) and
+  # gain the asset-scan env (NODES_EXCLUDE=[], CLAMAV_HOST/PORT, S3_*, ASSET_SCAN_MAX_WF_ATTEMPTS/
+  # STUCK_MINUTES) + clamav/minio deps + the fnb-minio credential — mirroring docker-compose.yml.
 
   # ── Caddy — TLS front door (same proxy as dev docker/Caddyfile + TLS). Publishes 80/443; routes to the apps. ──
   caddy:

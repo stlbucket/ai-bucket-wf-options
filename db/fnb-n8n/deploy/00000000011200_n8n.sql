@@ -16,7 +16,7 @@ CREATE TYPE n8n.n8n_workflow_run_status AS ENUM ('running', 'success', 'error');
 -- the agentic engine; per-engine logs match the per-engine site-admin tools.
 CREATE TABLE n8n.workflow_run (
   id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  workflow_key citext NOT NULL,              -- 'n8n-exerciser' | future keys
+  workflow_key citext NOT NULL,              -- 'exerciser' | 'sync-breweries' | 'asset-scan' | …
   n8n_execution_id text,                     -- n8n's $execution.id (correlate to the n8n log)
   tenant_id uuid REFERENCES app.tenant(id),  -- nullable
   status n8n.n8n_workflow_run_status NOT NULL DEFAULT 'running',

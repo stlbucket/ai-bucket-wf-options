@@ -15,8 +15,8 @@ user follows this pattern themselves (e.g. adding `tags`/`parent_asset_id` direc
 `00000000010600_storage.sql`).
 
 **How to apply:** Put new functions/columns/policies in the existing file where they logically
-belong. Mind deploy order within the existing plan — e.g. `agent_worker`-only `storage_fn`
+belong. Mind deploy order within the existing plan — e.g. `n8n_worker`-only `storage_fn`
 functions live in a change after the policies file's blanket `grant execute ... to authenticated`
 so their revokes stick. New changes are still acceptable when a change genuinely needs a new
-cross-project dependency (precedent: `00000000010640_storage_agent_worker` depending on
-`fnb-agent`, 2026-07-17). Never run `git` during a sqitch session.
+cross-project dependency (precedent: `00000000010640_storage_n8n_worker` depending on
+`fnb-n8n`). Never run `git` during a sqitch session.

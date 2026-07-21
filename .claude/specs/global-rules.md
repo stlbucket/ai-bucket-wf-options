@@ -143,51 +143,41 @@ apps/<app>/app/composables/use{Module}.ts                    ← thin re-export
 apps/<app>/app/pages/{module}/index.vue, [id].vue            ← call composables only
 ```
 The only `server/` directories are the H3 carve-outs (`graphql-api-app` — the GraphQL transport;
-`msg-layer` — WebSocket infrastructure; `storage-layer` — the multipart upload endpoint) and the
-headless `agent-app` (R22).
+`msg-layer` — WebSocket infrastructure; `storage-layer` — the multipart upload endpoint). There
+is no headless app — the workflow engine is a container, not an app (R22).
 
-### R22 — two workflow engines: agent-app (primary) + the parallel n8n container
-The stack runs **two** workflow engines side by side, with **per-workflow engine assignment**
-in exactly one place: the `WORKFLOW_REGISTRY` of the `triggerWorkflow` extendSchema plugin
-(`apps/graphql-api-app/server/graphile/trigger-workflow.plugin.ts` — `{ key: { engine:
-'agent' | 'n8n', permission } }`). Pages/composables are engine-agnostic (R1); moving a
-workflow between engines is a registry edit plus the DB grants the workflow needs on the
-target side. Per-engine run logs (`agent.workflow_run` / `n8n.workflow_run`) back the two
-site-admin tools (Agentic Workflows / n8n Workflows, both `p:app-admin-super`).
+### R22 — n8n is the sole workflow engine
+All workflows run on **n8n** (self-hosted container, custom image, own host port; state in the
+separate `n8n_engine` DB in the existing postgis cluster). There is no agentic/Claude-Agent-SDK
+engine and no graphile-worker — both retired (agentic-decommission 2026-07-21; the agentic
+engine, `apps/agent-app`, `db/fnb-agent`, and the `agent_worker` role were deleted after every
+workflow moved to n8n). Spec: `.claude/specs/n8n-parallel-engine/` (standup) +
+`.claude/specs/agentic-decommission/` (the migration + retirement).
 
-**The agentic engine** is `apps/agent-app` (headless: no Caddy route, no layers, no UI) — the
-Claude Agent SDK harness running asset-scan + reaper, sync-breweries, and exerciser
-(sync-airports moved to n8n 2026-07-20; its agentic definition is dormant in the tree as the
-registry-flip rollback). Spec: `.claude/specs/agentic-workflow-engine/`.
-The invariants:
-- **fnb → agent is trigger-endpoint-only**: HTTP POST `${AGENT_INTERNAL_URL}/api/trigger/<key>`
-  with the `X-Fnb-Trigger-Secret` header (callers: the `triggerWorkflow` extendSchema plugin in
-  graphql-api-app, the storage-layer upload endpoint's post-commit POST, and the in-process
-  reaper). Fire-and-forget `202 { accepted, runId }`; completion is observed via
-  `agent.workflow_run`, never by holding the call open.
-- **agent → fnb is the `agent_worker` PG role calling SECURITY DEFINER `_fn` functions, from
-  tool handlers only.** agent-app never connects as authenticator/authenticated and never goes
-  through PostGraphile. The model never sees a connection string and never writes SQL.
-- **Toolboxes are closed**: custom zod-validated SDK MCP tools only — `tools: []` (disables all
-  built-ins; `allowedTools` alone only gates permission, built-ins stay visible),
-  `settingSources: []`, `allowedTools` = the `mcp__fnb__*` set. No Bash/FS/Web tools, no SQL tool.
-- **Invariant-bearing transitions are single deterministic tools** (e.g. the scan verdict +
-  promote/purge is ONE atomic `scan_and_resolve` tool); agents orchestrate, never adjudicate
-  security verdicts. Deterministic recurring work (the reaper) is croner code, not an agent.
-- **Terminal writes are harness-owned**: the injected `complete_run` tool hands resultData to
-  the harness; begin/attach/complete/error/sweep DB writes happen only in harness code.
+Trigger routing lives in one place: the `WORKFLOW_REGISTRY` of the `triggerWorkflow` extendSchema
+plugin (`apps/graphql-api-app/server/graphile/trigger-workflow.plugin.ts` —
+`{ key: { permission } }`, POSTing the n8n webhook). Pages/composables are engine-agnostic (R1).
+Inventory: `sync-breweries`, `sync-airports`, `exerciser`, `game-event`, `asset-scan` (+ its
+`asset-scan-reaper` Schedule Trigger), and the shared `error-handler`. The single run log
+`n8n.workflow_run` backs the site-admin **Workflows** tool (`p:app-admin-super`).
 
-**The n8n engine** is a parallel container (official pinned image, own host port, state in the
-separate `n8n_engine` DB in the existing cluster; inventory: `n8n-exerciser`, `error-handler`,
-the `n8n-sync-breweries` twin, and the production `sync-airports` — moved 2026-07-20).
-Spec: `.claude/specs/n8n-parallel-engine/`. Its invariants mirror the
-agentic ones: **fnb → n8n is webhook-only** (`${N8N_INTERNAL_URL}/webhook/<key>` with
-`X-Fnb-Webhook-Secret`, respond-immediately, no runId); **n8n → fnb is the `n8n_worker` PG
-role calling granted functions only** (never PostGraphile, never authenticator); workflow
-definitions are code (`n8n/workflows/*.json`, imported at boot; the shared `error-handler` —
-which must be **active** — turns any failure into a terminal `n8n.workflow_run` error row).
+Invariants:
+- **fnb → n8n is webhook-only**: `${N8N_INTERNAL_URL}/webhook/<key>` with the `X-Fnb-Webhook-Secret`
+  header, respond-immediately (no runId). Callers: the `triggerWorkflow` plugin, the storage-layer
+  upload endpoint's post-commit POST (asset-scan), and the reaper's self-POST. `asset-scan` is
+  absent from the registry — upload endpoint + reaper only.
+- **n8n → fnb is the `n8n_worker` PG role calling granted functions only** (SECURITY DEFINER `_fn`
+  + a few `_api`), never PostGraphile, never authenticator/authenticated. Grants live in the
+  owning module's package.
+- **Definitions are code**: `n8n/workflows/*.json`, imported at boot by the `n8n-import` one-shot;
+  the shared `error-handler` (which must be **active**) turns any failure into a terminal
+  `n8n.workflow_run` error row.
+- **Security-bearing transitions are fixed node graphs** (e.g. asset-scan's scan → verdict IF →
+  promote/purge — no model in the loop; the graph is the sole authority, mirroring the game-event
+  referee). Binary steps (clamdscan, ffmpeg) run as Execute Command nodes on the custom image
+  (`NODES_EXCLUDE=[]` re-enables Execute Command; scan files live under `~/.n8n-files`).
 
-No graphile-worker anywhere. See `monorepo-bootstrap-pattern.md` → Headless apps.
+See `monorepo-bootstrap-pattern.md` → the n8n engine.
 
 ---
 

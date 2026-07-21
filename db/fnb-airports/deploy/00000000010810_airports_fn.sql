@@ -546,33 +546,18 @@ CREATE OR REPLACE FUNCTION airports_fn.airport_sync_status()
     select count(*)::int into _retval.country_count from airports.country;
     select count(*)::int into _retval.region_count from airports.region;
 
-    -- either engine syncing this dataset counts (n8n-parallel-engine/dataset-sync.workflow.data.md;
-    -- the key runs on n8n since the 2026-07-20 engine move, agent side kept for the dormant rollback)
-    _retval.in_progress := agent_fn.running_count('sync-airports') > 0
-      or n8n_fn.running_count('sync-airports') > 0;
+    -- n8n is the sole workflow engine (agentic-decommission spec): in_progress means the n8n
+    -- sync-airports workflow is running.
+    _retval.in_progress := n8n_fn.running_count('sync-airports') > 0;
 
     return _retval;
   end;
   $$;
 
----------------------------------------------- agent_worker grants (agentic workflow engine)
--- The sync-airports workflow's tool handlers connect as agent_worker: per-file CSV upserts,
--- sync bookkeeping, and the etag conditional-GET read of airports.sync_source.
-grant usage on schema airports to agent_worker;
-grant usage on schema airports_fn to agent_worker;
-grant execute on function airports_fn.upsert_countries(jsonb) to agent_worker;
-grant execute on function airports_fn.upsert_regions(jsonb) to agent_worker;
-grant execute on function airports_fn.upsert_airports(jsonb) to agent_worker;
-grant execute on function airports_fn.upsert_runways(jsonb) to agent_worker;
-grant execute on function airports_fn.upsert_airport_frequencies(jsonb) to agent_worker;
-grant execute on function airports_fn.upsert_navaids(jsonb) to agent_worker;
-grant execute on function airports_fn.record_sync_source(citext, text, text, int) to agent_worker;
-grant select on airports.sync_source to agent_worker;
-
----------------------------------------------- n8n_worker grants (n8n dataset-sync twin)
--- The n8n-sync-airports workflow's Postgres nodes connect as n8n_worker: per-file chunked
+---------------------------------------------- n8n_worker grants (sync-airports workflow)
+-- The sync-airports workflow's Postgres nodes connect as n8n_worker: per-file chunked
 -- upserts, sync bookkeeping, and the etag conditional-GET read of airports.sync_source
--- (n8n-parallel-engine/dataset-sync.workflow.data.md).
+-- (agentic-decommission spec).
 grant usage on schema airports to n8n_worker;
 grant usage on schema airports_fn to n8n_worker;
 grant execute on function airports_fn.upsert_countries(jsonb) to n8n_worker;

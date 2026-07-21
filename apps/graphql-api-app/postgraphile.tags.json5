@@ -11,8 +11,8 @@
      */
     procedure: {
       /*
-       * n8n run-log read fn: rename so its root field (n8nWorkflowRunsList) cannot collide
-       * with agent_api.workflow_runs' workflowRunsList. (n8n-parallel-engine spec)
+       * n8n run-log read fn: kept renamed to n8nWorkflowRunsList (from when an agent run-log
+       * read fn coexisted). (agentic-decommission spec)
        */
       'n8n_api.workflow_runs': {
         tags: { name: 'n8n_workflow_runs' },
@@ -49,23 +49,12 @@
       },
 
       /*
-       * Agent run log: reads go through the gated agent_api.workflow_runs function
-       * (p:app-admin-super). The table's own all-rows root fields would collide with the
-       * function's `workflowRunsList` name (schema-build naming conflict) and serve no
-       * client purpose — drop them; the type itself stays (the function returns it).
-       * (agentic-workflow-engine spec, _shared.data.md)
-       */
-      'agent.workflow_run': {
-        tags: { behavior: '-query:resource:list -query:resource:connection' },
-      },
-
-      /*
-       * n8n run log (parallel engine): same treatment as agent.workflow_run — reads go
-       * through the gated n8n_api.workflow_runs function — PLUS a name rename, because
-       * agent.workflow_run already owns the WorkflowRun GraphQL type name; unrenamed, the
-       * two schemas collide at schema build. The enum's rename lives as a smart COMMENT in
-       * the deploy SQL (this file can't target types) and the function's rename in the
-       * procedure section below. (n8n-parallel-engine spec, _shared.data.md)
+       * n8n run log: reads go through the gated n8n_api.workflow_runs function
+       * (p:app-admin-super). Drop the table's own all-rows root fields (no client purpose;
+       * they'd collide with the function's list field). The `n8n_workflow_run` rename +
+       * the enum's smart COMMENT rename in the deploy SQL are retained from when a second
+       * (agent) run-log schema coexisted; renaming back now would only churn codegen.
+       * (agentic-decommission spec, _shared.data.md)
        */
       'n8n.workflow_run': {
         tags: {

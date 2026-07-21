@@ -100,7 +100,6 @@ jobs:
           ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
           ZITADEL_DB_PASSWORD: ${{ secrets.ZITADEL_DB_PASSWORD }}
           N8N_ENGINE_DB_PASSWORD: ${{ secrets.N8N_ENGINE_DB_PASSWORD }}
-          AGENT_WORKER_PG_PASSWORD: ${{ secrets.AGENT_WORKER_PG_PASSWORD }}
           N8N_WORKER_PG_PASSWORD: ${{ secrets.N8N_WORKER_PG_PASSWORD }}
           S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
           S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
@@ -108,7 +107,6 @@ jobs:
           ZITADEL_MASTERKEY: ${{ secrets.ZITADEL_MASTERKEY }}
           N8N_ENCRYPTION_KEY: ${{ secrets.N8N_ENCRYPTION_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          AGENT_TRIGGER_SECRET: ${{ secrets.AGENT_TRIGGER_SECRET }}
           N8N_WEBHOOK_SECRET: ${{ secrets.N8N_WEBHOOK_SECRET }}
           ZITADEL_ADMIN_USERNAME: ${{ secrets.ZITADEL_ADMIN_USERNAME }}
           ZITADEL_ADMIN_EMAIL: ${{ secrets.ZITADEL_ADMIN_EMAIL }}

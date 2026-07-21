@@ -149,9 +149,9 @@ pnpm-install    ├→ packages-watch → [all apps]
 - Runs all sqitch deploy commands and exits (`restart: "no"`)
 - `DEPLOY_PACKAGES` (required, `${DEPLOY_PACKAGES:?}`) controls which packages to deploy — it lives
   in `.env` as the single source of truth and carries the full ordered list (`fnb-auth fnb-app
-  fnb-agent fnb-n8n fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets
-  fnb-airports`; `fnb-agent` must precede `fnb-storage`/`fnb-location-datasets`/`fnb-airports` —
-  `agent_worker` grants + `agent_fn` refs). PostGraphile exposes the module schemas
+  fnb-n8n fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets
+  fnb-airports fnb-game`; `fnb-n8n` must precede `fnb-storage`/`fnb-location-datasets`/`fnb-airports` —
+  `n8n_worker` grants for the asset-scan + sync workflows). PostGraphile exposes the module schemas
   (`graphile.config.ts` `pgServices.schemas`), so all eleven must deploy or it fails at boot.
   `.env.example` ships the full list pre-filled (not a comment).
 - `depends_on: db: condition: service_healthy`
@@ -320,29 +320,21 @@ When adding `<slug>-app`:
 
 See `fnb-create-app` skill for the complete file-by-file scaffold.
 
-### Headless apps (agent-app)
+### Headless apps
 
-`apps/agent-app` is the one **headless** app: the primary workflow engine (Claude Agent SDK
-harness — R22; spec `.claude/specs/agentic-workflow-engine/`; the parallel **n8n engine** is
-not an app but a service trio — see below). It follows the app service
-template but **skips checklist steps 4–5** (no Caddy entry, no `NUXT_APP_BASE_URL`, not in
-`pinger`) and differs from the routed apps in:
-- **dedicated Dockerfile** (`apps/agent-app/Dockerfile`): `ffmpeg` + `clamav-clamdscan` system
-  binaries (Alpine's clamdscan package — Debian calls it `clamav-clients`) + the baked-in
-  `clamd-remote.conf`; binaries run only inside tool handlers.
-- `depends_on` adds `minio-init` (completed) + `clamav` (started — SOFT gate: the scan tool's
-  retry + the reaper own the warm-up horizon).
-- env: `ANTHROPIC_API_KEY`, `AGENT_*`, `PG*` (the `agent_worker` pool), `S3_*`, `CLAMAV_*`,
-  `ASSET_SCAN_*` — plus the `agent-transcripts` volume at `/data/transcripts`.
-- It listens on `:3000` compose-internal only; graphql-api-app and storage-app reach it at
-  `AGENT_INTERNAL_URL=http://agent-app:3000` (trigger routes are secret-gated).
-It deploys **after db-migrate** (the `fnb-agent` schema + `agent_worker` role must exist).
-There is no graphile-worker/job-queue service anywhere in the stack.
+There are **no headless apps** — every app under `apps/` is a routed Nuxt app. The workflow
+engine is n8n, a compose service trio (below), not an app (R22; the agentic `apps/agent-app`
+was retired at the agentic-decommission, 2026-07-21). There is no graphile-worker/job-queue
+service anywhere in the stack.
 
 ### The n8n engine services (`n8n-db-init` / `n8n-import` / `n8n`)
 
-The **parallel n8n workflow engine** (R22; spec `.claude/specs/n8n-parallel-engine/` — do not
-restate it here) is three compose services, not an app:
+The **n8n workflow engine** (R22, the sole engine; specs `.claude/specs/n8n-parallel-engine/` +
+`.claude/specs/agentic-decommission/` — do not restate them here) is three compose services,
+not an app. Its `n8n` service builds a **custom image** (`docker/n8n/Dockerfile`, multi-stage —
+`ffmpeg` + `clamav-clamdscan` copied from an Alpine builder into the hardened n8n image) and
+`depends_on` `minio-init` + `clamav` for the asset-scan workflow; env adds `NODES_EXCLUDE=[]`
+(re-enables Execute Command), `S3_*`, `CLAMAV_*`, `ASSET_SCAN_*`:
 - `n8n-db-init` — one-shot (`docker/n8n/db-init.sh`, postgis image): idempotently creates the
   separate **`n8n_engine` database** + owner login role in the shared postgis container.
   Gotcha baked into the script: psql only substitutes `:'var'` in stdin/`-f` input, never `-c`.
@@ -351,7 +343,7 @@ restate it here) is three compose services, not an app:
   no gettext in the stock image, values JSON-escaped) then `n8n import:credentials` +
   `import:workflow --separate` from `n8n/workflows/`. Stable ids → idempotent overwrite (the
   sqitch/seed analog).
-- `n8n` — the engine (official image, **pinned**), **own host port** `N8N_HOST_PORT`
+- `n8n` — the engine (custom image `docker/n8n/Dockerfile`, **pinned** base), **own host port** `N8N_HOST_PORT`
   (ZITADEL own-port precedent, no Caddy route), volume `n8n-data`, healthcheck probes
   `http://127.0.0.1:5678/healthz` (**not** `localhost` — the alpine image resolves it to `::1`
   and n8n listens IPv4-only). Boots after `n8n-import` + `db-migrate` (the `fnb-n8n` schema +

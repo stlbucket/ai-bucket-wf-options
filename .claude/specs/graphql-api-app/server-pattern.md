@@ -121,11 +121,11 @@ Mounts PostGraphile/grafserv as a middleware on the h3 app at startup. This make
 
 ---
 
-### Workflows — no worker anywhere (agentic engine, 2026-07-17)
+### Workflows — no worker anywhere (n8n engine)
 
-graphql-api-app runs no job queue and no workflow engine. Workflows run in the headless
-`apps/agent-app` (R22; spec `.claude/specs/agentic-workflow-engine/`); this app's only workflow
-surface is the `triggerWorkflow` extendSchema plugin (below).
+graphql-api-app runs no job queue and no workflow engine. Workflows run on **n8n** (R22, the sole
+engine; specs `.claude/specs/n8n-parallel-engine/` + `.claude/specs/agentic-decommission/`); this
+app's only workflow surface is the `triggerWorkflow` extendSchema plugin (below).
 
 ---
 

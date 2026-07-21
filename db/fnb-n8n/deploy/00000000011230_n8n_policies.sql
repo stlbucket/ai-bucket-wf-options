@@ -43,7 +43,7 @@ grant usage on schema n8n_fn to n8n_worker;
 grant execute on all functions in schema n8n_fn to n8n_worker;
 alter default privileges for role postgres in schema n8n_fn grant execute on functions to n8n_worker;
 
--- n8n-exerciser demo: the DB-raised-exception path (app_api.raise_exception — SECURITY
+-- exerciser demo: the DB-raised-exception path (app_api.raise_exception — SECURITY
 -- INVOKER, no permission gate, just raises). This grant lives HERE, not in fnb-app: fnb-app
 -- deploys before the n8n_worker role exists on a fresh rebuild (same lesson as agent_worker).
 grant usage on schema app_api to n8n_worker;

@@ -1,0 +1,106 @@
+{
+  "id": "XKp3puLAGz9ALWG4",
+  "name": "asset-scan-reaper",
+  "active": true,
+  "nodes": [
+    {
+      "name": "Schedule",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/15 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "b1a1c2d3-0001-4000-8000-000000000001"
+    },
+    {
+      "name": "Find Stuck",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select asset_id, tenant_id, ai_tags_requested from storage_fn.stuck_pending_assets($1::int, $2::int)",
+        "options": {
+          "queryReplacement": "={{ [ $env.ASSET_SCAN_STUCK_MINUTES, $env.ASSET_SCAN_MAX_WF_ATTEMPTS ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "b1a1c2d3-0002-4000-8000-000000000002"
+    },
+    {
+      "name": "Re-fire Scan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/asset-scan",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ assetId: $json.asset_id, tenantId: $json.tenant_id, aiTagsRequested: $json.ai_tags_requested }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnbwebhooksecr01",
+          "name": "fnb-webhook-secret"
+        }
+      },
+      "id": "b1a1c2d3-0003-4000-8000-000000000003"
+    }
+  ],
+  "connections": {
+    "Schedule": {
+      "main": [
+        [
+          {
+            "node": "Find Stuck",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Stuck": {
+      "main": [
+        [
+          {
+            "node": "Re-fire Scan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "errorWorkflow": "0E8QFQyYGSyHHq0g",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "all"
+  },
+  "pinData": null
+}

@@ -1,7 +1,7 @@
 # Monorepo Bootstrap Pattern
 
 This document describes the root-level infrastructure that ties the monorepo together:
-workspace config, task runner, Docker topology, and nginx routing. Read this when recreating
+workspace config, task runner, Docker topology, and Caddy routing. Read this when recreating
 the monorepo from scratch or when adding infrastructure for a new app.
 
 ---
@@ -136,7 +136,7 @@ pnpm-install    ├→ packages-watch → [all apps]
 > through a local `requiredEnv(name)` helper that throws on missing/empty (covers host scripts /
 > future prod). Nuxt configs use `''` sentinels + `NUXT_*` runtime env (they must not throw — host
 > `pnpm build` evaluates them without the dev env). The only literals that stay in compose are the
-> **structural constants** coupled to `docker/nginx.conf` (which can't read `.env`): per-app
+> **structural constants** coupled to `docker/Caddyfile` (which can't read `.env`): per-app
 > `NUXT_APP_BASE_URL`, `NUXT_HOST=0.0.0.0`, `NUXT_PORT=3000`, in-container port `3000`.
 > `cp .env.example .env` yields a bootable dev environment. See `env-consolidation.plan.md`.
 
@@ -193,8 +193,8 @@ here):
 - `zitadel` — `ghcr.io/zitadel/zitadel` (pinned), `start-from-init --masterkeyFromEnv --tlsMode
   disabled`, dedicated `zitadel` database inside the shared postgis container
   (`docker/db-init/10-create-zitadel-db.sh` on a fresh volume). **Own host port**
-  (`${ZITADEL_HOST_PORT:?}`, like minio) — the issuer must own its origin, so no nginx path
-  prefix and no nginx change. Healthcheck is `/app/zitadel ready` (distroless image, no curl);
+  (`${ZITADEL_HOST_PORT:?}`, like minio) — the issuer must own its origin, so no Caddy path
+  prefix and no Caddy change. Healthcheck is `/app/zitadel ready` (distroless image, no curl);
   `ZITADEL_TLS_ENABLED=false` must stay in env because `ready` reads env only, not start flags.
 - `zitadel-init` — one-shot chown of the `zitadel-seed` volume to uid 1000 (the distroless
   image's user) so FirstInstance can write the machine PAT.
@@ -207,12 +207,14 @@ here):
   session cookie, issue 0010) on every session-parsing app.
 - auth-app additionally `depends_on: zitadel-seed: service_completed_successfully`.
 
-**`nginx`** — Path-based proxy, port `${PORT:?}` (required; `.env` bakes the port into every
-`http://localhost:PORT/...` URL — no port hunting, `env-build.ts` only preflights that it's free):
+**`caddy`** — Path-based proxy (`caddy:2`), port `${PORT:?}` (required; `.env` bakes the port into
+every `http://localhost:PORT/...` URL — no port hunting, `env-build.ts` only preflights that it's
+free). Dev is plain HTTP (`auto_https off`); it is the same-syntax sibling of the prod TLS front
+door `infra/docker/Caddyfile` (spec `.claude/specs/deployment/dev-caddy-migration/README.md`):
 ```yaml
 depends_on: [auth-app, tenant-app, home-app, msg-app, game-app]  # add new apps here
 volumes:
-  - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+  - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
 ```
 
 **App service template:**
@@ -228,8 +230,8 @@ volumes:
       packages-watch: { condition: service_healthy }
     environment:
       NODE_ENV: "${NODE_ENV:?}"
-      NUXT_HOST: "0.0.0.0"                                   # D2 structural constant (nginx-coupled)
-      NUXT_PORT: "3000"                                      # D2 structural constant (nginx-coupled)
+      NUXT_HOST: "0.0.0.0"                                   # D2 structural constant (Caddy-coupled)
+      NUXT_PORT: "3000"                                      # D2 structural constant (Caddy-coupled)
       NUXT_APP_BASE_URL: "/<slug>"                           # D2 structural constant; omit for home-app (serves /)
       NUXT_PUBLIC_AUTH_APP_URL: "${NUXT_PUBLIC_AUTH_APP_URL:?}"
       NUXT_PUBLIC_GRAPHQL_API_URL: "${NUXT_PUBLIC_GRAPHQL_API_URL:?}"
@@ -249,39 +251,38 @@ volumes:
 
 ---
 
-## nginx Routing (`docker/nginx.conf`)
+## Caddy Routing (`docker/Caddyfile`)
 
-All WebSocket headers are set globally (required for Vite HMR and app WebSockets):
-```nginx
-map $http_upgrade $connection_upgrade {
-  default upgrade;
-  ''      close;
-}
+Dev and prod share Caddy (this dev `docker/Caddyfile` is the plain-HTTP sibling of the prod TLS
+front door `infra/docker/Caddyfile`; migration spec `.claude/specs/deployment/dev-caddy-migration/`).
+Caddy handles the WebSocket `Upgrade`/`Connection` dance automatically — Vite HMR **and** app
+WebSockets — so there is no nginx-style `map $http_upgrade` block; forwarded headers
+(`Host`/`X-Real-IP`/`X-Forwarded-*`) are set by `reverse_proxy` automatically:
+```caddyfile
+{ auto_https off }          # dev: no domain, no Let's Encrypt
 
-server {
-    listen 80;
-
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection $connection_upgrade;
-    # ... other proxy headers
-
-    location /auth   { proxy_pass http://auth-app:3000; }
-    location /tenant { proxy_pass http://tenant-app:3000; }
-    location /msg    { proxy_pass http://msg-app:3000; }
-    location /game   { proxy_pass http://game-app:3000; }    # WS only — no user pages (game-server spec)
-    location /       { proxy_pass http://home-app:3000; }    # catch-all must be last
+:80 {
+    # SSE stream — before the general /graphql-api block, no buffering.
+    handle /graphql-api/api/graphql/stream* { reverse_proxy graphql-api-app:3000 { flush_interval -1 } }
+    handle /auth*    { reverse_proxy auth-app:3000 }
+    handle /tenant*  { reverse_proxy tenant-app:3000 }
+    handle /msg*     { reverse_proxy msg-app:3000 }
+    handle /game*    { reverse_proxy game-app:3000 }        # WS only — no user pages (game-server spec)
+    handle /storage* { request_body { max_size 6MB } reverse_proxy storage-app:3000 }  # keep 6MB aligned w/ upload.post.ts
+    handle /graphql-api* { reverse_proxy graphql-api-app:3000 }
+    handle /ruru-static* { reverse_proxy graphql-api-app:3000 }
+    handle           { reverse_proxy home-app:3000 }        # catch-all must be last
 }
 ```
 
-**Rule:** new app location blocks go BEFORE `location /`. The catch-all must always be last.
-Service name in `proxy_pass` must match the Docker service name exactly.
+**Rule:** new app `handle` blocks go BEFORE the catch-all `handle { … }`. The catch-all must always
+be last. The `reverse_proxy` upstream must match the Docker service name exactly.
 
-### How `NUXT_APP_BASE_URL` and nginx interact
+### How `NUXT_APP_BASE_URL` and Caddy interact
 
 `NUXT_APP_BASE_URL` sets Nuxt's router base and asset URL prefix. It must exactly match the
-nginx `location` prefix. Example: `/tenant` maps to both `NUXT_APP_BASE_URL=/tenant` and
-`location /tenant`. Mismatch causes 404s on assets and broken `<NuxtLink>` navigation.
+Caddy `handle` prefix. Example: `/tenant` maps to both `NUXT_APP_BASE_URL=/tenant` and
+`handle /tenant*`. Mismatch causes 404s on assets and broken `<NuxtLink>` navigation.
 
 `home-app` is the exception — it serves `/` with no base URL override.
 
@@ -294,8 +295,8 @@ When adding `<slug>-app`:
 1. Add `node_modules_<slug>_app:` to the top-level `volumes:` section
 2. Add `- node_modules_<slug>_app:/app/apps/<slug>-app/node_modules` to `pnpm-install` volumes
 3. Add the full app service block (see template above)
-4. Add `<slug>-app` to `nginx` service `depends_on`
-5. Add `location /<slug> { proxy_pass http://<slug>-app:3000; }` before `location /` in nginx.conf
+4. Add `<slug>-app` to `caddy` service `depends_on`
+5. Add `handle /<slug>* { reverse_proxy <slug>-app:3000 }` before the catch-all `handle` in `docker/Caddyfile`
 
 See `fnb-create-app` skill for the complete file-by-file scaffold.
 
@@ -304,7 +305,7 @@ See `fnb-create-app` skill for the complete file-by-file scaffold.
 `apps/agent-app` is the one **headless** app: the primary workflow engine (Claude Agent SDK
 harness — R22; spec `.claude/specs/agentic-workflow-engine/`; the parallel **n8n engine** is
 not an app but a service trio — see below). It follows the app service
-template but **skips checklist steps 4–5** (no nginx entry, no `NUXT_APP_BASE_URL`, not in
+template but **skips checklist steps 4–5** (no Caddy entry, no `NUXT_APP_BASE_URL`, not in
 `pinger`) and differs from the routed apps in:
 - **dedicated Dockerfile** (`apps/agent-app/Dockerfile`): `ffmpeg` + `clamav-clamdscan` system
   binaries (Alpine's clamdscan package — Debian calls it `clamav-clients`) + the baked-in
@@ -331,7 +332,7 @@ restate it here) is three compose services, not an app:
   `import:workflow --separate` from `n8n/workflows/`. Stable ids → idempotent overwrite (the
   sqitch/seed analog).
 - `n8n` — the engine (official image, **pinned**), **own host port** `N8N_HOST_PORT`
-  (ZITADEL own-port precedent, no nginx route), volume `n8n-data`, healthcheck probes
+  (ZITADEL own-port precedent, no Caddy route), volume `n8n-data`, healthcheck probes
   `http://127.0.0.1:5678/healthz` (**not** `localhost` — the alpine image resolves it to `::1`
   and n8n listens IPv4-only). Boots after `n8n-import` + `db-migrate` (the `fnb-n8n` schema +
   `n8n_worker` role).

@@ -42,7 +42,7 @@ export function useAssetUpload() {
       if (isPublic) form.append('isPublic', 'true')
       if (tags.length) form.append('tags', tags.join(',')) // pre-normalized by AssetUploader; endpoint re-normalizes
       if (aiTagsRequested) form.append('aiTagsRequested', 'true') // images only (endpoint 400s otherwise)
-      // Do NOT set Content-Type — the browser sets the multipart boundary. Same-origin (nginx),
+      // Do NOT set Content-Type — the browser sets the multipart boundary. Same-origin (Caddy),
       // so the httpOnly session cookie is sent automatically (Q5).
       return await $fetch<AssetMeta>(url, { method: 'POST', body: form })
     }

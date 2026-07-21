@@ -191,7 +191,7 @@ services:
   # ZITADEL — identity provider (OIDC login ceremony ONLY; the httpOnly `session`
   # cookie stays the root of trust). Spec: .claude/specs/future-auth/zitadel-login-pattern.md.
   # Own host port like minio — the issuer must own its origin, so it cannot live
-  # under the nginx path prefix. No nginx change in dev.
+  # under the Caddy path prefix. No Caddy change in dev.
   zitadel:
     image: ghcr.io/zitadel/zitadel:v4.15.3       # pinned (Decisions, 2026-07-08)
     container_name: fnb_zitadel
@@ -280,7 +280,7 @@ services:
       # present the external domain (same trick as the official login-v2 compose).
       ZITADEL_EXTERNAL_HOST: localhost
       ZITADEL_ISSUER: "${NUXT_ZITADEL_ISSUER:?}"
-      APP_PORT: "${PORT:?}"                      # redirect URIs embed the nginx port
+      APP_PORT: "${PORT:?}"                      # redirect URIs embed the Caddy port
       PAT_FILE: /zitadel-seed/admin.pat
       SEED_FILE: "${NUXT_ZITADEL_SEED_FILE:?}"
     volumes:
@@ -289,8 +289,8 @@ services:
     command: ["node", "/seed.mjs"]
     restart: "no"
 
-  nginx:
-    image: nginx:alpine
+  caddy:
+    image: caddy:2
     networks:
       - fnb-network
     depends_on:
@@ -304,7 +304,7 @@ services:
     ports:
       - "${PORT:?}:80"
     volumes:
-      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
 
   auth-app:
     build:
@@ -323,7 +323,7 @@ services:
         condition: service_completed_successfully   # OIDC clientId handoff file must exist
     environment:
       NODE_ENV: "${NODE_ENV:?}"
-      # D2 structural constants — must match docker/nginx.conf, which can't read .env.
+      # D2 structural constants — must match docker/Caddyfile, which can't read .env.
       NUXT_HOST: "0.0.0.0"
       NUXT_PORT: "3000"
       NUXT_APP_BASE_URL: "/auth"
@@ -370,7 +370,7 @@ services:
       NUXT_PUBLIC_MSG_APP_URL: "${NUXT_PUBLIC_MSG_APP_URL:?}"
       NUXT_MSG_APP_INTERNAL_URL: "${NUXT_MSG_APP_INTERNAL_URL:?}"
       # storage-layer's uploadUrl runtimeConfig (tenant-app extends storage-layer — issue 0330).
-      # Uploads still POST same-origin to storage-app via nginx /storage; no S3_* needed here.
+      # Uploads still POST same-origin to storage-app via Caddy /storage; no S3_* needed here.
       NUXT_PUBLIC_UPLOAD_URL: "${NUXT_PUBLIC_UPLOAD_URL:?}"
       # site-admin n8n Workflows page — editor link-out ('' sentinel in nuxt.config.ts)
       NUXT_PUBLIC_N8N_EDITOR_URL: "${NUXT_PUBLIC_N8N_EDITOR_URL:?}"
@@ -594,7 +594,7 @@ services:
       NODE_ENV: "${NODE_ENV:?}"
       NUXT_HOST: "0.0.0.0"
       NUXT_PORT: "3000"
-      # Claude Agent SDK — the headless workflow engine (no nginx route; reachable only at
+      # Claude Agent SDK — the headless workflow engine (no Caddy route; reachable only at
       # http://agent-app:3000 == AGENT_INTERNAL_URL, trigger routes gated by the shared secret)
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:?}"
       AGENT_MODEL_DEFAULT: "${AGENT_MODEL_DEFAULT:-claude-haiku-4-5}"
@@ -632,7 +632,7 @@ services:
   # ─── n8n parallel workflow engine (spec: .claude/specs/n8n-parallel-engine/) ───
   # Coexists with agent-app (dual engines — R22). State lives in the separate n8n_engine
   # database in the shared postgis cluster; editor + webhooks on their own host port
-  # (ZITADEL own-port precedent — no nginx route). Official pinned image: the demo-only
+  # (ZITADEL own-port precedent — no Caddy route). Official pinned image: the demo-only
   # inventory has no binary steps, so no custom Dockerfile.
 
   n8n-db-init:

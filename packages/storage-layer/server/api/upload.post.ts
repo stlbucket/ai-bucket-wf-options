@@ -23,8 +23,8 @@ import {
 const MAX_BYTES = 5 * 1024 * 1024
 // Content-length headroom for multipart boundaries + the other small fields, so a valid ~5 MB
 // file isn't falsely rejected before parsing. The precise per-file check is step 3.
-// Keep in sync with nginx client_max_body_size (docker/nginx.conf /storage) and the 413 message
-// in useAssetUpload.ts.
+// Keep in sync with the Caddy request_body max_size (docker/Caddyfile + infra/docker/Caddyfile
+// /storage) and the 413 message in useAssetUpload.ts.
 const MAX_BODY_BYTES = MAX_BYTES + 1024 * 1024
 
 // Raw storage.asset row (snake_case, no camel-casing on this carve-out). bigint arrives as string.

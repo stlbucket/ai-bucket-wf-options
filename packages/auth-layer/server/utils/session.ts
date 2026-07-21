@@ -34,7 +34,7 @@ export function appSessionConfig(event?: H3Event): SessionConfig {
     cookie: {
       sameSite: 'lax',
       // secure unconditionally — browsers treat http://localhost as trustworthy,
-      // so the dev stack (nginx on localhost:PORT) still receives the cookie.
+      // so the dev stack (Caddy on localhost:PORT) still receives the cookie.
       secure: true,
       domain: (cookieDomain as string) || undefined,
     },

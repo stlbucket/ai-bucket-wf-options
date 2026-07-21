@@ -24,7 +24,7 @@ export type UseAuthReturn = {
 
 export const useAuth = (): UseAuthReturn => {
   // Claims live in localStorage (not a cookie) — the full ProfileClaims JSON is too large for the
-  // super-admin to fit in a Set-Cookie header (nginx 502). The httpOnly `session` cookie remains
+  // super-admin to fit in a Set-Cookie header (proxy 502). The httpOnly `session` cookie remains
   // the auth root of trust; claims are (re)fetched from GraphQL and mirrored here. useStorage is
   // SSR-safe (returns the default on the server, hydrates from localStorage on the client).
   const user = useStorage<ProfileClaims | null>('auth.user', null, undefined, {

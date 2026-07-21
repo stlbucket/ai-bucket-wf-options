@@ -155,7 +155,7 @@ workflow between engines is a registry edit plus the DB grants the workflow need
 target side. Per-engine run logs (`agent.workflow_run` / `n8n.workflow_run`) back the two
 site-admin tools (Agentic Workflows / n8n Workflows, both `p:app-admin-super`).
 
-**The agentic engine** is `apps/agent-app` (headless: no nginx route, no layers, no UI) — the
+**The agentic engine** is `apps/agent-app` (headless: no Caddy route, no layers, no UI) — the
 Claude Agent SDK harness running asset-scan + reaper, sync-breweries, and exerciser
 (sync-airports moved to n8n 2026-07-20; its agentic definition is dormant in the tree as the
 registry-flip rollback). Spec: `.claude/specs/agentic-workflow-engine/`.

@@ -34,11 +34,11 @@ top-level **`infra/`** directory.
 
 | # | Decision | Why |
 |---|---|---|
-| D1 | **DO = Compose on one droplet** (not DinD, not App Platform) | Achieves the "one cheap box, nginx broker included, one `up`" goal without DinD's shared-PID/no-per-service-health/painful-logs anti-pattern |
+| D1 | **DO = Compose on one droplet** (not DinD, not App Platform) | Achieves the "one cheap box, Caddy broker included, one `up`" goal without DinD's shared-PID/no-per-service-health/painful-logs anti-pattern |
 | D2 | **AWS = EC2 lift-and-shift** running the identical prod Compose (not Fargate/EKS) | Two **near-identical** environments, one Compose file + one mental model, smallest delta from the working dev stack; Fargate is the documented scale-up path |
 | D3 | **Managed data everywhere** — DO Managed PG + Spaces; AWS RDS + S3 | Backups/patching/HA off the box; app code already speaks S3 so object storage is a config swap |
 | D4 | **Immutable prod image pipeline is in scope** — multi-stage build → registry → run `.output` | `nuxt dev` + bind mounts + in-stack `pnpm install` is not a production posture; this is the correct one |
-| D5 | **Caddy replaces nginx** as the broker, with **automatic Let's Encrypt** | ZITADEL hard-requires TLS + a real https issuer origin in prod; Caddy gives same path routing + auto-TLS with least ops; both envs identical |
+| D5 | **Caddy is the broker (dev + prod)**, prod adding **automatic Let's Encrypt** | ZITADEL hard-requires TLS + a real https issuer origin in prod; Caddy gives same path routing + auto-TLS with least ops; dev unified onto Caddy too (spec `dev-caddy-migration/`), both envs identical |
 | D6 | **Terraform parameterized, prod first** (reusable cloud modules + per-env tfvars) | Ship `do-prod`/`aws-prod` now; adding staging later is one more tfvars file — no premature staging infra |
 | D7 | **GitHub Actions** builds+pushes images then applies Terraform + deploys | Reproducible, no laptop state; scripts are the primitive so a human can run the same deploy locally |
 | D8 | **Prod = full functional parity, minus dev-only helpers** | Drops `pnpm-install`, `packages-watch`, `pinger`, `dozzle` (images are pre-built); keeps all 8 apps, ZITADEL, n8n, ClamAV, storage |
@@ -78,7 +78,7 @@ top-level **`infra/`** directory.
 - [ ] `infra/compose/docker-compose.prod.yml` — images from registry, no bind mounts, managed PG/S3,
       drop dev-only helpers, keep all functional services + one-shots (`db-migrate`, `zitadel-*`,
       `n8n-import`)
-- [ ] `infra/docker/Caddyfile` — path routing (mirror nginx) + `id.<domain>`/`n8n.<domain>` vhosts +
+- [ ] `infra/docker/Caddyfile` — path routing (mirror the dev `docker/Caddyfile`) + `id.<domain>`/`n8n.<domain>` vhosts +
       auto-TLS + body-size limit; persisted ACME volume
 - [ ] ZITADEL prod-hardening env (`ExternalSecure`, https issuer, subdomain) + a **prod seed** path
       (no dev users, real complexity, https redirect URIs)

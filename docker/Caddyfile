@@ -1,0 +1,62 @@
+# Caddy — the DEV proxy. Plain-HTTP sibling of infra/docker/Caddyfile (the prod TLS front door).
+# Replaces docker/nginx.conf (spec .claude/specs/deployment/dev-caddy-migration/README.md).
+#
+# Two differences from prod: (1) NO TLS — dev has no domain/ACME, so this binds plain HTTP on :80
+# with auto_https off, exactly as nginx did; (2) NO id./n8n. subdomains — dev runs ZITADEL/n8n on
+# their own host ports (see docker-compose.yml), not behind this proxy.
+#
+# Path routing is IDENTICAL to prod (and to the old docker/nginx.conf). Caddy handles the
+# WebSocket Upgrade/Connection dance automatically — msg + game sockets AND Vite HMR — so there is
+# no nginx-style `map $http_upgrade` block. Forwarded headers (Host/X-Real-IP/X-Forwarded-*) are
+# set by reverse_proxy automatically.
+#
+# RULE preserved from nginx: new app blocks go BEFORE the `/` catch-all; the reverse_proxy upstream
+# is the Compose service name on :3000. agent-app has NO route (headless).
+{
+	# Dev: no automatic HTTPS (no domain, no Let's Encrypt).
+	auto_https off
+}
+
+# ── Single site on :80 — the 7 routed apps + home catch-all (mirrors the old docker/nginx.conf).
+# Compose maps ${PORT} on the host to this :80 (docker-compose.yml `caddy` service). ──
+:80 {
+	# Streaming GraphQL (SSE) — must come before the general /graphql-api block, no buffering.
+	handle /graphql-api/api/graphql/stream* {
+		reverse_proxy graphql-api-app:3000 {
+			flush_interval -1
+		}
+	}
+
+	handle /auth* {
+		reverse_proxy auth-app:3000
+	}
+	handle /tenant* {
+		reverse_proxy tenant-app:3000
+	}
+	handle /msg* {
+		reverse_proxy msg-app:3000
+	}
+	handle /game* {
+		reverse_proxy game-app:3000
+	}
+	handle /storage* {
+		# Upload cap: keep aligned with MAX_BODY_BYTES (packages/storage-layer/server/api/
+		# upload.post.ts, 6 MB) and the prod Caddyfile `request_body max_size`. Three places.
+		# nginx's default 1m would 413 legitimate uploads before they reach the app.
+		request_body {
+			max_size 6MB
+		}
+		reverse_proxy storage-app:3000
+	}
+	handle /graphql-api* {
+		reverse_proxy graphql-api-app:3000
+	}
+	handle /ruru-static* {
+		reverse_proxy graphql-api-app:3000
+	}
+
+	# Catch-all LAST — home-app (no base URL).
+	handle {
+		reverse_proxy home-app:3000
+	}
+}

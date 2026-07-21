@@ -19,7 +19,7 @@ inner-loop iteration, not production:
 | `pnpm-install` + `packages-watch` build the workspace **inside the running stack** | Prod must run **pre-built immutable images**, not build at boot |
 | `db` is a self-hosted **PostGIS container** holding three databases | Prod uses **managed Postgres** (backups, patching, HA) |
 | `minio` + `minio-init` provide object storage | Prod uses **managed object storage** (Spaces / S3) |
-| `nginx` broker terminates **plain HTTP** | Prod needs **TLS** (ZITADEL hard-requires it — see §6) |
+| `caddy` broker terminates **plain HTTP** (`auto_https off`) | Prod Caddy adds **TLS** (ZITADEL hard-requires it — see §6) + `id.`/`n8n.` subdomains |
 | Secrets sit in a repo-root `.env` with dev defaults | Prod secrets come from a secret store, never the repo |
 | `pinger` / `dozzle` dev utilities | Not part of a production footprint |
 
@@ -37,7 +37,7 @@ Full functional parity with dev, minus the dev-only helpers. Every service below
 
 | Service | Image | Route | Notes |
 |---|---|---|---|
-| `caddy` | official `caddy:2` + repo `Caddyfile` | TLS front door | **replaces nginx** — same path routing + automatic Let's Encrypt (§5) |
+| `caddy` | official `caddy:2` + repo `Caddyfile` | TLS front door | same proxy as dev (`docker/Caddyfile`) + TLS/subdomains — same path routing + automatic Let's Encrypt (§5) |
 | `auth-app` | `fnb-auth-app` | `/auth` | Nuxt `.output` runtime |
 | `home-app` | `fnb-home-app` | `/` (catch-all) | Nuxt `.output` runtime |
 | `tenant-app` | `fnb-tenant-app` | `/tenant` | Nuxt `.output` runtime; serves the game/asset UI |
@@ -165,19 +165,23 @@ the same S3 config — one credential source, as in dev.
 
 ---
 
-## 5. The Caddy broker (replaces nginx)
+## 5. The Caddy broker
 
-Caddy replaces the nginx broker container and does three jobs: **TLS termination with automatic
-Let's Encrypt**, **path routing** to the apps (identical prefixes to nginx), and **WebSocket
-passthrough** (msg + game + Vite is gone in prod, but the app WS upgrades remain).
+Dev and prod both front the stack with **Caddy** (dev: `docker/Caddyfile`, plain HTTP; prod:
+`infra/docker/Caddyfile`, this file — same syntax, migration spec
+`.claude/specs/deployment/dev-caddy-migration/`). The prod broker does three jobs the dev one
+does not need: **TLS termination with automatic Let's Encrypt**, and `id.`/`n8n.` **subdomains**
+(§6); plus the shared **path routing** and **WebSocket passthrough** (msg + game — Vite HMR is
+dev-only).
 
-- Path routing mirrors `docker/nginx.conf` exactly: `/auth /tenant /msg /game /graphql-api
+- Path routing is identical to the dev `docker/Caddyfile`: `/auth /tenant /msg /game /graphql-api
   /storage` → each app `:3000`, `/` → `home-app` (catch-all last). `agent-app` has **no route**.
-- **Rule preserved from nginx:** new app blocks go before the catch-all; the `proxy` upstream is
-  the Compose service name.
+- **Rule:** new app blocks go before the catch-all; the `reverse_proxy` upstream is the Compose
+  service name.
 - WebSocket headers: Caddy handles `Upgrade`/`Connection` automatically (no manual `map` block).
-- `client_max_body_size` equivalent: set `request_body max_size` to match the storage upload limit
-  (nginx `/storage` block + the 413 message in `useAssetUpload.ts` — keep the three aligned).
+- Body-size limit: `request_body max_size` matches the storage upload limit (the dev `Caddyfile`
+  `/storage` block + `MAX_BODY_BYTES` in `upload.post.ts` + the 413 message in `useAssetUpload.ts`
+  — keep them aligned).
 - TLS: Caddy obtains + renews certs automatically for the site domains (§6). A persisted volume
   holds the ACME account + certs so restarts don't re-issue.
 

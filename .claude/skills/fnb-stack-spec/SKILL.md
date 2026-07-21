@@ -27,7 +27,7 @@ the patterns and rules that govern all implementation in this project.
 ├── ui-components-rules.md           ← UC1–UC12 UI rules
 ├── package-layers-pattern.md        ← all seven packages: compiled libs, Nuxt layers, file inventories
 ├── graphql-client-api-package.md    ← codegen details for the client package
-├── monorepo-bootstrap-pattern.md    ← Docker Compose, nginx, pnpm workspace, adding a new app
+├── monorepo-bootstrap-pattern.md    ← Docker Compose, Caddy, pnpm workspace, adding a new app
 ├── workspace-dependency-integrity-pattern.md ← R24: per-package dep declarations + per-layer TS projects
 └── <app>/                           ← per-app spec trees (see below)
     ├── {module}/
@@ -79,7 +79,7 @@ Always read these before writing specs or implementation plans:
   → composable re-export → Vue (plus the REST/H3 carve-out + pre-claims root of trust)
 - `sockets-pattern.md` — real-time pattern based on the `msg` module (GraphQL load + WS incremental read)
 - `package-layers-pattern.md` — all seven packages: compiled libs, Nuxt layers, file inventories, codegen workflow
-- `monorepo-bootstrap-pattern.md` — Docker Compose topology, nginx routing, pnpm workspace config
+- `monorepo-bootstrap-pattern.md` — Docker Compose topology, Caddy routing, pnpm workspace config
 - `workspace-dependency-integrity-pattern.md` — R24: every package declares its own deps (shared
   versions once, via the pnpm default catalog / `"catalog:"` protocol); layers are
   self-preparable TS projects (tsconfig + `nuxt prepare`); `dep-audit` enforcement

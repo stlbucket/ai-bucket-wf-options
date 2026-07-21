@@ -7,7 +7,7 @@ stack in full here (global-rules R21).
 
 ## Structure
 
-**Apps** (`apps/`) — each routed app extends one Nuxt layer and serves an nginx path prefix:
+**Apps** (`apps/`) — each routed app extends one Nuxt layer and serves a Caddy path prefix:
 
 | App | Path | Extends |
 |-----|------|---------|
@@ -65,7 +65,7 @@ composables; pages never touch the transport. Details: `.claude/specs/graphql-ap
 dropped). The auth-app callback maps the verified identity to `app.profile` (`idp_user_id`) and
 sets the **sealed** httpOnly `session` cookie, which stays the root of trust → `ProfileClaims` →
 `pgSettings` → RLS. Claims are fetched from GraphQL and mirrored to **localStorage** client-side
-(the full JSON overflowed `Set-Cookie` → nginx 502). `db-access`'s 2-arg `withClaims(claims, fn)`
+(the full JSON overflowed `Set-Cookie` → proxy 502). `db-access`'s 2-arg `withClaims(claims, fn)`
 is the outside-GraphQL carve-out. Details: security section of `.claude/specs/graphql-api-pattern.md`.
 
 ## Tech Stack

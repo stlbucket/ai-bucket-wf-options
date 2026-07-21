@@ -92,14 +92,14 @@ in the spec, stop immediately and ask the user to resolve it. Do not guess or in
 ## Monorepo Layout
 
 ```
-apps/auth-app          → nginx /auth         (port 3000 in Docker)   extends auth-layer
-apps/home-app          → nginx /             (port 3000 in Docker)   extends tenant-layer
-apps/tenant-app        → nginx /tenant       (port 3000 in Docker)   extends tenant-layer — NO server/ dir
-apps/msg-app           → nginx /msg          (port 3000 in Docker)   extends msg-layer
-apps/storage-app       → nginx /storage      (port 3000 in Docker)   extends storage-layer
-apps/game-app          → nginx /game         (port 3000 in Docker)   extends game-layer — WS only, no user pages (game UI lives in tenant-app)
-apps/graphql-api-app   → nginx /graphql-api  (port 3000 in Docker)   PostGraphile 5 + extendSchema plugins (triggerWorkflow, downloadUrl)
-apps/agent-app         → HEADLESS (no nginx)                         primary workflow engine — Claude Agent SDK harness (exerciser, sync-breweries, asset-scan + reaper; sync-airports moved to n8n 2026-07-20); the PARALLEL n8n engine (R22 dual engines) is a compose service trio, not an app — n8n-parallel-engine spec, skill n8n-cli
+apps/auth-app          → Caddy /auth         (port 3000 in Docker)   extends auth-layer
+apps/home-app          → Caddy /             (port 3000 in Docker)   extends tenant-layer
+apps/tenant-app        → Caddy /tenant       (port 3000 in Docker)   extends tenant-layer — NO server/ dir
+apps/msg-app           → Caddy /msg          (port 3000 in Docker)   extends msg-layer
+apps/storage-app       → Caddy /storage      (port 3000 in Docker)   extends storage-layer
+apps/game-app          → Caddy /game         (port 3000 in Docker)   extends game-layer — WS only, no user pages (game UI lives in tenant-app)
+apps/graphql-api-app   → Caddy /graphql-api  (port 3000 in Docker)   PostGraphile 5 + extendSchema plugins (triggerWorkflow, downloadUrl)
+apps/agent-app         → HEADLESS (no Caddy)                         primary workflow engine — Claude Agent SDK harness (exerciser, sync-breweries, asset-scan + reaper; sync-airports moved to n8n 2026-07-20); the PARALLEL n8n engine (R22 dual engines) is a compose service trio, not an app — n8n-parallel-engine spec, skill n8n-cli
 packages/auth-layer      Nuxt layer: layout, AppNav, LoginForm, UserProfile, useAuth; server/utils claims+cookies
 packages/tenant-layer    Nuxt layer: extends auth-layer; server/middleware/auth.ts (applyEventClaims)
 packages/msg-layer       Nuxt layer: extends tenant-layer; WebSocket carve-out server/
@@ -111,7 +111,7 @@ packages/db-access       compiled lib: pre-claims root of trust (raw pg), 2-arg 
 packages/graphql-client-api  compiled lib: .graphql docs + codegen hooks + mappers + composables (the default data layer)
 packages/game-engines    pure TS, vitest-covered, NO runtime app consumer — the game referee/engine logic, embedded verbatim into the game-event n8n workflow's Code nodes (game-server spec)
 db/fnb-auth  fnb-app  fnb-agent  fnb-n8n  fnb-res  fnb-msg  fnb-todo  fnb-loc  fnb-storage  fnb-location-datasets  fnb-airports  fnb-game   sqitch packages
-docker/nginx.conf       path-based proxy: /auth→auth-app, /tenant→tenant-app, /graphql-api→graphql-api-app, /msg→msg-app, /storage→storage-app, /game→game-app, /→home-app (agent-app not routed)
+docker/Caddyfile        path-based proxy: /auth→auth-app, /tenant→tenant-app, /graphql-api→graphql-api-app, /msg→msg-app, /storage→storage-app, /game→game-app, /→home-app (agent-app not routed)
 ```
 
 `db-types` is retired (was Kysely/Kanel) — `db-access` + `graphql-client-api` replaced it.
@@ -120,9 +120,9 @@ entity/view types ONLY from `@function-bucket/fnb-types`. Generated GraphQL type
 `graphql-client-api`, reached only via **mappers** (`src/mappers/<entity>.ts`, `to<Entity>(fragment)`).
 Enum values in `fnb-types` mirror the GraphQL enum values (UPPERCASE); timestamps are `Date`. The
 `graphql-client-api` barrel does NOT `export *` the generated module.
-All routed apps share one nginx entry point; each listens on `:3000` inside its container.
+All routed apps share one Caddy entry point; each listens on `:3000` inside its container.
 `NUXT_APP_BASE_URL` sets the path prefix so Nuxt asset URLs and the router base are correct.
-`agent-app` is the headless exception (no nginx location, no base URL) — the primary
+`agent-app` is the headless exception (no Caddy route, no base URL) — the primary
 workflow engine (R22 dual engines: fnb→agent is trigger-endpoint-only with the shared secret;
 agent→fnb is `agent_worker`-via-`_fn` from tool handlers only; closed toolboxes; deterministic
 reaper); see `monorepo-bootstrap-pattern.md` → Headless apps. Writing/altering workflow
@@ -151,7 +151,7 @@ compose service) → skill `zitadel-expert`.
    `useSession` + `NUXT_SESSION_SECRET`) blob carrying `{ id: <profile uuid>, sid: <auth.session
    uuid> }` — auth-layer `server/utils/session.ts`, issues 0010 + 0185. Never raw JSON. The
    cookie is written **only here** — never re-sealed (`session-refresh-pattern.md`).
-   **Claims are NOT written to a cookie** (the full JSON overflows the response header → nginx 502).
+   **Claims are NOT written to a cookie** (the full JSON overflows the response header → proxy 502).
 2. Every request → server middleware (`tenant-layer`, or `auth-app` directly) →
    `applyEventClaims` → `getEventClaims` unseals the `session` cookie (`readAppSession`; unseal
    failure or missing `sid` = unauthenticated) → `claimsForSession(sid)` (`db-access`, SECURITY
@@ -350,7 +350,7 @@ graphql-api-app (GraphQL transport) and the msg-layer WS carve-out.
 ### 6. Nuxt app (`apps/<app>/`)
 
 Brand-new app → skill `fnb-create-app` (full skeleton: package.json, nuxt.config, compose
-service, nginx location). The bullets below are for touching an **existing** app.
+service, Caddy handle block). The bullets below are for touching an **existing** app.
 
 - `nuxt.config.ts` — `extends: [...]`, set `NUXT_APP_BASE_URL`, declare
   `runtimeConfig.public.graphqlApiUrl` as a `''` sentinel (real value via `NUXT_PUBLIC_*` env)
@@ -361,7 +361,7 @@ service, nginx location). The bullets below are for touching an **existing** app
   layers: catalogued packages are declared `"catalog:"`, new shared deps get a catalog entry first.
 - Pages in `app/pages/` call composables only — zero `$fetch`/`useFetch`/`/api/` paths
 - Components use `useAuth().user.value.permissions` for permission-gated rendering
-- Add the Docker service in `docker-compose.yml` + nginx location block in `docker/nginx.conf`
+- Add the Docker service in `docker-compose.yml` + Caddy `handle` block in `docker/Caddyfile`
 - **UC4** — Wrap page content in `<UCard>`, not bare divs
 - **UC5** — Responsive: `flex flex-wrap`, `overflow-x-auto` on tables
 - **UC6** — Color tokens only: `primary`, `success`, `error` — no raw Tailwind color classes
@@ -596,7 +596,7 @@ export default defineConfig({ test: { passWithNoTests: true } })
 | WS message read (withClaims carve-out) | `packages/msg-layer/server/api/topics/[id]/messages/[msgId].get.ts` |
 | Upload endpoint (withClaims carve-out) | `packages/storage-layer/server/api/upload.post.ts` |
 | agent workflow engine (harness/workflows/tools) | `apps/agent-app/server/lib/{agent-harness.ts,agent-workflows/,agent-tools/}` (skill `claude-agent-sdk`) |
-| nginx config | `docker/nginx.conf` |
+| Caddy config (dev proxy) | `docker/Caddyfile` |
 | docker-compose | `docker-compose.yml` |
 
 ---
@@ -639,7 +639,7 @@ export default defineConfig({ test: { passWithNoTests: true } })
 - **`profile_id` nullable on resident:** invited users have no profile yet; `handle_new_user` links
   them on registration → [c4].
 
-- **`NUXT_APP_BASE_URL`** must match the nginx `location` prefix (asset URLs, `<NuxtLink>`, `router.push`).
+- **`NUXT_APP_BASE_URL`** must match the Caddy `handle` prefix (asset URLs, `<NuxtLink>`, `router.push`).
 
 - **`packages-watch` healthcheck** waits for `db-access`, `graphql-client-api`, `auth-server`,
   `auth-ui` dist files before apps start.
@@ -661,7 +661,7 @@ Core specs in `.claude/specs/` (the single source — do not restate them inline
 - `graphql-client-api-package.md` — codegen details for the client package
 - `sockets-pattern.md` — WebSocket / real-time pattern (GraphQL initial load + WS incremental read)
 - `ui-components-rules.md` — UC1–UC12
-- `monorepo-bootstrap-pattern.md` — Docker Compose topology, nginx routing, pnpm workspace config
+- `monorepo-bootstrap-pattern.md` — Docker Compose topology, Caddy routing, pnpm workspace config
 - `workspace-dependency-integrity-pattern.md` — R24: every package declares every bare specifier
   its own source/config resolves (the `@nuxt/ui` direct-dep rule is a special case); layers are
   self-preparable TS projects (own `tsconfig.json` + `nuxt prepare`); one version per external

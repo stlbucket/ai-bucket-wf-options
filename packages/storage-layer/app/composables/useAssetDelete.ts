@@ -28,7 +28,7 @@ export function useAssetDelete() {
     deleting.value = true
     error.value = null
     try {
-      // Same-origin through nginx, so the httpOnly session cookie is sent automatically.
+      // Same-origin through Caddy, so the httpOnly session cookie is sent automatically.
       return await $fetch<{ deleted: number }>(`${base}/assets/${id}`, { method: 'DELETE' })
     } catch (e: any) {
       error.value = messageForDeleteStatus(e?.statusCode)

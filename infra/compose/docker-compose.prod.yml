@@ -7,7 +7,7 @@ name: fnb-prod
 #     node_modules_* volumes, no pnpm-install / packages-watch.
 #   • Data services are MANAGED (external): Postgres cluster + object storage (Spaces/S3) — the
 #     `db`, `minio`, `minio-init`, `n8n-db-init` services are gone.
-#   • Caddy replaces nginx (auto-TLS + path routing + id./n8n. subdomains).
+#   • Caddy is the front door (same proxy as dev; adds auto-TLS + id./n8n. subdomains).
 #   • pg-bootstrap one-shot creates zitadel/n8n_engine DBs + PostGIS on the managed cluster.
 #   • Dropped dev-only: pnpm-install, packages-watch, pinger, dozzle.
 # Every value is ${VAR:?} — a missing key fails `up` loudly (render-env.mjs enforces this earlier).
@@ -462,7 +462,7 @@ services:
       - agent-transcripts:/data/transcripts
     restart: unless-stopped
 
-  # ── Caddy — TLS front door (replaces nginx). Publishes 80/443; routes to the apps. ──
+  # ── Caddy — TLS front door (same proxy as dev docker/Caddyfile + TLS). Publishes 80/443; routes to the apps. ──
   caddy:
     image: caddy:2
     networks:

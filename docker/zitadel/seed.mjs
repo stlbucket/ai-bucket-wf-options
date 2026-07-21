@@ -6,7 +6,7 @@
 // volume. Ensures:
 //   1. project `fnb`
 //   2. Web app `fnb-web` — auth method NONE (PKCE), Dev Mode on, redirect/post-logout
-//      URIs pointing at the nginx entry point on ${APP_PORT}
+//      URIs pointing at the Caddy entry point on ${APP_PORT}
 //   3. human users mirroring db/seed.sql (same emails, same dev password)
 //   4. the { issuer, clientId } handoff JSON on the shared volume (read by auth-app)
 //
@@ -34,7 +34,7 @@ const SEED_FILE = requiredEnv('SEED_FILE') // { issuer, clientId } handoff for a
 const SEED_MODE = process.env.ZITADEL_SEED_MODE ?? 'dev'
 const IS_PROD = SEED_MODE === 'prod'
 
-// Dev embeds the nginx host port; prod uses the public https origin (APP_ORIGIN=https://<domain>,
+// Dev embeds the Caddy host port; prod uses the public https origin (APP_ORIGIN=https://<domain>,
 // terminated by Caddy). APP_PORT stays required in dev only.
 const APP_ORIGIN = IS_PROD
   ? requiredEnv('APP_ORIGIN')

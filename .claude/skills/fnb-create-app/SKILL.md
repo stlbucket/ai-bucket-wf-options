@@ -3,7 +3,7 @@ name: fnb-create-app
 description: >
   Scaffolds a new Nuxt 4 app within the fnb monorepo. Use this skill when the user wants to
   add a new app under apps/ — it creates the full skeleton: package.json, nuxt.config.ts,
-  tsconfig.json, server boilerplate, Docker service, and nginx location block.
+  tsconfig.json, server boilerplate, Docker service, and Caddy handle block.
   Triggers include: "create a new app", "scaffold loc-app", "add a new app to the monorepo",
   or any request to bootstrap a fresh Nuxt app inside fnb. WebSocket support is optional.
 ---
@@ -21,7 +21,7 @@ Before writing any files, confirm these three values with the user:
 
 1. **App slug** — short lowercase name, e.g. `loc` → creates `apps/loc-app/`, package name
    `@function-bucket/fnb-loc-app`
-2. **nginx path prefix** — the URL path nginx will route to this app, e.g. `/loc`
+2. **Caddy path prefix** — the URL path Caddy will route to this app, e.g. `/loc`
 3. **WebSocket support?** — yes/no. If yes, **extend `@function-bucket/fnb-msg-layer`** (it already
    provides `pg-notify-bridge.ts`, `getWsUpgradeClaims.ts`, the `_ws` route, and the `withClaims`
    incremental-read endpoint) and enable `nitro.experimental.websocket: true`. Only hand-roll WS
@@ -262,14 +262,14 @@ filter, env, and volume):
     command: ["sh", "-c", "pnpm --filter @function-bucket/fnb-<slug>-app exec nuxt dev --host 0.0.0.0 --port 3000"]
 ```
 
-**4. Add the new service to the `nginx` depends_on list.**
+**4. Add the new service to the `caddy` depends_on list.**
 
-### `docker/nginx.conf`
+### `docker/Caddyfile`
 
-Add a location block **before** the catch-all `location /` block:
-```nginx
-    location /<slug> {
-        proxy_pass http://<slug>-app:3000;
+Add a `handle` block **before** the catch-all `handle { … }` block:
+```caddyfile
+    handle /<slug>* {
+        reverse_proxy <slug>-app:3000
     }
 ```
 

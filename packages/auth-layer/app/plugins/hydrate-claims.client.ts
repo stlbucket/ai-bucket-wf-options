@@ -11,7 +11,7 @@ import { defineNuxtPlugin, navigateTo, onNuxtReady } from 'nuxt/app'
 //   fetch throws           → fail-soft: keep last-known claims (a transient API outage must not
 //                            log the user out — only a definitive "no claims" response clears)
 // Runs on the client only, after the app is ready (so the urql plugin has already provided
-// $urqlClient — this is independent of plugin registration order). Each app behind nginx is its
+// $urqlClient — this is independent of plugin registration order). Each app behind Caddy is its
 // own Nuxt app, so every cross-app navigation is a full page load and re-runs this check.
 export default defineNuxtPlugin((nuxtApp) => {
   onNuxtReady(() => {

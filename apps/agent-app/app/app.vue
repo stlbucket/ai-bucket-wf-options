@@ -4,5 +4,5 @@
 </script>
 
 <template>
-  <div>fnb agent-app — headless Claude Agent SDK workflow engine (no UI, not routed through nginx)</div>
+  <div>fnb agent-app — headless Claude Agent SDK workflow engine (no UI, not routed through Caddy)</div>
 </template>

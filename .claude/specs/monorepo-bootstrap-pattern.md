@@ -288,6 +288,26 @@ Caddy `handle` prefix. Example: `/tenant` maps to both `NUXT_APP_BASE_URL=/tenan
 
 ---
 
+## Dev startup performance (Vite prebundle + route warmup)
+
+All apps run `nuxt dev`, which compiles lazily per-route, per-app — so first visits feel slow
+and an un-prebundled dep triggers a mid-request full-page reload. Two **dev-server-only** Vite
+keys mitigate this (both ignored by `nuxt build`); see spec `.claude/specs/dev-startup-performance/`.
+
+- **`vite.optimizeDeps.include`** — heavy **browser** deps prebundled at boot. Lives in
+  `packages/auth-layer/nuxt.config.ts` (the extends-chain root; defu concatenates the array into
+  every app). **Only bare specifiers resolvable from an app root** belong here — transitive-only
+  deps warn `Unresolvable` and are already covered by their parent's prebundle (e.g. `@urql/vue`
+  covers `@urql/core`/`graphql`; `@nuxt/ui` covers `tailwind-variants`/`@internationalized/date`).
+  App-specific heavy deps go in **that app's own** block (e.g. tenant-app pins `mapbox-gl`).
+- **`vite.server.warmup.clientFiles: ['./app/pages/**/*.vue']`** — also in auth-layer; transforms
+  each app's page graph at startup (glob resolves against the consuming app's `rootDir`).
+
+The authoritative `include` list comes from the dev logs (`new dependencies optimized … reloading`
+= add it; `Unresolvable optimizeDeps.include` = remove it), never from guessing.
+
+---
+
 ## Adding a New App: Infrastructure Checklist
 
 When adding `<slug>-app`:

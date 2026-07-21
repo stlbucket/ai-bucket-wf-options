@@ -42,6 +42,12 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-01-15',
 
   vite: {
+    // App-specific prebundle (issue 0370). mapbox-gl (CJS) is a tenant-app-only dep used by
+    // the airport-dataset map; pinning it here stops Vite discovering it mid-request and
+    // reloading the page. Merges (concat) with the shared list inherited from auth-layer.
+    optimizeDeps: {
+      include: ['mapbox-gl']
+    },
     server: {
       // Only configure HMR when the browser-facing port is provided (dev via compose); host
       // `pnpm build` has no VITE_HMR_CLIENT_PORT and must not hard-require it.

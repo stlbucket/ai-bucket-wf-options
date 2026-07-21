@@ -33,8 +33,34 @@ export default defineNuxtConfig({
   },
 
   vite: {
+    // Dev-startup performance (issue 0370). Both keys are dev-server-only — `nuxt build`
+    // ignores them — and live here in the root layer so all six apps inherit them via
+    // Nuxt's defu merge of extended-layer `vite` config.
     optimizeDeps: {
-      include: ['@nuxtjs/color-mode', '@urql/vue', '@vueuse/core'],
+      // Prebundle heavy shared BROWSER deps at boot so Vite does not discover them
+      // mid-request and force a full-page reload ("new dependencies optimized: …,
+      // reloading"). Only bare specifiers resolvable from an app root belong here —
+      // transitive-only deps (@urql/core, graphql under @urql/vue; tailwind-variants,
+      // @internationalized/date under @nuxt/ui) warn "Unresolvable" and are already
+      // bundled inside their parent's prebundle, so listing @urql/vue + @nuxt/ui
+      // covers them. Server-only deps (pg, @aws-sdk, nitropack, h3) are NOT listed —
+      // this is the browser graph. (App-specific heavy deps, e.g. tenant-app's
+      // mapbox-gl, are pinned in that app's own optimizeDeps.include, not here.)
+      include: [
+        '@nuxtjs/color-mode',
+        '@urql/vue',
+        '@vueuse/core',
+        '@nuxt/ui',
+        'reka-ui',
+      ],
+    },
+    server: {
+      // Transform each app's page graph at startup instead of on first click. Glob
+      // resolves against the consuming app's rootDir (Nuxt 4 pages at app/pages/), so
+      // one entry warms every app's own pages. Merges with each app's `vite.server.hmr`.
+      warmup: {
+        clientFiles: ['./app/pages/**/*.vue'],
+      },
     },
   },
 })

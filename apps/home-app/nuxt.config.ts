@@ -14,6 +14,7 @@ export default defineNuxtConfig({
     public: {
       authAppUrl: '',
       graphqlApiUrl: ''
+      // sentryDsn is inherited from auth-layer's runtimeConfig.public.
     }
   },
 

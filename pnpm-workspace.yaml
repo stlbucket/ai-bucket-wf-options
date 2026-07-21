@@ -15,6 +15,7 @@ catalog:
   '@iconify-json/simple-icons': ^1.2.77
   '@nuxt/eslint': ^1.15.2
   '@nuxt/ui': ^4.6.1
+  '@sentry/nuxt': ^10.67.0
   '@types/pg': ^8.20.0
   '@urql/vue': ^2.1.1
   '@vueuse/core': ^14.3.0

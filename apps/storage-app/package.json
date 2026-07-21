@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@nuxt/ui": "catalog:",
+    "@sentry/nuxt": "catalog:",
     "@iconify-json/lucide": "catalog:",
     "@iconify-json/simple-icons": "catalog:",
     "@function-bucket/fnb-storage-layer": "workspace:*",

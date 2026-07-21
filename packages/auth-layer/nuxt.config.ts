@@ -4,9 +4,25 @@ import { createResolver } from '@nuxt/kit'
 const { resolve } = createResolver(import.meta.url)
 
 export default defineNuxtConfig({
-  modules: ['@nuxt/ui', '@nuxt/fonts'],
+  modules: ['@nuxt/ui', '@nuxt/fonts', '@sentry/nuxt/module'],
   css: [resolve('app/assets/css/main.css')],
   compatibilityDate: '2025-01-15',
+
+  // Sentry (project `fnb`) — declared in the ROOT layer so every app in the
+  // chain inherits error + tracing capture. Each app still needs its own
+  // sentry.client.config.ts / sentry.server.config.ts (the module resolves
+  // those from the consuming app's rootDir, not the layer). `top-level-import`
+  // injects server init into the Nitro build, so no `--import`/NODE_OPTIONS
+  // change to any app's dev or prod start command is required.
+  // sourceMapsUploadOptions only affects `nuxt build` (prod); upload is skipped
+  // unless SENTRY_AUTH_TOKEN is present at build time.
+  sentry: {
+    autoInjectServerSentry: 'top-level-import',
+    sourceMapsUploadOptions: {
+      org: 'function-bucket',
+      project: 'fnb'
+    }
+  },
 
   // function-bucket brand favicons (plan 0500). Assets live in this root layer's public/
   // dir, so every app that extends the chain inherits them. Root-absolute hrefs are
@@ -30,6 +46,12 @@ export default defineNuxtConfig({
     // server/utils/session.ts fails closed (500) when unset; every app that parses the
     // session cookie needs it (all tenant-layer descendants + auth-app).
     sessionSecret: '',
+    public: {
+      // Public Sentry DSN (safe to ship to the browser). Filled at runtime by
+      // NUXT_PUBLIC_SENTRY_DSN; '' => sentry.client.config.ts init is a no-op.
+      // Inherited by every app; each app's sentry.client.config.ts reads it.
+      sentryDsn: '',
+    },
   },
 
   vite: {

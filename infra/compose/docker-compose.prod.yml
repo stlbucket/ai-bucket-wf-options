@@ -266,6 +266,9 @@ services:
       NODE_ENV: production
       NUXT_HOST: "0.0.0.0"
       NUXT_PORT: "3000"
+      # Sentry (optional; empty disables the SDK). Same public DSN to both.
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
       NUXT_APP_BASE_URL: "/auth"
       NUXT_PUBLIC_AUTH_APP_URL: "${NUXT_PUBLIC_AUTH_APP_URL:?}"
       NUXT_PUBLIC_GRAPHQL_API_URL: "${NUXT_PUBLIC_GRAPHQL_API_URL:?}"
@@ -290,6 +293,9 @@ services:
       NODE_ENV: production
       NUXT_HOST: "0.0.0.0"
       NUXT_PORT: "3000"
+      # Sentry (optional; empty disables the SDK). Same public DSN to both.
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
       NUXT_PUBLIC_AUTH_APP_URL: "${NUXT_PUBLIC_AUTH_APP_URL:?}"
       NUXT_PUBLIC_GRAPHQL_API_URL: "${NUXT_PUBLIC_GRAPHQL_API_URL:?}"
       NUXT_AUTH_APP_INTERNAL_URL: "${NUXT_AUTH_APP_INTERNAL_URL:?}"
@@ -308,6 +314,9 @@ services:
       NODE_ENV: production
       NUXT_HOST: "0.0.0.0"
       NUXT_PORT: "3000"
+      # Sentry (optional; empty disables the SDK). Same public DSN to both.
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
       NUXT_APP_BASE_URL: "/tenant"
       NUXT_PUBLIC_AUTH_APP_URL: "${NUXT_PUBLIC_AUTH_APP_URL:?}"
       NUXT_PUBLIC_GRAPHQL_API_URL: "${NUXT_PUBLIC_GRAPHQL_API_URL:?}"
@@ -332,6 +341,9 @@ services:
       NODE_ENV: production
       NUXT_HOST: "0.0.0.0"
       NUXT_PORT: "3000"
+      # Sentry (optional; empty disables the SDK). Same public DSN to both.
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
       NUXT_APP_BASE_URL: "/msg"
       NUXT_PUBLIC_AUTH_APP_URL: "${NUXT_PUBLIC_AUTH_APP_URL:?}"
       NUXT_PUBLIC_GRAPHQL_API_URL: "${NUXT_PUBLIC_GRAPHQL_API_URL:?}"
@@ -351,6 +363,9 @@ services:
       NODE_ENV: production
       NUXT_HOST: "0.0.0.0"
       NUXT_PORT: "3000"
+      # Sentry (optional; empty disables the SDK). Same public DSN to both.
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
       NUXT_APP_BASE_URL: "/game"
       NUXT_PUBLIC_AUTH_APP_URL: "${NUXT_PUBLIC_AUTH_APP_URL:?}"
       NUXT_PUBLIC_GRAPHQL_API_URL: "${NUXT_PUBLIC_GRAPHQL_API_URL:?}"
@@ -370,6 +385,9 @@ services:
       NODE_ENV: production
       NUXT_HOST: "0.0.0.0"
       NUXT_PORT: "3000"
+      # Sentry (optional; empty disables the SDK). Same public DSN to both.
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
       NUXT_APP_BASE_URL: "/graphql-api"
       NUXT_PUBLIC_AUTH_APP_URL: "${NUXT_PUBLIC_AUTH_APP_URL:?}"
       NUXT_PUBLIC_GRAPHQL_API_URL: "${NUXT_PUBLIC_GRAPHQL_API_URL:?}"
@@ -399,6 +417,9 @@ services:
       NODE_ENV: production
       NUXT_HOST: "0.0.0.0"
       NUXT_PORT: "3000"
+      # Sentry (optional; empty disables the SDK). Same public DSN to both.
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
       NUXT_APP_BASE_URL: "/storage"
       NUXT_PUBLIC_AUTH_APP_URL: "${NUXT_PUBLIC_AUTH_APP_URL:?}"
       NUXT_PUBLIC_GRAPHQL_API_URL: "${NUXT_PUBLIC_GRAPHQL_API_URL:?}"

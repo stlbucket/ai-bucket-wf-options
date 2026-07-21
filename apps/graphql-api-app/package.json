@@ -19,6 +19,7 @@
     "@graphile/simplify-inflection": "^8.0.0",
     "@iconify-json/lucide": "catalog:",
     "@nuxt/ui": "catalog:",
+    "@sentry/nuxt": "catalog:",
     "@urql/vue": "catalog:",
     "@vueuse/core": "catalog:",
     "h3": "catalog:",

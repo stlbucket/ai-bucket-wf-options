@@ -20,6 +20,7 @@
     "@nuxt/fonts": "^0.14.0",
     "@nuxt/kit": "^4.4.2",
     "@nuxt/ui": "catalog:",
+    "@sentry/nuxt": "catalog:",
     "h3": "catalog:",
     "nuxt": "catalog:",
     "tailwindcss": "^4.2.2"

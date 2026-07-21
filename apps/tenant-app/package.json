@@ -14,6 +14,7 @@
     "@iconify-json/lucide": "catalog:",
     "@iconify-json/simple-icons": "catalog:",
     "@nuxt/ui": "catalog:",
+    "@sentry/nuxt": "catalog:",
     "@function-bucket/fnb-graphql-client-api": "workspace:*",
     "@function-bucket/fnb-storage-layer": "workspace:*",
     "@function-bucket/fnb-tenant-layer": "workspace:*",

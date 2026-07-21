@@ -334,6 +334,9 @@ services:
       NUXT_ZITADEL_SEED_FILE: "${NUXT_ZITADEL_SEED_FILE:?}"
       DATABASE_URL: "${DATABASE_URL:?}"
       VITE_HMR_CLIENT_PORT: "${VITE_HMR_CLIENT_PORT:?}"
+      # Sentry (optional; empty disables the SDK). Same public DSN to both.
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
     volumes:
       - .:/app
       - node_modules_root:/app/node_modules
@@ -374,6 +377,9 @@ services:
       MAPBOX_ACCESS_TOKEN: "${MAPBOX_ACCESS_TOKEN:?}"
       DATABASE_URL: "${DATABASE_URL:?}"
       VITE_HMR_CLIENT_PORT: "${VITE_HMR_CLIENT_PORT:?}"
+      # Sentry (optional; empty disables the SDK). Same public DSN to both.
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
     volumes:
       - .:/app
       - node_modules_root:/app/node_modules
@@ -404,6 +410,11 @@ services:
       NUXT_SESSION_SECRET: "${NUXT_SESSION_SECRET:?}"
       DATABASE_URL: "${DATABASE_URL:?}"
       VITE_HMR_CLIENT_PORT: "${VITE_HMR_CLIENT_PORT:?}"
+      # Sentry (optional — empty disables the SDK, so :- not :?). Same public DSN
+      # to both: NUXT_PUBLIC_SENTRY_DSN -> client (runtimeConfig), SENTRY_DSN ->
+      # server (process.env, read in sentry.server.config.ts before Nuxt boots).
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
     volumes:
       - .:/app
       - node_modules_root:/app/node_modules
@@ -435,6 +446,9 @@ services:
       NUXT_SESSION_SECRET: "${NUXT_SESSION_SECRET:?}"
       DATABASE_URL: "${DATABASE_URL:?}"
       VITE_HMR_CLIENT_PORT: "${VITE_HMR_CLIENT_PORT:?}"
+      # Sentry (optional; empty disables the SDK). Same public DSN to both.
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
     volumes:
       - .:/app
       - node_modules_root:/app/node_modules
@@ -469,6 +483,9 @@ services:
       NUXT_SESSION_SECRET: "${NUXT_SESSION_SECRET:?}"
       DATABASE_URL: "${DATABASE_URL:?}"
       VITE_HMR_CLIENT_PORT: "${VITE_HMR_CLIENT_PORT:?}"
+      # Sentry (optional; empty disables the SDK). Same public DSN to both.
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
     volumes:
       - .:/app
       - node_modules_root:/app/node_modules
@@ -513,6 +530,9 @@ services:
       # with the shared secret (agentic-decommission spec)
       N8N_INTERNAL_URL: "${N8N_INTERNAL_URL:?}"
       N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"
+      # Sentry (optional; empty disables the SDK). Same public DSN to both.
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
     volumes:
       - .:/app
       - node_modules_root:/app/node_modules
@@ -560,6 +580,9 @@ services:
       # agentic-decommission)
       N8N_INTERNAL_URL: "${N8N_INTERNAL_URL:?}"
       N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"
+      # Sentry (optional; empty disables the SDK). Same public DSN to both.
+      NUXT_PUBLIC_SENTRY_DSN: "${SENTRY_DSN:-}"
+      SENTRY_DSN: "${SENTRY_DSN:-}"
     volumes:
       - .:/app
       - node_modules_root:/app/node_modules

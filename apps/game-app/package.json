@@ -13,6 +13,7 @@
   "dependencies": {
     "@iconify-json/lucide": "catalog:",
     "@nuxt/ui": "catalog:",
+    "@sentry/nuxt": "catalog:",
     "@function-bucket/fnb-game-layer": "workspace:*",
     "@function-bucket/fnb-graphql-client-api": "workspace:*",
     "@function-bucket/fnb-types": "workspace:*",

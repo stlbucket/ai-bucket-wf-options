@@ -30,7 +30,7 @@ services:
       context: .
       dockerfile: docker/db.Dockerfile
     image: fnb-db-pgtap:local
-    platform: linux/amd64
+    platform: ${FNB_PLATFORM:-}   # host arch by default; Apple Silicon sets FNB_PLATFORM=linux/amd64 in .env
     container_name: function_bucket
     networks:
       - fnb-network
@@ -122,7 +122,7 @@ services:
 
   minio:
     image: minio/minio:RELEASE.2025-09-07T16-13-09Z
-    platform: linux/amd64            # Apple Silicon: force amd64 (matches db service)
+    platform: ${FNB_PLATFORM:-}   # host arch by default; Apple Silicon sets FNB_PLATFORM=linux/amd64 in .env
     container_name: fnb_minio
     networks:
       - fnb-network
@@ -144,7 +144,7 @@ services:
 
   minio-init:
     image: minio/mc:RELEASE.2025-08-13T08-35-41Z
-    platform: linux/amd64            # Apple Silicon: force amd64 (matches db service)
+    platform: ${FNB_PLATFORM:-}   # host arch by default; Apple Silicon sets FNB_PLATFORM=linux/amd64 in .env
     container_name: fnb_minio_init
     networks:
       - fnb-network
@@ -167,7 +167,7 @@ services:
 
   clamav:
     image: clamav/clamav:1.5.3       # bundles clamd + freshclam
-    platform: linux/amd64            # Apple Silicon: force amd64 (matches db service)
+    platform: ${FNB_PLATFORM:-}   # host arch by default; Apple Silicon sets FNB_PLATFORM=linux/amd64 in .env
     container_name: fnb_clamav
     networks:
       - fnb-network
@@ -615,7 +615,7 @@ services:
 
   n8n-db-init:
     image: postgis/postgis
-    platform: linux/amd64
+    platform: ${FNB_PLATFORM:-}   # host arch by default; Apple Silicon sets FNB_PLATFORM=linux/amd64 in .env
     container_name: fnb_n8n_db_init
     networks:
       - fnb-network
@@ -768,7 +768,7 @@ services:
   dozzle:
     image: amir20/dozzle:latest
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock
     ports:
       - "${DOZZLE_PORT:?}:8080"
     environment:

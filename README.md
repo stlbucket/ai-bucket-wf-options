@@ -25,3 +25,5 @@ A pnpm + Turborepo monorepo.
 pnpm install
 pnpm dev
 ```
+
+Running the Docker stack on Linux or Windows? See [docs/cross-platform-setup.md](docs/cross-platform-setup.md) for per-OS setup (`FNB_PLATFORM`, WSL2, the portability checklist).

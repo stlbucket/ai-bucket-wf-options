@@ -46,9 +46,13 @@ Respond `200 { accepted: true }` immediately; the rest runs async (fire-and-forg
 ### 4b. 409 already-exists (re-invite / seeded email)
 
 - **ZITADEL search** (`zitadel-admin-client.md` call 1b) → `userId` by email.
-- **ZITADEL re-request email code** (call 2) `POST /v2/users/{userId}/email` `returnCode` →
-  fresh `verificationCode`.
-- Continue at node 5 with that code. (Resend semantics — README Open Question / Phase 4.)
+- **Re-issuing an email verification code is NOT supported** for an existing/unchanged address
+  (confirmed 2026-07-22: `POST /email` → "Email not changed"; `/email/resend` → "Code is empty").
+  So the re-invite branch instead mints a **password_reset** code (call 3, `returnCode` — always
+  works for any existing user) and sends **email #2 (`set-password`)** directly, skipping the
+  verify step for the resend. i.e. a re-invite = "here's a fresh link to finish setting up your
+  password." (Exact resend UX/throttle — README Open Question / Phase 4.)
+- The happy path (new user) is unaffected — create returns `emailCode` inline for email #1.
 
 ## Error handling
 

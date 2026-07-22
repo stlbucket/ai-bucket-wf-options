@@ -11,3 +11,4 @@
 - [db-types generation — RETIRED](project_db_types_generation.md) — db-types (Kysely/Kanel) is gone; replaced by db-access + graphql-client-api. Only the barrel-export ESM-crash lesson still applies
 - [Architecture is single-sourced](feedback_architecture_single_source.md) — stack described once in pattern files; any architecture change updates specs + both skills in the same change (global-rules R21). Default = urql GraphQL → PostGraphile; 2-arg withClaims is a carve-out
 - [Sqitch: edit deploy files in place](feedback_sqitch_edit_in_place.md) — current phase: no new sqitch deploy files; add SQL to the existing file where it belongs (mind deploy order for grants/revokes)
+- [n8n Code-node + workflow-iteration gotchas](project_n8n_code_node_gotchas.md) — $env blocked (use process.env), no URL global, localhost→::1 (use n8n:5678), secrets via credential; reload = import+publish+restart. n8n_worker grants on app_fn live in fnb-n8n (fnb-app deploys first)

@@ -77,6 +77,16 @@ async function onSelectResidency(residentId: string) {
       <h1 class="text-3xl font-bold tracking-tight">Sign in</h1>
       <p class="mt-2 text-muted">Enter your credentials to continue.</p>
     </div>
+    <!-- One-time notice after the invitation set-password ceremony (user-invitation spec). -->
+    <UAlert
+      v-if="route.query.welcome === '1'"
+      class="max-w-sm"
+      color="success"
+      variant="soft"
+      icon="i-lucide-circle-check"
+      title="Password set"
+      description="Sign in with your email and the password you just chose."
+    />
     <LoginForm />
     <ResidencySelectModal
       v-model:open="modalOpen"

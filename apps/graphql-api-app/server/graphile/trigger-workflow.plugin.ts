@@ -24,7 +24,12 @@ const WORKFLOW_REGISTRY: Record<string, { permission: string | string[] | null }
   // The single outbound-notification chokepoint (notifications spec, R22): { channel, templateKey,
   // to, subject?, vars?, tenantId?, profileId? }. v1's only caller is the site-admin send-test
   // page, so it is gated p:app-admin-super; loosen when invitation/other senders land.
-  'send-notification': { permission: 'p:app-admin-super' }
+  'send-notification': { permission: 'p:app-admin-super' },
+  // User invitation (user-invitation spec, R22): { displayName, email }. tenantId/profileId are
+  // injected from the inviting admin's claims by the plugin. Gated p:app-admin — tenant admins
+  // invite into their own tenant. The workflow creates the resident (app_fn.invite_user as
+  // n8n_worker) + the ZITADEL human user + email #1; fire-and-forget (accepted:true, runId:null).
+  'invite-user': { permission: 'p:app-admin' }
 }
 
 interface TriggerClaims {

@@ -56,27 +56,12 @@
     },
     {
       "name": "Render",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [640, 280],
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "r1",
-              "name": "subject",
-              "type": "string",
-              "value": "={{ $('Webhook').item.json.body.subject || ('[fnb] ' + $('Webhook').item.json.body.templateKey) }}"
-            },
-            {
-              "id": "r2",
-              "name": "html",
-              "type": "string",
-              "value": "={{ $('Webhook').item.json.body.vars?.html || $('Webhook').item.json.body.vars?.body || ('<p>' + $('Webhook').item.json.body.templateKey + '</p>') }}"
-            }
-          ]
-        },
-        "options": {}
+        "mode": "runOnceForAllItems",
+        "jsCode": "const b=$('Webhook').first().json.body;const v=b.vars||{};const k=b.templateKey;const btn=(u,l)=>`<a href='${u}' style='display:inline-block;padding:12px 20px;background:#156f41;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600'>${l}</a>`;const wrap=(t,i,c,u)=>`<div style='font-family:sans-serif;max-width:480px;margin:0 auto;color:#1b2025'><h1 style='color:#156f41'>${t}</h1><p>${i}</p><p style='margin:24px 0'>${c}</p><p style='color:#888888;font-size:12px'>If the button does not work, paste this link into your browser:<br>${u||''}</p></div>`;let subject,html;if(k==='user-invitation'){const n=v.displayName||'there';subject=b.subject||'You have been invited to fnb';html=wrap('Welcome to fnb',`Hi ${n}, you have been invited to fnb. First, verify your email address to get started.`,btn(v.verifyUrl,'Verify your email'),v.verifyUrl);}else if(k==='set-password'){const n=v.displayName||'there';subject=b.subject||'Set your fnb password';html=wrap('Set your password',`Hi ${n}, your email is verified. Choose a password to finish setting up your account.`,btn(v.setPasswordUrl,'Set your password'),v.setPasswordUrl);}else{subject=b.subject||('[fnb] '+k);html=v.html||v.body||('<p>'+k+'</p>');}return [{json:{subject,html}}];"
       },
       "id": "b1a00000-0000-4000-8000-000000000003"
     },

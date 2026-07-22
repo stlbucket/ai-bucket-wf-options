@@ -97,42 +97,52 @@ Phased build order; each phase is independently verifiable. **Depends on notific
 (live): `notify.notification`, the `send-notification` + `notification-webhook` workflows, Mailpit.**
 
 ### Phase 0 — ZITADEL admin client + PAT delivery (`zitadel-admin-client.md`)
-- [ ] Confirm the v4.15.3 v2 endpoint paths + field names (`returnCode`/`sendCode`,
-      `verificationCode`, `password_reset`) against the running instance — see the checklist.
+- [x] Confirm the v4.15.3 v2 endpoint paths + field names against the running instance (done
+      2026-07-22 — see the Confirmed contract table in `zitadel-admin-client.md`). Corrections:
+      verify is `/email/verify` (no `_`); 409 re-invite uses `password_reset` (no email-code resend).
 - [ ] Make the `fnb-seeder` PAT reachable from n8n (mount the `zitadel-seed` volume ro; a Code
       node reads the PAT file at runtime) **and** from auth-app (it already reads the seed dir for
       `clientId`; add PAT-file read). Split-horizon: reach ZITADEL at `NUXT_ZITADEL_INTERNAL_URL`
       with the external host in the `Host` header.
 - [ ] `APP_ORIGIN` available to n8n + auth-app for building ceremony links (already in env).
 
-### Phase 1 — Invite trigger + workflow (`admin-invite.*`, `invite-user.workflow.md`)
-- [ ] Register `invite-user` in `WORKFLOW_REGISTRY` (`trigger-workflow.plugin.ts`) with
+### Phase 1 — Invite trigger + workflow (`admin-invite.*`, `invite-user.workflow.md`) — DONE + VERIFIED LIVE 2026-07-22
+- [x] Register `invite-user` in `WORKFLOW_REGISTRY` (`trigger-workflow.plugin.ts`) with
       `permission: 'p:app-admin'`.
-- [ ] `n8n/workflows/invite-user.json` — Webhook (header-auth) → Postgres `app_fn.invite_user`
-      → ZITADEL create-human-user (return-code, no password; 409 → look up userId + re-request
-      email code) → **Execute Workflow** `send-notification` (email #1, `user-invitation`).
-- [ ] `user-invitation` template added to `send-notification`'s inline template store
-      (greeting + **Verify your email** CTA → `verifyUrl`).
-- [ ] tenant-app: "Invite User" button + `InviteUserModal` on `admin/user/index.vue`;
+- [x] `n8n/workflows/invite-user.json` — Webhook (header-auth) → Postgres `app_fn.invite_user`
+      → **Code node** (PAT read + ZITADEL create-human-user return-code/no-password; **409 →
+      search userId + `password_reset`** — no email-code resend exists) → **HTTP Request** POST to
+      `send-notification` (email #1 `user-invitation` on create, `set-password` on 409). Grant lives
+      in **`fnb-n8n:00000000011240`** (NOT `fnb-app` — deploy-order: `fnb-app` precedes `fnb-n8n`).
+- [x] `user-invitation` + `set-password` templates added to `send-notification`'s Render node
+      (converted Set → Code; greeting + CTA → `verifyUrl`/`setPasswordUrl`; generic path preserved).
+- [x] tenant-app: "Invite User" button + `InviteUserModal` on `admin/user/index.vue`;
       `useInviteUser()` → `triggerWorkflow('invite-user', { displayName, email })`.
-- [ ] Verify: invite from the admin UI → resident row `invited` + ZITADEL user exists (unverified,
-      no password) + a `user-invitation` mail in Mailpit with a working `verifyUrl`.
+- [x] Verified live: invite → `invited` resident + ZITADEL user (unverified, no password) +
+      `user-invitation` mail in Mailpit with a working `verifyUrl` + `notify.notification` sent row.
+      Re-invite (409) → `set-password` mail, no error.
 
-### Phase 2 — Verify-email ceremony (`verify-email.*`)
-- [ ] auth-app `/auth/verify-email` page — auto-`POST` `verify-email` on load; on success set the
+### Phase 2 — Verify-email ceremony (`verify-email.*`) — DONE + VERIFIED LIVE 2026-07-22
+- [x] auth-app `/auth/verify-email` page — auto-`POST` `verify-email` on load; on success set the
       short-lived verified cookie + reveal "Send me a link to set my password".
-- [ ] Server routes: `verify-email` (ZITADEL email `_verify`) and `request-password` (ZITADEL
-      `password_reset` return-code → `send-notification` email #2, `set-password` template).
-- [ ] `set-password` template added to `send-notification` (greeting + **Set your password** CTA →
-      `setPasswordUrl`).
-- [ ] Verify: opening email #1's link flips the ZITADEL user to email-verified; the button lands a
-      `set-password` mail with a working `setPasswordUrl`.
+- [x] Server routes: `verify-email` (ZITADEL email **`/email/verify`** — no underscore) and
+      `request-password` (ZITADEL `password_reset` return-code → `send-notification` email #2). The
+      U5 `onboard_verified` sealed cookie (reuses NUXT_SESSION_SECRET) gates request-password —
+      **verified live: 200 with cookie, 401 without**. email #2 POSTed to send-notification via
+      `process.env.N8N_INTERNAL_URL` + secret (auth-app compose env added).
+- [x] `set-password` template added to `send-notification`'s Render Code node (with `user-invitation`).
+- [x] Verified live: email #1's link flips the ZITADEL user to `emailVerified:true`; the button
+      lands a `set-password` mail with a working `setPasswordUrl`.
 
-### Phase 3 — Set-password ceremony (`set-password.*`)
-- [ ] auth-app `/auth/set-password` page — double-entry form (match + complexity hint), submit →
-      `set-password` route → ZITADEL set-password (`changeRequired:false`) → redirect `/auth/login`.
-- [ ] Verify (end to end): a fresh invitee completes both emails, sets a password, and signs in via
-      the ZITADEL hosted login; `provision_idp_user` email-matches and activates the resident.
+### Phase 3 — Set-password ceremony (`set-password.*`) — DONE + VERIFIED LIVE 2026-07-22
+- [x] auth-app `/auth/set-password` page — double-entry form (match + complexity hint: 8/number/
+      symbol, first-run-setup floor; ZITADEL is the authority → 422 verbatim), submit →
+      `set-password` route → ZITADEL set-password (`changeRequired:false`) → redirect
+      `/auth/login?welcome=1` (login.vue shows a one-time notice).
+- [x] Verified live end-to-end: a fresh invitee completes both emails, sets a password, and the
+      credential authenticates (ZITADEL session create → 201). OIDC first-login → resident
+      activation is the pre-existing `provision_idp_user` linker (unchanged, not re-tested).
+      Browser click-through of the two Vue pages + InviteUserModal is the only unverified surface.
 
 ### Phase 4 — Hardening (open items)
 - [ ] Rate-limit / abuse-guard `request-password` + `set-password` (unauthenticated routes).

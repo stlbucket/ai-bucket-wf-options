@@ -162,3 +162,90 @@ export async function createHumanUser(input: {
   // 5xx / unexpected — transport-level failure
   throw new Error(`zitadel-admin: create human user failed (${res.status}): ${messageOf(res)}`)
 }
+
+// ── Invitation onboarding ceremony (spec: .claude/specs/user-invitation/) ────────────────────
+// The auth-app onboard routes (verify-email / request-password / set-password) call these. The
+// invite itself (create human user + email #1) is done by the n8n `invite-user` workflow, not
+// here. Contract confirmed against v4.15.3 (2026-07-22) — see zitadel-admin-client.md:
+//   verify email    POST /v2/users/{id}/email/verify       { verificationCode }   (NO underscore)
+//   request reset   POST /v2/users/{id}/password_reset      { returnCode: {} } → { verificationCode }
+//   set password    POST /v2/users/{id}/password            { newPassword, verificationCode }
+//   get user        GET  /v2/users/{id}
+// A ZITADEL 4xx on a code call means the single-use code is bad/expired/consumed; 5xx (or transport
+// failure) THROWS so the route maps it to 502.
+
+// A code was bad/expired/consumed (the emailed link no longer works).
+export type CodeExpired = { ok: false; kind: 'expired'; message: string }
+
+// Verify a user's email with the code carried by email #1 (auto-verify on the verify-email page).
+export async function verifyEmail(
+  userId: string,
+  verificationCode: string,
+): Promise<{ ok: true } | CodeExpired> {
+  const ctx = await getZitadelAdminContext()
+  const res = await request(ctx, 'POST', `/v2/users/${encodeURIComponent(userId)}/email/verify`, {
+    verificationCode,
+  })
+  if (res.status === 200 || res.status === 201) return { ok: true }
+  if (res.status >= 400 && res.status < 500) return { ok: false, kind: 'expired', message: messageOf(res) }
+  throw new Error(`zitadel-admin: verify email failed (${res.status}): ${messageOf(res)}`)
+}
+
+// Mint a single-use password-reset code (return-code mode) for the set-password link in email #2.
+// Works for any existing user regardless of email-verified state (confirmed 2026-07-22).
+export async function requestPasswordReset(
+  userId: string,
+): Promise<{ ok: true; verificationCode: string } | CodeExpired> {
+  const ctx = await getZitadelAdminContext()
+  const res = await request(ctx, 'POST', `/v2/users/${encodeURIComponent(userId)}/password_reset`, {
+    returnCode: {},
+  })
+  const code = (res.json as { verificationCode?: string } | null)?.verificationCode
+  if ((res.status === 200 || res.status === 201) && code) return { ok: true, verificationCode: code }
+  if (res.status >= 400 && res.status < 500) return { ok: false, kind: 'expired', message: messageOf(res) }
+  throw new Error(`zitadel-admin: password_reset failed (${res.status}): ${messageOf(res)}`)
+}
+
+// Set the invitee's chosen password using the reset code from email #2. `changeRequired:false` —
+// they just picked it. A bad/expired code and a password-policy violation are both ZITADEL 4xx;
+// they are distinguished so the page can show "expired link" vs. the policy message.
+export type SetPasswordResult =
+  | { ok: true }
+  | CodeExpired
+  | { ok: false; kind: 'policy'; message: string }
+
+export async function setPassword(
+  userId: string,
+  verificationCode: string,
+  password: string,
+): Promise<SetPasswordResult> {
+  const ctx = await getZitadelAdminContext()
+  const res = await request(ctx, 'POST', `/v2/users/${encodeURIComponent(userId)}/password`, {
+    newPassword: { password, changeRequired: false },
+    verificationCode,
+  })
+  if (res.status === 200 || res.status === 201) return { ok: true }
+  if (res.status >= 400 && res.status < 500) {
+    // ZITADEL flags a bad/expired/consumed reset code distinctly from a policy rejection. The code
+    // errors reference the code/verification; anything else on a 4xx is a complexity/policy fail.
+    const msg = messageOf(res)
+    if (/code|verification|expired/i.test(msg)) return { ok: false, kind: 'expired', message: msg }
+    return { ok: false, kind: 'policy', message: msg }
+  }
+  throw new Error(`zitadel-admin: set password failed (${res.status}): ${messageOf(res)}`)
+}
+
+// Fetch a user (the request-password route needs the email + display name to build email #2).
+export async function getUser(userId: string): Promise<{
+  email: string
+  displayName: string
+} | null> {
+  const ctx = await getZitadelAdminContext()
+  const res = await request(ctx, 'GET', `/v2/users/${encodeURIComponent(userId)}`)
+  if (res.status !== 200) return null
+  const human = (res.json as { user?: { human?: { email?: { email?: string }; profile?: { displayName?: string } } } } | null)
+    ?.user?.human
+  const email = human?.email?.email
+  if (!email) return null
+  return { email, displayName: human?.profile?.displayName || email }
+}

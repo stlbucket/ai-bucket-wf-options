@@ -5,3 +5,4 @@
 00000000011210_n8n_fn [00000000011200_n8n] 2026-07-19T00:00:00Z Developer <dev@example.com> # Create n8n_fn functions (begin_run, complete_run, error_run, error_run_by_execution, running_count)
 00000000011220_n8n_api [00000000011210_n8n_fn] 2026-07-19T00:00:00Z Developer <dev@example.com> # Create n8n_api.workflow_runs (gated p:app-admin-super)
 00000000011230_n8n_policies [00000000011220_n8n_api] 2026-07-19T00:00:00Z Developer <dev@example.com> # Grants + RLS policies + n8n_worker login role (password via :'n8n_worker_password')
+00000000011240_n8n_worker_app_invite [00000000011230_n8n_policies fnb-app:00000000010242_app_fn_definers] 2026-07-22T00:00:00Z Developer <dev@example.com> # Grant n8n_worker execute on app_fn.invite_user for the invite-user workflow

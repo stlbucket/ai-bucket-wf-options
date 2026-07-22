@@ -1,0 +1,133 @@
+{
+  "id": "InviteUsr01Fnb0",
+  "name": "invite-user",
+  "active": true,
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        400
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "invite-user",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnbwebhooksecr01",
+          "name": "fnb-webhook-secret"
+        }
+      },
+      "id": "c2b00000-0000-4000-8000-000000000001",
+      "webhookId": "c2b00000-0000-4000-8000-0000000000a1"
+    },
+    {
+      "name": "Create Resident",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        440,
+        400
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select id from app_fn.invite_user($1::uuid, $2::citext)",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body.tenantId, $('Webhook').item.json.body.email ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "c2b00000-0000-4000-8000-000000000002"
+    },
+    {
+      "name": "Invite Via ZITADEL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        400
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const http = require('http');\nconst fs = require('fs');\n\nconst E = (typeof process !== 'undefined' && process.env) ? process.env : {};\nconst zOrigin  = E.NUXT_ZITADEL_INTERNAL_URL || 'http://zitadel:8080';\nconst zHost    = (E.NUXT_ZITADEL_ISSUER || 'http://localhost:8200').replace(/^https?:\\/\\//, '');\nconst authBase = E.NUXT_PUBLIC_AUTH_APP_URL || 'http://localhost:4000/auth';\n\nconst body = $('Webhook').first().json.body || {};\nconst displayName = (body.displayName || '').trim();\nconst email = (body.email || '').trim();\nconst tenantId = body.tenantId || null;\nconst profileId = body.profileId || null;\nif (!email || !tenantId) throw new Error('invite-user: email and tenantId are required');\n\nconst pat = fs.readFileSync('/zitadel-seed/admin.pat', 'utf8').trim();\nif (!pat) throw new Error('invite-user: PAT file is empty');\n\nfunction parseOrigin(o) {\n  const n = String(o).replace(/^https?:\\/\\//, '');\n  const i = n.indexOf(':');\n  return i < 0 ? { host: n, port: '80' } : { host: n.slice(0, i), port: n.slice(i + 1) };\n}\nfunction httpReq(origin, path, method, headers, payload) {\n  const { host, port } = parseOrigin(origin);\n  return new Promise((resolve, reject) => {\n    const r = http.request({ hostname: host, port, path, method, headers }, (res) => {\n      let d = '';\n      res.on('data', (c) => (d += c));\n      res.on('end', () => { let j = null; try { j = d ? JSON.parse(d) : null; } catch { j = { raw: d }; } resolve({ status: res.statusCode, json: j }); });\n    });\n    r.on('error', reject);\n    if (payload) r.write(payload);\n    r.end();\n  });\n}\nfunction zitadel(method, path, obj) {\n  const payload = obj === undefined ? null : JSON.stringify(obj);\n  const headers = { host: zHost, authorization: 'Bearer ' + pat, 'content-type': 'application/json' };\n  if (payload) headers['content-length'] = Buffer.byteLength(payload);\n  return httpReq(zOrigin, path, method, headers, payload);\n}\n\nconst me = await zitadel('GET', '/management/v1/orgs/me');\nconst orgId = me.json && me.json.org && me.json.org.id;\nif (!orgId) throw new Error('invite-user: orgs/me failed (' + me.status + ')');\n\nconst parts = displayName.split(' ').filter(Boolean);\nconst givenName = parts[0] || displayName || email;\nconst familyName = parts.slice(1).join(' ') || displayName || email;\n\nconst create = await zitadel('POST', '/v2/users/human', {\n  username: email, organization: { orgId }, profile: { givenName, familyName }, email: { email, returnCode: {} },\n});\n\nlet templateKey, vars, userId, subject;\nconst conflict = create.status === 409 || (create.status === 400 && /already exists/i.test(JSON.stringify(create.json || '')));\nif (create.status === 200 || create.status === 201) {\n  userId = create.json.userId;\n  const emailCode = create.json.emailCode;\n  const verifyUrl = authBase + '/verify-email?userId=' + encodeURIComponent(userId) + '&code=' + encodeURIComponent(emailCode);\n  templateKey = 'user-invitation'; subject = 'You have been invited to fnb'; vars = { displayName: displayName || email, verifyUrl };\n} else if (conflict) {\n  // Re-invite: an unchanged email cannot be re-issued an email-verify code (confirmed 2026-07-22),\n  // so mint a fresh password_reset link (email #2) instead — always works for an existing user.\n  const search = await zitadel('POST', '/v2/users', { queries: [{ emailQuery: { emailAddress: email } }] });\n  userId = search.json && search.json.result && search.json.result[0] && search.json.result[0].userId;\n  if (!userId) throw new Error('invite-user re-invite: no ZITADEL user found for ' + email);\n  const reset = await zitadel('POST', '/v2/users/' + encodeURIComponent(userId) + '/password_reset', { returnCode: {} });\n  const resetCode = reset.json && reset.json.verificationCode;\n  if (!resetCode) throw new Error('invite-user re-invite: password_reset failed (' + reset.status + ')');\n  const setPasswordUrl = authBase + '/set-password?userId=' + encodeURIComponent(userId) + '&code=' + encodeURIComponent(resetCode);\n  templateKey = 'set-password'; subject = 'Set your fnb password'; vars = { displayName: displayName || email, setPasswordUrl };\n} else {\n  throw new Error('invite-user: ZITADEL create user failed (' + create.status + '): ' + JSON.stringify(create.json));\n}\n\n// Output = the exact send-notification payload; the downstream HTTP Request node POSTs it with the\n// fnb-webhook-secret credential.\nreturn [{ json: { channel: 'email', templateKey, to: email, subject, vars, tenantId, profileId, userId } }];\n"
+      },
+      "id": "c2b00000-0000-4000-8000-000000000003"
+    },
+    {
+      "name": "Send Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://n8n:5678/webhook/send-notification",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnbwebhooksecr01",
+          "name": "fnb-webhook-secret"
+        }
+      },
+      "id": "c2b00000-0000-4000-8000-000000000005"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Create Resident",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Resident": {
+      "main": [
+        [
+          {
+            "node": "Invite Via ZITADEL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Invite Via ZITADEL": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "errorWorkflow": "0E8QFQyYGSyHHq0g"
+  },
+  "pinData": {}
+}

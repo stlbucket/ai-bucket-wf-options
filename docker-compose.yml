@@ -368,6 +368,10 @@ services:
       # First-run setup (server/utils/zitadel-admin.ts + server/api/setup/*): seeder PAT for the
       # runtime management-API client + the mandatory setup-token gate (fail-closed in every env).
       ZITADEL_PAT_FILE: "/zitadel-seed/admin.pat"
+      # Onboarding ceremony (server/api/onboard/request-password): emails the set-password link
+      # (email #2) via the internal send-notification webhook. n8n is IPv4-only → service name.
+      N8N_INTERNAL_URL: "${N8N_INTERNAL_URL:?}"
+      N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"
       SETUP_TOKEN: "${SETUP_TOKEN:?SETUP_TOKEN required — first-run /auth/setup gate}"
       DATABASE_URL: "${DATABASE_URL:?}"
       VITE_HMR_CLIENT_PORT: "${VITE_HMR_CLIENT_PORT:?}"
@@ -759,10 +763,21 @@ services:
       CLAMAV_PORT: "${CLAMAV_PORT:?}"
       ASSET_SCAN_MAX_WF_ATTEMPTS: "${ASSET_SCAN_MAX_WF_ATTEMPTS:?}"
       ASSET_SCAN_STUCK_MINUTES: "${ASSET_SCAN_STUCK_MINUTES:?}"
+      # invite-user workflow (user-invitation spec): the Code node reads the fnb-seeder PAT off the
+      # zitadel-seed volume and calls ZITADEL management/v2 over the split-horizon transport, then
+      # POSTs send-notification internally + builds the /auth/verify-email link. All workflow code is
+      # repo-authored (R22) so allowing fs+http in Code nodes is safe here.
+      NODE_FUNCTION_ALLOW_BUILTIN: "fs,http,https"
+      N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"        # to POST send-notification internally
+      N8N_INTERNAL_URL: "${N8N_INTERNAL_URL:?}"            # http://n8n:5678 (self, for the internal POST)
+      NUXT_ZITADEL_INTERNAL_URL: "${NUXT_ZITADEL_INTERNAL_URL:?}"  # http://zitadel:8080
+      NUXT_ZITADEL_ISSUER: "${NUXT_ZITADEL_ISSUER:?}"      # external issuer → Host header for split-horizon
+      NUXT_PUBLIC_AUTH_APP_URL: "${NUXT_PUBLIC_AUTH_APP_URL:?}"    # http://localhost:4000/auth → verifyUrl base
     ports:
       - "${N8N_HOST_PORT:?}:5678"                  # editor + webhooks (ZITADEL own-port precedent)
     volumes:
       - n8n-data:/home/node/.n8n                   # instance settings; state of record is n8n_engine
+      - zitadel-seed:/zitadel-seed:ro              # fnb-seeder PAT (admin.pat) — read at runtime by invite-user
     healthcheck:
       # 127.0.0.1, not localhost: the alpine image resolves localhost to ::1 first and n8n
       # listens on IPv4 only — a localhost probe gets connection-refused while n8n is fine.

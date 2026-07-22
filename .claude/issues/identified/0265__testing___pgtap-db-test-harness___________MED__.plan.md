@@ -99,6 +99,18 @@ stays untouched and **prod never gets pgTAP** (managed PG never builds this imag
    files green. `pnpm build` still green. Confirm no test artifacts landed in `db/fnb-todo/deploy/`
    or `sqitch.plan`, and the `test` helper schema is dropped after the run (not persisted in the DB).
 
+## Phase 2 status (2026-07-21) — DONE
+
+Rolled out across **all 11 packages**: `pnpm db-test` = **16 files / 86 assertions green**. Each
+package got `010-rls.sql` (+ `020` gate tests for msg/n8n, `020` grant-shape for game, `030` behaviour
+for todo, `030-jwt-helpers` for auth). Highlights: game's per-seat pending-event redaction + closed
+`game_fn` surface; res registry visibility; n8n null-tenant branch; storage anon grant-lockout.
+**The auth suite caught `jwt.has_all_permissions` broken and drove the fix** (→ exact containment
+`_permission_keys <@ jwt.user_permissions()`); verified green — this closes
+`0150__auth__jwt-has-all-permissions-bug` (user to delete that plan). The follow-ups are also done: fuller `fnb-app` RLS
+(`011-rls-resident-session` + `012-rls-license-support` — all 14 app RLS tables covered) + `_fn`
+behaviour for res/msg/loc/game/app. Full suite now **23 files / 135 assertions** green. No open items.
+
 ## Task list — Phase 2+ (follow-on; not required for this plan to close)
 Roll the same `010`/`020`/`030` pattern out one package per pass, security-critical first
 (`fnb-auth`, `fnb-app`, `fnb-res`, `fnb-game`, `fnb-storage`), then `fnb-msg`/`fnb-loc`/`fnb-n8n`

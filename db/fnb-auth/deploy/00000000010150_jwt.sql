@@ -227,27 +227,17 @@ CREATE OR REPLACE FUNCTION jwt.has_all_permissions(_permission_keys citext[], _t
   AS $function$
   DECLARE
     _retval boolean;
-    _permissions citext[];
   BEGIN
-    _retval = false;
-    _permissions := jwt.user_permissions();
-    _retval := (
-      SELECT 
-      EXISTS (    
-        SELECT 1 FROM unnest(_permissions) AS perm  
-        WHERE perm LIKE _permission_key||'%'
-      ) 
-    );
+    -- every requested key must be present in the caller's permissions (exact match, mirroring
+    -- jwt.has_permission). `<@` = "is contained by"; empty input → true (vacuously all-held).
+    _retval := (_permission_keys <@ jwt.user_permissions());
     if _tenant_id is not null then
-      -- _retval := (select _retval and ((jwt.jwt()->'user_metadata')->>'tenant_id')::uuid = _tenant_id);
-      _retval := (select _retval and jwt.tenant_id() = _tenant_id);
+      _retval := (_retval and jwt.tenant_id() = _tenant_id);
     end if;
-
     return _retval;
   end;
   $function$
   ;
-
 
  --- jwt policies
  grant usage on schema jwt to anon, authenticated, service_role;

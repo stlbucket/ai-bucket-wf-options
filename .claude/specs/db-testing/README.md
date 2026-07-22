@@ -87,16 +87,44 @@ Surfacing exactly these gaps is the point (`0260`). Tightening them is out of sc
       Verification surfaced + fixed two seed/test bugs: the immediate `resident_urn` FK (seed must
       register the resident) and the data-modifying-CTE restriction (both now in `_shared.md`).
 
-### Phase 2+ — Roll out (one package per phase, security-critical first)
-Deploy-order list, each phase = its own `test/` tree (`010`/`020`/`030` where the package has
-tables/api/fn respectively; skip a file the package doesn't warrant):
-- [ ] `fnb-auth` · [ ] `fnb-app` · [ ] `fnb-res` · [ ] `fnb-game` · [ ] `fnb-storage`
-      (security-critical: RLS + registry + referee)
-- [ ] `fnb-msg` · [ ] `fnb-loc` · [ ] `fnb-n8n` (the `n8n_worker` grants + null-tenant policy branch)
-- [ ] `fnb-location-datasets` · [ ] `fnb-airports` (thinner data packages — RLS + any `_fn`)
+### Phase 2 — Roll out across all packages — DONE (2026-07-21): `pnpm db-test` = 23 files / 135 assertions green
+Every db package now has a `test/` tree (`010`/`020`/`030` where warranted):
+- [x] `fnb-auth` — `030-jwt-helpers.sql` (auth.user is dropped → the value is the `jwt.*` helpers:
+      identity accessors, `has_permission`, `enforce_permission`, empty-claims). **Found a live bug** —
+      see below.
+- [x] `fnb-app` — `010-rls.sql` (profile self / super-admin / reference-catalog / own-tenant). Subset;
+      fuller coverage (resident multi-policy, licenses, support tickets, `auth.session` deny-all) is future work.
+- [x] `fnb-res` — `010-rls.sql` (`resource_select`: module-permission-gated + null-key tenant membership + super).
+- [x] `fnb-game` — `010-rls.sql` (public game_type, tenant games, **per-seat pending-event redaction**,
+      deny-all `game_event_state`) + `020-grant-shape.sql` (the **closed `game_fn` surface** — anti-0020).
+- [x] `fnb-storage` — `010-rls.sql` (tenant p:app-user/admin, super-admin, **anon grant-level lockout**).
+- [x] `fnb-msg` — `010-rls.sql` (`p:discussions` select/insert, no-update-policy) + `020` (upsert_topic gate + GAP).
+- [x] `fnb-loc` — `010-rls.sql` (tenant manage + public overlay).
+- [x] `fnb-n8n` — `010-rls.sql` (**null-tenant super-admin branch**) + `020` (workflow_runs gate).
+- [x] `fnb-location-datasets` · `fnb-airports` — `010-rls.sql` structural public-catalog smoke (RLS on,
+      SELECT-only, no write policy, anon reads).
 - [ ] Add a CI job (disposable DB → deploy → `db-test`) once the dev flow is proven (`harness.md` §4).
 - [ ] If the harness approach becomes a documented convention, update `global-rules.md` + both
       skills (R21) and register nothing new in `skill-map.md` beyond the existing `pgtap-expert`.
+
+**Finding (2026-07-21) — FIXED: `jwt.has_all_permissions` was broken.** The test caught it live: body
+referenced `_permission_key` (param is `_permission_keys`) → `undefined_column`, and the rename alone
+still failed (`LIKE <array>`). Fixed to exact array containment (`_permission_keys <@
+jwt.user_permissions()`, mirroring `has_permission`'s exact match) and verified green. This closed the
+already-identified **`0150__auth__jwt-has-all-permissions-bug`**. `db/fnb-auth/test/030-jwt-helpers.sql`
+now asserts the correct true/all-held + false/one-missing behaviour.
+
+### Phase 2 follow-ups — DONE (2026-07-21)
+- [x] Fuller `fnb-app` RLS: `011-rls-resident-session.sql` (resident view_all_for_tenant, own vs
+      tenant-admin update, `auth.session` deny-all) + `012-rls-license-support.sql` (license
+      own-profile/tenant-admin/cross-tenant + support_ticket own-resident/tenant-admin/support-staff,
+      self-seeding the `tenant_subscription`→`license_pack`/`license_type`/`application` chain). **All
+      14 app RLS tables now covered.**
+- [x] `_fn` behaviour across the stack: `res` (build_urn/register/idempotent/archive/uuid_v7),
+      `msg` (upsert_topic: create + register + initial message + identifier-idempotent + bad-resident),
+      `loc` (create_location: tenant/resident_urn/urn/register + bad-resident), `game`
+      (create_game: lobby/seats/roster/register + type-availability + seat-bounds guards), `app`
+      (session lifecycle: create/revoke/revoke_my_sessions/claims fail-closed).
 
 ## Remaining Open Questions
 - [x] **Seed helpers** — RESOLVED: hand-written against the real `app.tenant`/`app.resident` columns

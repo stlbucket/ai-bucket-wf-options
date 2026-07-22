@@ -35,6 +35,12 @@ const BRAND_ASSETS_DIR = process.env.BRAND_ASSETS_DIR ?? '/brand-assets' // moun
 const SEED_MODE = process.env.ZITADEL_SEED_MODE ?? 'dev'
 const IS_PROD = SEED_MODE === 'prod'
 
+// first-run-setup: SEED_DATA=empty stands up a virgin env — project/app/branding are still
+// seeded (auth-app needs the clientId handoff), but NO user roster, so the /auth/setup flow
+// mints the first user. Folds into the same "skip roster" branch as prod, while staying on the
+// dev origin/devMode.
+const SEED_USERS_ENABLED = (process.env.SEED_DATA ?? 'full') !== 'empty' && !IS_PROD
+
 // Dev embeds the Caddy host port; prod uses the public https origin (APP_ORIGIN=https://<domain>,
 // terminated by Caddy). APP_PORT stays required in dev only.
 const APP_ORIGIN = IS_PROD
@@ -357,8 +363,11 @@ console.log(`zitadel-seed: org ${orgId}`)
 
 const projectId = await ensureProject()
 const clientId = await ensureWebApp(projectId)
-if (IS_PROD) {
-  console.log('zitadel-seed: prod mode — skipping dev user seeding (admin comes from FirstInstance)')
+if (!SEED_USERS_ENABLED) {
+  const reason = IS_PROD
+    ? 'prod mode (admin comes from FirstInstance)'
+    : 'SEED_DATA=empty (first user comes from /auth/setup)'
+  console.log(`zitadel-seed: skipping dev user seeding — ${reason}`)
 } else {
   for (const user of SEED_USERS) await ensureUser(user)
 }

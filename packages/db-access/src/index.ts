@@ -8,6 +8,11 @@ export { currentProfileClaims } from '@/mutations/current-profile-claims'
 export { profileClaimsForUser } from '@/mutations/profile-claims-for-user'
 export { provisionIdpUser } from '@/mutations/provision-idp-user'
 
+// First-run setup (pre-claims, R5 carve-out): virgin-env bootstrap from /auth/setup
+export { anchorExists } from '@/queries/anchor-exists'
+export { initializeAnchor } from '@/mutations/initialize-anchor'
+export type { InitializeAnchorInput } from '@/mutations/initialize-anchor'
+
 // Server-side sessions (session-refresh-pattern.md): create at login, validate+touch per
 // request, revoke at logout
 export { createSession } from '@/mutations/create-session'

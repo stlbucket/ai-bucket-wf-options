@@ -75,6 +75,9 @@ services:
       DEPLOY_PACKAGES: "${DEPLOY_PACKAGES:?}"
       # fnb-n8n creates the n8n_worker role with this password (sqitch --set).
       N8N_WORKER_PG_PASSWORD: "${N8N_WORKER_PG_PASSWORD:?}"
+      # first-run-setup: SEED_DATA=empty skips db/seed.sql (no anchor tenant / profiles) so the
+      # /auth/setup flow can bootstrap a virgin env. Default 'full' = today's behavior, untouched.
+      SEED_DATA: "${SEED_DATA:-full}"
     restart: "no"
 
   pnpm-install:
@@ -286,6 +289,9 @@ services:
       PAT_FILE: /zitadel-seed/admin.pat
       SEED_FILE: "${NUXT_ZITADEL_SEED_FILE:?}"
       BRAND_ASSETS_DIR: /brand-assets            # instance label-policy logo/icon uploads (plan 0500)
+      # first-run-setup: SEED_DATA=empty seeds project/app/branding but NO user roster (folds into
+      # the same "skip roster" branch as prod). Default 'full' = today's dev roster.
+      SEED_DATA: "${SEED_DATA:-full}"
     volumes:
       - zitadel-seed:/zitadel-seed
       - ./docker/zitadel/seed.mjs:/seed.mjs:ro
@@ -339,6 +345,10 @@ services:
       NUXT_ZITADEL_ISSUER: "${NUXT_ZITADEL_ISSUER:?}"
       NUXT_ZITADEL_INTERNAL_URL: "${NUXT_ZITADEL_INTERNAL_URL:?}"
       NUXT_ZITADEL_SEED_FILE: "${NUXT_ZITADEL_SEED_FILE:?}"
+      # First-run setup (server/utils/zitadel-admin.ts + server/api/setup/*): seeder PAT for the
+      # runtime management-API client + the mandatory setup-token gate (fail-closed in every env).
+      ZITADEL_PAT_FILE: "/zitadel-seed/admin.pat"
+      SETUP_TOKEN: "${SETUP_TOKEN:?SETUP_TOKEN required — first-run /auth/setup gate}"
       DATABASE_URL: "${DATABASE_URL:?}"
       VITE_HMR_CLIENT_PORT: "${VITE_HMR_CLIENT_PORT:?}"
       # Sentry (optional; empty disables the SDK). Same public DSN to both.

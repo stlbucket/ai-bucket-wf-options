@@ -1,7 +1,7 @@
 # first-run-setup — Infrastructure (empty-env build)
 
 ## Status
-Draft — fill in all [FILL IN] sections before implementing.
+**Ready** — all open questions resolved (2026-07-21).
 
 ## Goal
 
@@ -61,23 +61,28 @@ the `http://localhost:${APP_PORT}` redirect URIs, just without the user roster.
   (prod already seeds no users; `empty` folds into the same "skip roster" branch while staying on
   the dev origin/devMode.)
 
-### auth-app service env additions (for the runtime ZITADEL admin client)
+### auth-app service env additions (for the runtime ZITADEL admin client + setup token)
 
-`auth-app` already mounts `zitadel-seed:/zitadel-seed:ro` and has `NUXT_ZITADEL_INTERNAL_URL` /
-`NUXT_ZITADEL_ISSUER`. Add the three vars the admin util reads (see `setup.data.md`):
+`auth-app` already mounts `zitadel-seed:/zitadel-seed:ro` and already has
+`NUXT_ZITADEL_INTERNAL_URL` / `NUXT_ZITADEL_ISSUER` — the admin util reads **those existing names
+directly** (resolved 2026-07-21; consistent with `server/utils/oidc.ts`, see `setup.data.md`
+§Env naming). So no `ZITADEL_INTERNAL_URL` / `ZITADEL_EXTERNAL_HOST` aliases are introduced. Only
+**two genuinely new vars** get added to the service:
 
 ```yaml
   auth-app:
     environment:
-      ZITADEL_INTERNAL_URL: "${NUXT_ZITADEL_INTERNAL_URL:?}"
-      ZITADEL_EXTERNAL_HOST: "${ZITADEL_EXTERNAL_HOST:?}"   # host:port of the issuer, for the Host header
-      ZITADEL_PAT_FILE: "/zitadel-seed/admin.pat"
+      # NUXT_ZITADEL_INTERNAL_URL and NUXT_ZITADEL_ISSUER already present — reused as-is.
+      ZITADEL_PAT_FILE: "/zitadel-seed/admin.pat"   # seeder PAT (volume already mounted :ro)
+      SETUP_TOKEN: "${SETUP_TOKEN:?SETUP_TOKEN required — first-run setup gate}"
 ```
 
-`ZITADEL_EXTERNAL_HOST` is the host portion of `NUXT_ZITADEL_ISSUER` (the seed job already uses
-this exact value as `ZITADEL_EXTERNAL_HOST`). Reuse the existing `.env` var if one exists; else
-add it. [FILL IN] confirm `.env` already exports `ZITADEL_EXTERNAL_HOST` (the zitadel-seed job
-requires it) and simply reference it here.
+`SETUP_TOKEN` is a **required** operator secret (the `initialize` gate fails closed without it —
+`setup.data.md` §Auth). Add it to `.env` / `.env.example` with a generated value, e.g.
+`SETUP_TOKEN=$(openssl rand -hex 24)`. It is required in **every** environment including dev, so
+the empty-env build below assumes `.env` supplies it (the `:?` interpolation aborts the stack with
+a clear message if it is missing). The host portion of `NUXT_ZITADEL_ISSUER` is derived **in the
+util**, so no separate host var is needed.
 
 ## The new script — `scripts/env-build-empty.ts`
 
@@ -107,9 +112,10 @@ function isPortFree(port: number): Promise<boolean> { /* identical to env-build.
 })()
 ```
 
-Factor `isPortFree` into `scripts/_env` (or a small shared helper) if we don't want to duplicate
-it — [FILL IN] the repo's preference; duplicating the tiny helper is acceptable and keeps
-`env-build.ts` untouched.
+**`isPortFree` (resolved 2026-07-21): duplicate the helper.** Copy the tiny `isPortFree` function
+verbatim into `env-build-empty.ts` rather than refactoring it into `scripts/_env`. This keeps
+`env-build.ts` **byte-for-byte untouched** (the whole point of the empty path) at the cost of a few
+duplicated lines — an acceptable trade for zero blast radius on the default build.
 
 ## `package.json` scripts (root)
 
@@ -117,12 +123,12 @@ Add alongside the existing ones (leave `env-build` / `env-rebuild` unchanged):
 
 ```jsonc
 "env-build-empty": "tsx scripts/env-build-empty.ts",
-// optional companion:
 "env-rebuild-empty": "tsx scripts/env-destroy.ts && tsx scripts/env-build-empty.ts"
 ```
 
-[FILL IN] — include `env-rebuild-empty` too? (Recommended: yes; `env-destroy` is seed-agnostic,
-so it composes cleanly.)
+**Include `env-rebuild-empty` (resolved 2026-07-21: yes).** `env-destroy` is seed-agnostic, so it
+composes cleanly in front of `env-build-empty`, giving the empty path the same rebuild ergonomics
+as the default (`env-rebuild`).
 
 ## Verification (empty-env smoke)
 
@@ -131,7 +137,11 @@ so it composes cleanly.)
 2. `select count(*) from app.tenant;` → **0**; `select count(*) from app.profile;` → **0**.
 3. ZITADEL console: project `fnb` + app `fnb-web` exist; org has only the FirstInstance
    admin/machine users (no dev roster).
-4. Open the site → routed to `/auth/setup`. Submit the form.
-5. Anchor tenant + one `app-admin-super` profile exist; a matching ZITADEL human user exists;
-   `/auth/setup` now redirects to login; sign in lands in the site-admin session.
+4. Open the site → routed to `/auth/setup`. Submit the form, supplying the `.env` `SETUP_TOKEN` in
+   the **Setup token** field. Confirm a **wrong** token is rejected with a 403 before anything is
+   created, and that an unset server `SETUP_TOKEN` aborts the stack at compose (the `:?` guard).
+5. Anchor tenant + one `app-admin-super` profile exist; a matching ZITADEL human user exists
+   (created with `changeRequired: false`); `/auth/setup` now returns `needsSetup:false` and the
+   success path **auto-redirects into the ZITADEL OIDC login**; signing in lands in the site-admin
+   session.
 6. `pnpm env-build` (default) still seeds the full dev roster — unchanged.

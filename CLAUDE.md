@@ -81,6 +81,8 @@ n8n (sole workflow engine, self-hosted).
 
 - `pnpm dev` / `pnpm build` / `pnpm test` / `pnpm lint` → `turbo run <task>`
 - `pnpm build` is the gate — repo-wide `pnpm lint` is **known-broken** (see `.claude/memory/`)
+- `pnpm env-build` (full dev seed) · `pnpm env-build-empty` (virgin env, no seed — bootstrapped via
+  `/auth/setup`, first-run-setup spec); `env-rebuild` / `env-rebuild-empty` destroy-then-build
 
 ## Conventions
 

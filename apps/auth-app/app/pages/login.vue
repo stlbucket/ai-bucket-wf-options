@@ -3,6 +3,7 @@ import type { ProfileClaims, ResidencyTreeNode } from '@function-bucket/fnb-type
 import { assumeResidency } from '~/composables/useLoginFlow'
 
 const { goHome, isLoggedIn, refreshClaims, user } = useAuth()
+const authAppUrl = useRuntimeConfig().public.authAppUrl as string
 const { $urqlClient } = useNuxtApp() as unknown as {
   $urqlClient: Parameters<typeof assumeResidency>[0]
 }
@@ -20,6 +21,20 @@ const selecting = ref(false)
 // password path (residency check / selection).
 const route = useRoute()
 onMounted(async () => {
+  // First-run gate: a virgin env (no anchor tenant) steers "sign in" to /auth/setup instead of
+  // an empty ZITADEL login (first-run-setup spec).
+  try {
+    const { needsSetup } = await $fetch<{ needsSetup: boolean }>(
+      `${authAppUrl}/api/setup/status`,
+    )
+    if (needsSetup) {
+      await navigateTo('/setup', { replace: true })
+      return
+    }
+  } catch {
+    // status unreachable — fall through to the normal login page
+  }
+
   if (route.query.oidc !== 'success') return
   await refreshClaims()
   if (user.value) await onLoginSuccess(user.value)

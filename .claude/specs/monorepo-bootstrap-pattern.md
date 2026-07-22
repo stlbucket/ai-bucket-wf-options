@@ -37,8 +37,10 @@ packages are in the workspace — those are sqitch only.
     "db-exec": "tsx scripts/db-exec.ts",
     "db-status": "tsx scripts/db-status.ts",
     "env-build": "tsx scripts/env-build.ts",
+    "env-build-empty": "tsx scripts/env-build-empty.ts",
     "env-destroy": "tsx scripts/env-destroy.ts",
-    "env-rebuild": "tsx scripts/env-destroy.ts && tsx scripts/env-build.ts"
+    "env-rebuild": "tsx scripts/env-destroy.ts && tsx scripts/env-build.ts",
+    "env-rebuild-empty": "tsx scripts/env-destroy.ts && tsx scripts/env-build-empty.ts"
   },
   "devDependencies": {
     "turbo": "^2.9.6",
@@ -154,6 +156,15 @@ pnpm-install    ├→ packages-watch → [all apps]
   `n8n_worker` grants for the asset-scan + sync workflows). PostGraphile exposes the module schemas
   (`graphile.config.ts` `pgServices.schemas`), so all eleven must deploy or it fails at boot.
   `.env.example` ships the full list pre-filled (not a comment).
+- **`SEED_DATA`** (`${SEED_DATA:-full}`) selects the seed profile. `full` (default) runs the fat
+  `db/seed.sql` (anchor tenant + dev users) and seeds the ZITADEL dev-user roster — today's
+  behavior, unchanged. `empty` (first-run-setup) **skips** `db/seed.sql` and the ZITADEL roster
+  (roles + sqitch deploy still always run), standing up a virgin env that the `/auth/setup` flow
+  bootstraps on first open. Threaded to both `db-migrate` (`docker/migrate-entrypoint.sh` guards
+  the seed step) and `zitadel-seed` (`docker/zitadel/seed.mjs` gates the roster loop —
+  project/app/branding still seed). Driven by `pnpm env-build-empty` / `env-rebuild-empty`, which
+  set `SEED_DATA=empty` in the compose child env; `env-build` / `env-rebuild` are byte-for-byte
+  untouched.
 - `depends_on: db: condition: service_healthy`
 
 **`pnpm-install`** — One-shot pnpm install:

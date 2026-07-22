@@ -5,7 +5,7 @@
 > executes it.
 
 ## Status
-**Draft** — fill in all `[FILL IN]` sections before implementing.
+**Ready to implement** — all `[FILL IN]` sections and open questions resolved (2026-07-21).
 
 ## Purpose
 
@@ -95,16 +95,27 @@ around it — the same posture as the OIDC login trio.
 - [ ] `monorepo-bootstrap-pattern.md`: document `SEED_DATA` + `env-build-empty`
 - [ ] CLAUDE.md Root Scripts: add `env-build-empty`
 
-## Remaining Open Questions
+## Resolved Decisions (2026-07-21)
 
-- [ ] Password complexity handling at setup (enforce/display vs. surface ZITADEL's error). See
-      `_shared.data.md`.
-- [ ] `changeRequired` posture for the seeded ZITADEL user (currently `false`).
-- [ ] Abuse gate on the unauthenticated endpoint — optional one-time `SETUP_TOKEN` for
-      internet-exposed empty deploys. See `setup.data.md`.
-- [ ] Post-success destination: auto-redirect into OIDC vs. land on `/auth/login?setup=success`.
-      See `setup.ui.md`.
-- [ ] Include `env-rebuild-empty` companion script? (Recommended yes.) See `infrastructure.md`.
+- **Password complexity** — enforce client-side (**≥ 8 chars, ≥ 1 number, ≥ 1 symbol**) as a UX
+  pre-filter **and** surface ZITADEL's own rejection verbatim (422); ZITADEL stays the source of
+  truth. See `setup.ui.md` §Validation, `_shared.data.md`.
+- **`changeRequired`** — `false`; the human just chose the password. See `_shared.data.md`.
+- **Abuse gate** — **mandatory `SETUP_TOKEN` in every environment** (dev included). The
+  `initialize` endpoint fails closed if unset, compares constant-time, and gates before ZITADEL/DB
+  (403 on mismatch). Form collects a Setup-token field; empty-env build supplies the value. See
+  `setup.data.md` §Auth, `infrastructure.md`.
+- **Post-success destination** — **auto-redirect into OIDC** via `useAuth().loginWithRedirect()`
+  (no interim login card). See `setup.ui.md` §Post-success destination.
+- **`env-rebuild-empty`** — included. See `infrastructure.md`.
+
+Task-list impact of these decisions (folded into the phases above):
+- Phase 3 endpoint adds the `SETUP_TOKEN` gate (constant-time, fail-closed) + `setupToken` in the
+  request body; auth-app compose adds `SETUP_TOKEN` (`:?` required) and `ZITADEL_PAT_FILE` only
+  (reuse existing `NUXT_ZITADEL_*` — no new alias vars).
+- Phase 4 UI adds a required **Setup token** password field + client complexity validation; success
+  path calls `loginWithRedirect()`.
+- Phase 5 adds `SETUP_TOKEN` to `.env` / `.env.example` (generated) and `env-rebuild-empty`.
 
 ## Considered & rejected
 

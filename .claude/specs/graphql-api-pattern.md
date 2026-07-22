@@ -265,6 +265,15 @@ permanent server-side "root of trust". **Authentication itself is ZITADEL's** (O
 **Never migrate these to GraphQL.** `to_jsonb(...)` returns snake_case; `camelCaseKeys` in
 db-access recursively camelCases nested keys (the retired Kysely `CamelCasePlugin` behavior).
 
+**First-run setup** (`.claude/specs/first-run-setup/`) adds two more pre-claims functions in the
+same posture — they bootstrap a virgin env (no anchor tenant, no profiles) from auth-app's
+`/auth/setup` before any session exists: `anchorExists()` → `app_fn.anchor_exists` (the gate) and
+`initializeAnchor(input)` → `app_fn.initialize_anchor` (SEC DEFINER, hard-gated on "no anchor
+tenant yet", **no `app_api` wrapper**, granted only to `authenticator`). Consumed by the auth-app
+Nitro routes `server/api/setup/{status.get,initialize.post}.ts` (the `initialize` endpoint adds a
+mandatory, fail-closed, constant-time `SETUP_TOKEN` gate in front). Same rule applies: never
+GraphQL-ify them.
+
 The `graphql-api-app` itself (PostGraphile server + extendSchema plugins) is also an H3/Nitro
 app — but its endpoints are the GraphQL transport, not per-feature REST routes. Workflows run in
 the headless `apps/agent-app` (R22); graphql-api-app's only workflow surface is the

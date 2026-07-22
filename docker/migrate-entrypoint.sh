@@ -43,9 +43,16 @@ done
 
 echo "==> All migrations complete."
 
-echo "==> Running seed..."
-psql "$PG_URL" -f /db/seed.sql
-echo "==> Seed complete."
+# first-run-setup: SEED_DATA=empty stands up a virgin env (schema only — no anchor tenant /
+# profiles) that the /auth/setup flow bootstraps. Roles + sqitch deploy above always run; only
+# the fat dev seed is skipped. Default 'full' = today's behavior.
+if [ "${SEED_DATA:-full}" = "empty" ]; then
+  echo "==> SEED_DATA=empty — skipping db/seed.sql (first-open bootstraps via /auth/setup)"
+else
+  echo "==> Running seed..."
+  psql "$PG_URL" -f /db/seed.sql
+  echo "==> Seed complete."
+fi
 # echo "==> Adding seed workflows..."
 # psql "$PG_URL" -f apps/graphql-api-app/server/lib/worker-task-handlers/wf-exerciser/load-workflow-exerciser.sql
 # echo "==> Seed workflows complete."

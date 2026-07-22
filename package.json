@@ -18,8 +18,10 @@
     "dep-audit": "tsx scripts/dep-audit.ts",
     "graphql-api-generate": "tsx scripts/graphql-api-generate.ts",
     "env-build": "tsx scripts/env-build.ts",
+    "env-build-empty": "tsx scripts/env-build-empty.ts",
     "env-destroy": "tsx scripts/env-destroy.ts",
-    "env-rebuild": "tsx scripts/env-destroy.ts && tsx scripts/env-build.ts"
+    "env-rebuild": "tsx scripts/env-destroy.ts && tsx scripts/env-build.ts",
+    "env-rebuild-empty": "tsx scripts/env-destroy.ts && tsx scripts/env-build-empty.ts"
   },
   "devDependencies": {
     "@nuxt/eslint": "catalog:",

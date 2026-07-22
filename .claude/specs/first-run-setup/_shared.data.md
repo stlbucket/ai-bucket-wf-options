@@ -1,7 +1,7 @@
 # first-run-setup — Shared Data
 
 ## Status
-Draft — fill in all [FILL IN] sections before implementing.
+**Ready** — all open questions resolved (2026-07-21). See "Resolved decisions" below.
 
 ## Purpose
 
@@ -187,11 +187,23 @@ local-part when blank (matches the seed roster's shape). The PAT holds instance-
 Reuses `Profile` / `ProfileStatus` from `@function-bucket/fnb-types` (R3). The only new type is
 `InitializeAnchorInput` (above), co-located with the db-access mutation. No `fnb-types` change.
 
-## Open Questions
+## Resolved decisions (2026-07-21)
 
-- [ ] **Password policy at setup.** ZITADEL's password-complexity policy still applies to
-      `POST /v2/users/human`. In dev the compose relaxes it; on a real empty/prod deploy it is at
-      ZITADEL defaults. Does the setup form enforce/display the complexity rules, or just surface
-      the ZITADEL error verbatim on rejection? [FILL IN]
-- [ ] **`changeRequired`.** Setup creates the user with `changeRequired: false` (person just chose
-      the password). Confirm that matches the desired posture (vs. forcing a reset on first login).
+- **Password policy at setup — enforce client-side AND surface ZITADEL's error.** The form does
+  its own complexity check (**min 8 chars, ≥ 1 number, ≥ 1 symbol**) and blocks submit until it
+  passes (`setup.ui.md` §Validation). This is a UX pre-filter, not the source of truth: ZITADEL's
+  own password-complexity policy still applies on `POST /v2/users/human`, and any server-side
+  rejection is surfaced **verbatim** as a 422 `ZITADEL_REJECTED` in the error alert
+  (`setup.data.md` §Error surfaces). If the two ever diverge, ZITADEL wins and the operator sees
+  why.
+- **`changeRequired: false`.** The human just chose the password in the setup form, so the seeded
+  ZITADEL user is created with `password: { password, changeRequired: false }` — first login uses
+  the chosen password directly (no forced reset). Already reflected in `createHumanUser` above.
+- **Abuse gate — mandatory `SETUP_TOKEN` in every environment (dev included).** The unauthenticated
+  `initialize` endpoint requires a shared secret matched against auth-app's `SETUP_TOKEN` env var
+  before it touches ZITADEL or the DB; mismatch → **403**. This is layered *in front of* the
+  `anchor_exists()` gate (which still makes the endpoint inert after first success). Wiring:
+  the form collects a **Setup token** field, the endpoint compares it to `process.env.SETUP_TOKEN`
+  (constant-time), and the empty-env build supplies the value (`setup.data.md` §Auth,
+  `setup.ui.md`, `infrastructure.md`). The DB function itself is unchanged — the token is enforced
+  at the Nitro layer, since the DB has no view of request env.

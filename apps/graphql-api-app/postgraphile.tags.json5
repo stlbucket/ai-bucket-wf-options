@@ -17,6 +17,15 @@
       'n8n_api.workflow_runs': {
         tags: { name: 'n8n_workflow_runs' },
       },
+
+      /*
+       * notify send log read fn (gated p:app-admin-super). Renamed to notifyNotificationsList so
+       * the function field cannot collide with the notify.notification table's auto-generated list
+       * field (same shape as the n8n_workflow_runs rename). (notifications spec, _shared.data.md)
+       */
+      'notify_api.notifications': {
+        tags: { name: 'notify_notifications' },
+      },
     },
 
     constraint: {
@@ -59,6 +68,18 @@
       'n8n.workflow_run': {
         tags: {
           name: 'n8n_workflow_run',
+          behavior: '-query:resource:list -query:resource:connection',
+        },
+      },
+
+      /*
+       * notify send log: reads go through the gated notify_api.notifications function
+       * (p:app-admin-super). Drop the table's own all-rows root fields (no client purpose; they'd
+       * collide with the function's list field) — same posture as n8n.workflow_run. Single lookups
+       * + FK relations stay. (notifications spec, _shared.data.md)
+       */
+      'notify.notification': {
+        tags: {
           behavior: '-query:resource:list -query:resource:connection',
         },
       },

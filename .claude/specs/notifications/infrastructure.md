@@ -93,11 +93,22 @@ n8n dispatches via Twilio and records the row. **Open Question:** confirm the HT
 exists on the running ZITADEL version (vs. Twilio-only), which decides whether n8n owns the SMS
 wire or ZITADEL keeps its own Twilio account for MFA.
 
+## n8n webhook exposure (resolved)
+
+n8n has **no Caddy route** — it runs on **its own host port** (Caddyfile note; R22). So:
+
+- **fnb → n8n** (the `triggerWorkflow` registry + the send path) is internal:
+  `${N8N_INTERNAL_URL}/webhook/<key>` (`N8N_INTERNAL_URL=http://n8n:5678`) with the shared
+  `X-Fnb-Webhook-Secret` header (`N8N_WEBHOOK_SECRET`). This is the existing invariant — the
+  `send-notification` entry just adds a `WORKFLOW_REGISTRY` key.
+- **provider → n8n** (delivery webhooks) must reach n8n's **own host-port ingress** (dev: n8n's
+  published port; prod: whatever public URL fronts n8n). Not Caddy. In **dev** this is largely
+  moot — Resend can't call `localhost`; delivery-event testing waits for a reachable env.
+
 ## Provider webhooks (delivery events)
 
 - **Resend** → POST to the `notification-webhook` n8n Webhook Trigger (`delivered`/`opened`/
-  `bounced`). Verify with `RESEND_WEBHOOK_SECRET`. Routed through Caddy to n8n
-  (`[FILL IN]` — confirm the public webhook path prefix Caddy exposes for n8n).
+  `bounced`) at n8n's own ingress. Verify with `RESEND_WEBHOOK_SECRET`.
 - **Twilio** (Phase 5+) → status-callback URL → same `notification-webhook` workflow, sms branch.
 
 ## Checklist

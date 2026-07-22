@@ -1,0 +1,17 @@
+query RecentNotifications($channel: NotificationChannel, $itemLimit: Int) {
+  notifyNotificationsList(
+    _channel: $channel
+    _pagingOptions: { itemLimit: $itemLimit }
+  ) {
+    id
+    channel
+    status
+    templateKey
+    recipient
+    subject
+    tenantId
+    provider
+    createdAt
+    sentAt
+  }
+}

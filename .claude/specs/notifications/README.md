@@ -6,10 +6,24 @@
 
 ## Status
 
-**Draft — fill in all `[FILL IN]` sections before implementing.** Forward-looking (Mode 2).
-Locked decisions captured with the user 2026-07-22 (see the four-question round + follow-up
-thoughts). Phases 1–4 (email + invitation + test page) are v1; SMS/2FA is deferred (Phase 5+,
-`sms-2fa.future.md`).
+**Phases 1, 2, 4 IMPLEMENTED & verified 2026-07-22** (plan `0360…` → `.claude/issues/addressed/`).
+The `fnb-notify` pipeline + site-admin `send-test` page are live; a real send was verified
+end-to-end through the authenticated UI (Mailpit delivery + `notify.notification` row with the
+caller's tenant/profile). Phase 3 (invitation email) and Phase 5+ (SMS/2FA) remain **deferred** —
+this README is their durable entry point. Locked decisions captured 2026-07-22.
+
+**Scope split (decided 2026-07-22 at plan time):**
+- **This plan → Phases 1, 2, 4** — the `fnb-notify` DB module, the `send-notification` +
+  `notification-webhook` workflows, and the **site-admin `send-test` page**. A complete,
+  end-to-end-verifiable pipeline.
+- **Phase 3 (invitation email) — NOW SPECCED ELSEWHERE (2026-07-22).** Superseded by
+  `.claude/specs/user-invitation/` — a full ZITADEL-driven onboarding ceremony (eager user
+  creation → verify-email → set-password → login) that **reuses this `send-notification` pipeline**
+  as its sender (templates `user-invitation` + `set-password`). The original no-magic-link draft
+  (`invitation-email.data.md`) is retained as the rejected alternative. That spec resolves the
+  "where does the invite surface live" question: an n8n `invite-user` workflow fired from a
+  tenant-app admin action.
+- **Phase 5+ (SMS/2FA) — DEFERRED** (`sms-2fa.future.md`).
 
 ## Purpose
 
@@ -68,36 +82,48 @@ lazy invite into an actual email and establishes the pipeline everything else ri
 
 Phased build order; each phase is independently verifiable.
 
-### Phase 1 — DB module `fnb-notify` (`_shared.data.md`)
-- [ ] Sqitch package `db/fnb-notify/` — schemas `notify` / `notify_fn` / `notify_api`; enums
+### Phase 1 — DB module `fnb-notify` (`_shared.data.md`)  ✅ COMPLETE (deployed + verified 2026-07-22)
+- [x] Sqitch package `db/fnb-notify/` — schemas `notify` / `notify_fn` / `notify_api`; enums
       `notify.notification_channel` (`email`, `sms`) + `notify.notification_status`
       (`queued`, `sent`, `delivered`, `opened`, `bounced`, `failed`); `notify.notification` table
-      + indexes; `notify_fn.record_send` / `notify_fn.update_delivery` (SECURITY DEFINER);
-      `notify_api` read surface; grants + RLS + `n8n_worker` execute grants.
-- [ ] Register `fnb-notify` in `DEPLOY_PACKAGES` (`.env` / `.env.example`) **after `fnb-n8n`**.
-- [ ] Matching `revert/` + `verify/`; **no `git` during sqitch sessions**.
+      + indexes; `notify_fn.record_send` / `notify_fn.update_delivery` / `status_rank` (SECURITY
+      DEFINER); `notify_api.notifications` read (gated `p:app-admin-super`); grants + RLS +
+      `n8n_worker` execute grants. Verified live: schemas/fns/policy present.
+- [x] Register `fnb-notify` in `DEPLOY_PACKAGES` (`.env` / `.env.example`) **after `fnb-n8n`**.
+- [x] Matching `revert/` + `verify/` + pgTAP (`test/`); **no `git` during sqitch sessions**.
 
-### Phase 2 — Dispatch + callback workflows (`send-notification.workflow.md`, `notification-webhook.workflow.md`)
-- [ ] `n8n/workflows/send-notification.json` — Webhook Trigger → validate → route by `channel`
-      (email=Resend/Mailpit; sms=log-sink for now) → render template → send → `record_send`.
-- [ ] `n8n/workflows/notification-webhook.json` — Webhook Trigger for Resend events → map →
-      `update_delivery`.
-- [ ] Register both in `n8n-import` and the `triggerWorkflow` registry.
-- [ ] Verify: a manual `triggerWorkflow` enqueue produces a Mailpit message + a `queued→sent` row.
+### Phase 2 — Dispatch + callback workflows  ✅ COMPLETE (imported + send path verified 2026-07-22)
+- [x] `n8n/workflows/send-notification.json` — Webhook (header-auth) → If channel → render → Send
+      Email (Mailpit) with a `failed`-row error branch → `record_send`; sms → log-sink record.
+      (Resend HTTP branch deferred to prod wiring.)
+- [x] `n8n/workflows/notification-webhook.json` — Webhook → map Resend/Twilio event → `update_delivery`
+      (skeleton; **signature verification still TODO before prod**).
+- [x] Register `send-notification` in `WORKFLOW_REGISTRY` (`p:app-admin-super`); both load via
+      `n8n-import`. `fnb-smtp` credential template added.
+- [x] Verify: POST `send-notification` → **Mailpit delivered** + `notify.notification` row `→ sent`
+      with `provider_message_id`. ✅
 
-### Phase 3 — Invitation email (`invitation-email.data.md`)  ← v1 goal
-- [ ] Hook the residency-invite path (`[FILL IN]` — confirm the fnb-app invite fn) to enqueue a
-      `user-invitation` email via `triggerWorkflow`.
-- [ ] Template: "you've been invited" + login CTA (deep link to `/auth`).
-- [ ] Verify: inviting a resident lands a message in Mailpit and a `notify.notification` row.
+### Phase 3 — Invitation email  → MOVED to `.claude/specs/user-invitation/` (2026-07-22)
+- [x] Design decision resolved: the invite surface is an **n8n `invite-user` workflow** fired from a
+      tenant-app admin "Invite User" action (reuses `app_fn.invite_user`; ZITADEL user created
+      eagerly). The `user-invitation` + `set-password` email templates are added to
+      `send-notification` there. Build it via `/fnb-stack-implementor .claude/specs/user-invitation/README.md`.
+- [x] Original no-magic-link draft (`invitation-email.data.md`) superseded — kept as the rejected
+      alternative (that flow carried no auth token; the new flow sets the password in ZITADEL).
 
-### Phase 4 — Site-admin test page (`send-test.ui.md`, `send-test.data.md`)
-- [ ] `send-test` page in tenant-app site-admin (channel/to/template/free-body form), gated
+### Phase 4 — Site-admin test page (`send-test.ui.md`, `send-test.data.md`)  ◐ built + data layer verified
+- [x] `send-test` page in tenant-app site-admin (channel/to/template/body form), gated
       `p:app-admin-super`.
-- [ ] Composable posts to a `withClaims` carve-out route → `triggerWorkflow('send-notification')`.
-- [ ] Recent-sends list from `notify_api` (RLS super-admin reads).
-- [ ] Nav entry registered in the DB (R14) under `site-admin`.
-- [ ] Verify: send a test email → Mailpit + row + result toast.
+- [x] `useSendTest` composable → the existing `triggerWorkflow('send-notification')` surface
+      (not a REST route — reuses the trigger plugin, which injects claims + gates the key).
+- [x] `useRecentNotifications` → `notifyNotificationsList` (RLS super-admin reads). Read path +
+      gate verified live (anon raises).
+- [x] `fnb-types` `Notification` + mapper + barrels + tenant-app re-exports; codegen + package
+      build green.
+- [~] Nav entry edited into `…010240_app_fn.sql` (in-place) — **lands on next full reseed/rebuild**
+      (asset-manager precedent); page reachable by URL meanwhile.
+- [ ] Verify (authenticated UI): send a test email from the page → Mailpit + row + toast + the
+      recent-sends table (needs a super-admin browser session).
 
 ### Phase 5+ — SMS channel + 2FA (`sms-2fa.future.md`)  ← deferred
 - [ ] Twilio provider in `send-notification` (sms branch); dev stays log-sink.

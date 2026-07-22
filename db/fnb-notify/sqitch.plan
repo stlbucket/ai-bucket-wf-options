@@ -1,0 +1,7 @@
+%syntax-version=1.0.0
+%project=fnb-notify
+
+00000000011240_notify [fnb-app:00000000010250_app_policies] 2026-07-22T00:00:00Z Developer <dev@example.com> # Create notify schema, notification_channel/notification_status enums, and the notification outbox/log
+00000000011250_notify_fn [00000000011240_notify] 2026-07-22T00:00:00Z Developer <dev@example.com> # Create notify_fn writers (record_send, update_delivery, status_rank) called over the n8n_worker connection
+00000000011260_notify_api [00000000011250_notify_fn] 2026-07-22T00:00:00Z Developer <dev@example.com> # Create notify_api.notifications (recent-sends read, gated p:app-admin-super)
+00000000011270_notify_policies [00000000011260_notify_api fnb-n8n:00000000011230_n8n_policies] 2026-07-22T00:00:00Z Developer <dev@example.com> # Grants + RLS policy (view_notifications_super_admin) + n8n_worker execute grants on notify_fn

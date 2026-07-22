@@ -11,8 +11,9 @@ in the `triggerWorkflow` registry (no app caller); the provider calls it directl
 ## Trigger
 
 - **Webhook Trigger** node, path `notification-webhook` → n8n `/webhook/notification-webhook`.
-- Exposed publicly through Caddy (`[FILL IN]` — confirm the n8n webhook path prefix Caddy routes)
-  so Resend/Twilio can reach it.
+- Reached at n8n's **own host-port ingress** (n8n has no Caddy route — R22; its own host port),
+  so Resend/Twilio call n8n directly. Dev caveat: providers can't reach `localhost`, so
+  delivery-event testing waits for a publicly reachable env.
 - **Verify the signature** before acting:
   - Resend: `svix`-style signature using `RESEND_WEBHOOK_SECRET`.
   - Twilio: `X-Twilio-Signature` HMAC (Phase 5+).

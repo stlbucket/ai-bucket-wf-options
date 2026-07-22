@@ -1,0 +1,190 @@
+{
+  "id": "SendNotif01Fnb0",
+  "name": "send-notification",
+  "active": true,
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 400],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-notification",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnbwebhooksecr01",
+          "name": "fnb-webhook-secret"
+        }
+      },
+      "id": "b1a00000-0000-4000-8000-000000000001",
+      "webhookId": "b1a00000-0000-4000-8000-0000000000a1"
+    },
+    {
+      "name": "If Email",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [420, 400],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $('Webhook').item.json.body.channel }}",
+              "rightValue": "email",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1a00000-0000-4000-8000-000000000002"
+    },
+    {
+      "name": "Render",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [640, 280],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "subject",
+              "type": "string",
+              "value": "={{ $('Webhook').item.json.body.subject || ('[fnb] ' + $('Webhook').item.json.body.templateKey) }}"
+            },
+            {
+              "id": "r2",
+              "name": "html",
+              "type": "string",
+              "value": "={{ $('Webhook').item.json.body.vars?.html || $('Webhook').item.json.body.vars?.body || ('<p>' + $('Webhook').item.json.body.templateKey + '</p>') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1a00000-0000-4000-8000-000000000003"
+    },
+    {
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [860, 280],
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "fromEmail": "no-reply@function-bucket.net",
+        "toEmail": "={{ $('Webhook').item.json.body.to }}",
+        "subject": "={{ $('Render').item.json.subject }}",
+        "emailFormat": "html",
+        "html": "={{ $('Render').item.json.html }}",
+        "options": {}
+      },
+      "credentials": {
+        "smtp": {
+          "id": "fnbsmtpmailpit1",
+          "name": "fnb-smtp"
+        }
+      },
+      "id": "b1a00000-0000-4000-8000-000000000004"
+    },
+    {
+      "name": "Record Sent",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1080, 200],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select notify_fn.record_send($1::notify.notification_channel, $2::citext, $3::citext, $4, $5::jsonb, nullif($6,'')::uuid, nullif($7,'')::uuid, $8, $9, $10, $11::notify.notification_status, $12::jsonb) as id",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body.channel, $('Webhook').item.json.body.templateKey, $('Webhook').item.json.body.to, $('Render').item.json.subject, JSON.stringify($('Webhook').item.json.body.vars ?? {}), $('Webhook').item.json.body.tenantId ?? '', $('Webhook').item.json.body.profileId ?? '', 'mailpit', $json.messageId ?? '', $execution.id, 'sent', '{}' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "b1a00000-0000-4000-8000-000000000005"
+    },
+    {
+      "name": "Record Failed",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1080, 380],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select notify_fn.record_send($1::notify.notification_channel, $2::citext, $3::citext, $4, $5::jsonb, nullif($6,'')::uuid, nullif($7,'')::uuid, $8, $9, $10, $11::notify.notification_status, $12::jsonb) as id",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body.channel, $('Webhook').item.json.body.templateKey, $('Webhook').item.json.body.to, $('Render').item.json.subject, JSON.stringify($('Webhook').item.json.body.vars ?? {}), $('Webhook').item.json.body.tenantId ?? '', $('Webhook').item.json.body.profileId ?? '', 'mailpit', '', $execution.id, 'failed', JSON.stringify({ message: $json.error?.message ?? 'send failed' }) ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "b1a00000-0000-4000-8000-000000000006"
+    },
+    {
+      "name": "Record Sms Sink",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [640, 540],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select notify_fn.record_send($1::notify.notification_channel, $2::citext, $3::citext, $4, $5::jsonb, nullif($6,'')::uuid, nullif($7,'')::uuid, $8, $9, $10, $11::notify.notification_status, $12::jsonb) as id",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body.channel, $('Webhook').item.json.body.templateKey, $('Webhook').item.json.body.to, $('Webhook').item.json.body.subject ?? '', JSON.stringify($('Webhook').item.json.body.vars ?? {}), $('Webhook').item.json.body.tenantId ?? '', $('Webhook').item.json.body.profileId ?? '', 'log-sink', '', $execution.id, 'sent', '{}' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "b1a00000-0000-4000-8000-000000000007"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "If Email", "type": "main", "index": 0 }]]
+    },
+    "If Email": {
+      "main": [
+        [{ "node": "Render", "type": "main", "index": 0 }],
+        [{ "node": "Record Sms Sink", "type": "main", "index": 0 }]
+      ]
+    },
+    "Render": {
+      "main": [[{ "node": "Send Email", "type": "main", "index": 0 }]]
+    },
+    "Send Email": {
+      "main": [
+        [{ "node": "Record Sent", "type": "main", "index": 0 }],
+        [{ "node": "Record Failed", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "errorWorkflow": "0E8QFQyYGSyHHq0g"
+  },
+  "pinData": {}
+}

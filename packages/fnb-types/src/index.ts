@@ -68,3 +68,8 @@ export type {
   CheckersMove,
   CheckersPlayerView,
 } from '@/games/checkers-view'
+export type {
+  Notification,
+  NotificationChannel,
+  NotificationStatus,
+} from '@/notification'

@@ -1,0 +1,85 @@
+{
+  "id": "NotifWebhook01F",
+  "name": "notification-webhook",
+  "active": true,
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 400],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "notification-webhook",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "c1a00000-0000-4000-8000-000000000001",
+      "webhookId": "c1a00000-0000-4000-8000-0000000000a1"
+    },
+    {
+      "name": "Map Status",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 400],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "m1",
+              "name": "providerMessageId",
+              "type": "string",
+              "value": "={{ $json.body?.data?.email_id || $json.body?.MessageSid || '' }}"
+            },
+            {
+              "id": "m2",
+              "name": "status",
+              "type": "string",
+              "value": "={{ ({ 'email.delivered': 'delivered', 'email.opened': 'opened', 'email.bounced': 'bounced', 'email.complained': 'failed' })[$json.body?.type] || 'sent' }}"
+            },
+            {
+              "id": "m3",
+              "name": "error",
+              "type": "string",
+              "value": "={{ JSON.stringify($json.body?.data?.reason ? { reason: $json.body.data.reason } : {}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c1a00000-0000-4000-8000-000000000002"
+    },
+    {
+      "name": "Update Delivery",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [680, 400],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select notify_fn.update_delivery($1, $2::notify.notification_status, $3::jsonb)",
+        "options": {
+          "queryReplacement": "={{ [ $json.providerMessageId, $json.status, $json.error ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "c1a00000-0000-4000-8000-000000000003"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Map Status", "type": "main", "index": 0 }]]
+    },
+    "Map Status": {
+      "main": [[{ "node": "Update Delivery", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "errorWorkflow": "0E8QFQyYGSyHHq0g"
+  },
+  "pinData": {}
+}

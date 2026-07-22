@@ -20,7 +20,11 @@ const WORKFLOW_REGISTRY: Record<string, { permission: string | string[] | null }
   // trigger — rogue/duplicate calls no-op in the referee, and record_referee_result's
   // advisory lock + still-pending re-checks make concurrent duplicates harmless. Any-of gate
   // mirrors the game module's `jwt.enforce_any_permission('{p:app-user,p:app-admin}')`.
-  'game-event': { permission: ['p:app-user', 'p:app-admin'] }
+  'game-event': { permission: ['p:app-user', 'p:app-admin'] },
+  // The single outbound-notification chokepoint (notifications spec, R22): { channel, templateKey,
+  // to, subject?, vars?, tenantId?, profileId? }. v1's only caller is the site-admin send-test
+  // page, so it is gated p:app-admin-super; loosen when invitation/other senders land.
+  'send-notification': { permission: 'p:app-admin-super' }
 }
 
 interface TriggerClaims {

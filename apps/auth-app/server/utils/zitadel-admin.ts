@@ -235,6 +235,39 @@ export async function setPassword(
   throw new Error(`zitadel-admin: set password failed (${res.status}): ${messageOf(res)}`)
 }
 
+// ── Self-service change password (spec: .claude/specs/password-self-service/) ─────────────────
+// Set a new password after ZITADEL verifies the CURRENT one (call D). Confirmed live v4.15.3
+// (2026-07-22 probe): correct current → 200; wrong current → 400 with a typed
+// `zitadel.v1.CredentialsCheckError` detail; a policy/complexity fail → 400 with a different
+// `zitadel.v1.ErrorDetail`. We discriminate on the detail @type (robust — not string-matching).
+// `changeRequired:false` — the user just chose it. 5xx / transport failure THROWS (caller → 502).
+export type ChangePasswordResult =
+  | { ok: true }
+  | { ok: false; kind: 'wrong-current'; message: string } // → 401
+  | { ok: false; kind: 'policy'; message: string } // → 422
+
+export async function changeOwnPassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<ChangePasswordResult> {
+  const ctx = await getZitadelAdminContext()
+  const res = await request(ctx, 'POST', `/v2/users/${encodeURIComponent(userId)}/password`, {
+    newPassword: { password: newPassword, changeRequired: false },
+    currentPassword,
+  })
+  if (res.status === 200 || res.status === 201) return { ok: true }
+  if (res.status >= 400 && res.status < 500) {
+    const details = (res.json as { details?: Array<{ '@type'?: string }> } | null)?.details ?? []
+    const wrongCurrent = details.some((d) => (d?.['@type'] ?? '').includes('CredentialsCheckError'))
+    const message = messageOf(res)
+    return wrongCurrent
+      ? { ok: false, kind: 'wrong-current', message }
+      : { ok: false, kind: 'policy', message }
+  }
+  throw new Error(`zitadel-admin: change password failed (${res.status}): ${messageOf(res)}`)
+}
+
 // Fetch a user (the request-password route needs the email + display name to build email #2).
 export async function getUser(userId: string): Promise<{
   email: string

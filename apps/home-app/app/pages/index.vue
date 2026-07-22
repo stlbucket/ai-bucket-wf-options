@@ -13,12 +13,21 @@
         your tools. in a bucket.
       </p>
     </div>
-    <UButton
-      :href="`${authAppUrl}/login`"
-      :external="true"
-      size="xl"
-      label="sign in"
-    />
+    <div class="flex flex-col items-center gap-3">
+      <UButton
+        :href="`${authAppUrl}/login`"
+        :external="true"
+        size="xl"
+        label="sign in"
+      />
+      <ULink
+        :href="`${authAppUrl}/forgot-password`"
+        :external="true"
+        class="text-sm text-muted hover:text-default"
+      >
+        forgot password?
+      </ULink>
+    </div>
   </div>
 
   <!-- logged in: dashboard -->

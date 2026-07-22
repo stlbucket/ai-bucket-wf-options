@@ -357,6 +357,40 @@ async function ensureBranding() {
   console.log('zitadel-seed: label policy activated')
 }
 
+async function ensureLoginPolicy() {
+  // Hide ZITADEL's built-in "Forgot password?" link on the hosted login. The fnb forgot-password
+  // flow is a custom home-page page + n8n workflow (password-self-service spec), and ZITADEL runs
+  // in return-code mode with NO SMTP (n8n is the sole email sender), so ZITADEL's built-in reset is
+  // a dead end — leaving it visible offers a broken, competing path. Merge onto the current default
+  // policy so we never blank scalar/duration fields we don't set; the second/multi-factor arrays are
+  // managed via separate endpoints and are untouched by this update.
+  const current = await instanceRequest('GET', '/admin/v1/policies/login')
+  if (current.status < 200 || current.status >= 300) fail('get login policy', current)
+  const p = current.json?.policy ?? {}
+  const update = {
+    allowUsernamePassword: p.allowUsernamePassword ?? true,
+    allowRegister: p.allowRegister ?? false,
+    allowExternalIdp: p.allowExternalIdp ?? true,
+    forceMfa: p.forceMfa ?? false,
+    forceMfaLocalOnly: p.forceMfaLocalOnly ?? false,
+    passwordlessType: p.passwordlessType ?? 'PASSWORDLESS_TYPE_ALLOWED',
+    hidePasswordReset: true, // ← the change
+    ignoreUnknownUsernames: p.ignoreUnknownUsernames ?? false,
+    allowDomainDiscovery: p.allowDomainDiscovery ?? true,
+    disableLoginWithEmail: p.disableLoginWithEmail ?? false,
+    disableLoginWithPhone: p.disableLoginWithPhone ?? false,
+    defaultRedirectUri: p.defaultRedirectUri ?? '',
+    passwordCheckLifetime: p.passwordCheckLifetime ?? '864000s',
+    externalLoginCheckLifetime: p.externalLoginCheckLifetime ?? '864000s',
+    mfaInitSkipLifetime: p.mfaInitSkipLifetime ?? '2592000s',
+    secondFactorCheckLifetime: p.secondFactorCheckLifetime ?? '64800s',
+    multiFactorCheckLifetime: p.multiFactorCheckLifetime ?? '43200s',
+  }
+  const put = await instanceRequest('PUT', '/admin/v1/policies/login', jsonBody(update))
+  if (put.status < 200 || put.status >= 300) fail('update login policy', put)
+  console.log('zitadel-seed: login policy — hidePasswordReset enabled')
+}
+
 pat = await waitForPat()
 orgId = await resolveOrg()
 console.log(`zitadel-seed: org ${orgId}`)
@@ -374,6 +408,9 @@ if (!SEED_USERS_ENABLED) {
 
 // Instance branding (plan 0500) — runs in dev AND prod (not a dev-only seed step).
 await ensureBranding()
+
+// Hide ZITADEL's built-in password-reset link (password-self-service spec) — dev AND prod.
+await ensureLoginPolicy()
 
 writeFileSync(SEED_FILE, JSON.stringify({ issuer: ISSUER, clientId }, null, 2))
 console.log(`zitadel-seed: wrote ${SEED_FILE} — issuer ${ISSUER}, clientId ${clientId}`)

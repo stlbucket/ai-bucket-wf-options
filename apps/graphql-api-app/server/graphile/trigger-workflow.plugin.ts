@@ -29,7 +29,13 @@ const WORKFLOW_REGISTRY: Record<string, { permission: string | string[] | null }
   // injected from the inviting admin's claims by the plugin. Gated p:app-admin — tenant admins
   // invite into their own tenant. The workflow creates the resident (app_fn.invite_user as
   // n8n_worker) + the ZITADEL human user + email #1; fire-and-forget (accepted:true, runId:null).
-  'invite-user': { permission: 'p:app-admin' }
+  'invite-user': { permission: 'p:app-admin' },
+  // Admin password reset (password-self-service spec, admin-reset.data.md): { email }. Gated
+  // p:app-admin. The admin fires a set-password email for a user in their tenant — the same
+  // forgot-password workflow the public (unauthenticated) home-page route hits, so the workflow is
+  // unchanged. Tenant-scoping: the admin can only supply an email they are already RLS-authorized to
+  // see on the tenant-app user detail page (app.resident policies). Bounded harm (reset email only).
+  'forgot-password': { permission: 'p:app-admin' }
 }
 
 interface TriggerClaims {

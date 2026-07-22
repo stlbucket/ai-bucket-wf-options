@@ -14,9 +14,12 @@ const { user } = useAuth()
 
     <UButton to="/" :external="true" variant="ghost" color="neutral" icon="i-lucide-house" label="Home" />
 
-    <!-- Password management is ZITADEL self-service now (stage-5 cutover; supersedes 0070) -->
-    <div class="w-full max-w-md mx-auto">
+    <!-- Two columns (stack on mobile, UC5): profile claims | self-service change password
+         (password-self-service spec). ZITADEL is still the credential store — the form posts the
+         authenticated change-password route, which re-keys the caller's own ZITADEL user. -->
+    <div class="grid w-full max-w-4xl gap-6 md:grid-cols-2 md:items-start">
       <UserProfile :user="user!" />
+      <ChangePasswordForm />
     </div>
   </div>
 </template>

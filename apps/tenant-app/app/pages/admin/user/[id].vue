@@ -5,6 +5,7 @@ import { useAdminResident } from '~/composables/useAdminResidents'
 
 const route = useRoute()
 const toast = useToast()
+const { user } = useAuth()
 
 const {
   data,
@@ -14,6 +15,30 @@ const {
   grantResidentLicense,
   revokeResidentLicense
 } = useAdminResident(String(route.params.id))
+
+// Admin "send password reset" (password-self-service spec, admin-reset.data.md). Gated p:app-admin;
+// the DB also enforces it (registry gate + app.resident RLS on the email shown here). Fires the same
+// forgot-password workflow the public route hits — the admin never sets/learns the password.
+const canAdmin = computed(() => user.value?.permissions?.includes('p:app-admin') ?? false)
+const { reset: sendPasswordReset, fetching: resetting } = useAdminResetPassword()
+const resetOpen = ref(false)
+
+async function confirmReset() {
+  const email = resident.value?.email
+  if (!email) return
+  try {
+    await sendPasswordReset(String(email))
+    toast.add({
+      title: 'Reset link sent',
+      description: `${email} will get an email to set a new password.`,
+      color: 'success',
+      icon: 'i-lucide-mail-check'
+    })
+    resetOpen.value = false
+  } catch {
+    toast.add({ title: 'Could not send reset link', color: 'error' })
+  }
+}
 
 const resident = computed(() => data.value?.resident)
 const licenses = computed(() => (data.value?.licenses ?? []) as unknown as License[])
@@ -93,6 +118,16 @@ async function revokeLicense(licenseId: string) {
           </div>
           <div class="flex gap-2">
             <UButton
+              v-if="canAdmin && resident.email"
+              size="sm"
+              color="neutral"
+              variant="outline"
+              icon="i-lucide-key-round"
+              @click="resetOpen = true"
+            >
+              Send password reset
+            </UButton>
+            <UButton
               v-if="!isBlocked"
               size="sm"
               color="error"
@@ -154,5 +189,29 @@ async function revokeLicense(licenseId: string) {
         label="No subscription packs available for this tenant."
       />
     </template>
+
+    <UModal
+      v-model:open="resetOpen"
+      title="Send password reset"
+      description="Emails this user a link to set a new password."
+    >
+      <template #body>
+        <p class="text-sm text-muted">
+          This sends {{ resident?.displayName ?? resident?.email }} an email with a link to choose a
+          new password. You won't see or set their password.
+        </p>
+      </template>
+      <template #footer>
+        <div class="flex w-full justify-end gap-2">
+          <UButton variant="ghost" color="neutral" @click="resetOpen = false">
+            Cancel
+          </UButton>
+          <UButton icon="i-lucide-mail" :loading="resetting" @click="confirmReset">
+            Send reset link
+          </UButton>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>
+

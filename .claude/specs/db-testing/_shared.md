@@ -92,43 +92,53 @@ $$;
 
 ### Seed helpers — satisfy the FK graph as the owner
 
-Seeding runs **as the owning connection** (RLS bypassed), *before* `test._login()`. Two FK
-realities from `db/fnb-todo` govern how much you must seed:
+Seeding runs **as the owning connection** (`postgres`, superuser + BYPASSRLS), *before*
+`test._login()`. FK realities verified from `db/fnb-todo` + `db/fnb-res` govern how much you seed:
 
 - **Immediate FKs must be satisfied at insert time.** `todo.todo.tenant_id → app.tenant(id)` is
-  immediate → a tenant row must exist before you insert a todo. Same for
-  `resident_urn → res.resource(urn)` (nullable — leave NULL to skip) and any resident.
-- **Deferred FKs are safe to skip under ROLLBACK.** `fk_todo_resource (id) → res.resource(id)` is
-  `DEFERRABLE INITIALLY DEFERRED` — checked only at COMMIT, which never happens (we `ROLLBACK`). So
-  a direct `INSERT INTO todo.todo` **without** a matching `res.resource` row is fine for RLS tests.
+  immediate → a tenant row must exist before you insert a todo. `resident_urn → res.resource(urn)`
+  is nullable → leave NULL to skip.
+- **Deferred id-FKs are safe to skip under ROLLBACK.** `todo.todo`, `app.tenant`, and `app.resident`
+  each carry a `DEFERRABLE INITIALLY DEFERRED` FK `(id) → res.resource(id)` (added by
+  `db/fnb-res/…011020_res_app_retrofit.sql`) — checked only at COMMIT, which never happens. So a
+  direct `INSERT` needs **no** `res.resource` row *for those id-FKs*.
+- **BUT the `resident_urn` FK is IMMEDIATE (verified 2026-07-21).** `todo.todo.resident_urn →
+  res.resource(urn)` is a plain (non-deferred) FK, and `todo_fn.create_todo` sets
+  `resident_urn = _resident.urn`. So any `_fn`/`_api` test that calls `create_todo` **must register
+  the resident** in `res.resource` first (its generated urn must exist there) — otherwise
+  `todo_resident_urn_fkey` (23503) fires *inside* create_todo. `test._seed_resident` does this via
+  `res_fn.register_resource(_id, _tenant_id, 'app','resident')`. RLS-direct table tests that insert
+  `todo.todo` with `resident_urn = NULL` don't need it.
+- **No trigger side effects.** Registration of tenant/resident lives in `app_fn` **bodies, not
+  triggers** — a raw `INSERT INTO app.tenant`/`app.resident` registers nothing and fires nothing.
 - **Self-ref NOT NULL:** `root_todo_id NOT NULL REFERENCES todo.todo(id)` → set `root_todo_id = id`
   for a root row.
 
-`_fn` behaviour tests that call `todo_fn.create_todo` (which itself calls
-`res_fn.register_resource` and reads `app.resident`) need a real **tenant + resident** seeded. Give
-`_shared` a `test._seed_tenant(...)` and `test._seed_resident(...)` returning the created ids.
+`_fn`/`_api` behaviour tests that call `todo_fn.create_todo` need a real **tenant + registered
+resident** (the resident registered in `res.resource` per the immediate `resident_urn` FK above).
+RLS-direct table tests need only the `app.tenant` row(s).
+
+**Resolved (implemented in `db/_test/setup.sql`)** — the helpers take explicit ids so tests stay
+deterministic (psql `\set` UUIDs), and use the real, verified column lists:
 
 ```sql
--- Minimal example — REAL column lists come from db/fnb-app (app.tenant, app.resident). [FILL IN]
--- with the actual required columns when implementing (fnb-db-designer owns that schema).
-CREATE OR REPLACE FUNCTION test._seed_tenant(_name text DEFAULT 'test-tenant')
-  RETURNS uuid LANGUAGE plpgsql AS $$
-DECLARE _id uuid; BEGIN
-  -- INSERT INTO app.tenant (...) VALUES (...) RETURNING id INTO _id;   -- [FILL IN]
-  RETURN _id;
-END; $$;
+-- app.tenant: id, name (citext, not null), type (default 'customer'), status (default 'active')
+CREATE OR REPLACE FUNCTION test._seed_tenant(_id uuid, _name text DEFAULT 'test-tenant')
+  RETURNS void LANGUAGE sql AS $$
+  INSERT INTO app.tenant (id, name, type, status)
+  VALUES (_id, _name::citext, 'customer', 'active');
+$$;
 
-CREATE OR REPLACE FUNCTION test._seed_resident(_tenant_id uuid)
-  RETURNS uuid LANGUAGE plpgsql AS $$
-DECLARE _id uuid; BEGIN
-  -- INSERT INTO app.resident (...) VALUES (...) RETURNING id INTO _id;  -- [FILL IN]
-  RETURN _id;
-END; $$;
+-- app.resident: profile_id nullable; tenant_name + email + type NOT NULL (no default on type)
+CREATE OR REPLACE FUNCTION test._seed_resident(_id uuid, _tenant_id uuid)
+  RETURNS void LANGUAGE sql AS $$
+  INSERT INTO app.resident (id, profile_id, tenant_id, tenant_name, email, display_name, type, status)
+  VALUES (_id, NULL, _tenant_id, (SELECT name FROM app.tenant WHERE id = _tenant_id),
+          'resident@test.local', 'Test Resident'::citext, 'home', 'active');
+  -- required: create_todo sets todo.resident_urn = resident.urn (IMMEDIATE FK → res.resource.urn)
+  SELECT res_fn.register_resource(_id, _tenant_id, 'app', 'resident');
+$$;
 ```
-
-> **Open question (see README):** are the seed helpers hand-written per the real `app.tenant` /
-> `app.resident` shape, or should the suite reuse `db/seed.sql`? Resolve with `fnb-db-designer`
-> before the pilot lands. The pilot's value depends on these being correct.
 
 ---
 
@@ -161,3 +171,19 @@ db/<pkg>/test/
 - `citext` columns/args: `col_type_is(…, 'citext')`; pass permission arrays as plain `text[]`.
 - Match `_fn`/`_api` arg-type arrays to the catalog **exactly** — copy from
   `pg_get_function_identity_arguments`, not from memory.
+- **psql interpolation gotcha (verified 2026-07-21).** psql substitutes only the **`:'var'` quoted
+  form**, and **not** inside `$$…$$` dollar-quotes or `'…'` single-quotes. So a `throws_ok`/`lives_ok`
+  whose SQL is written `$$ … ':x' … $$` does **not** interpolate — the literal text `:x` reaches the
+  server (usually a `22P02`/syntax error, masking the SQLSTATE you meant to assert). Rules: pass
+  `:'var'` as a **direct** call arg (outside any quote); to get a value **into** a dollar-quoted SQL
+  string, wrap with `format($$ … %L … $$, :'var')`, or avoid it (use `gen_random_uuid()` / a literal
+  when the exercised path raises before that arg is read). The illustrative `':tenant_b'` snippets in
+  `rls-tests.md`/`api-permission-tests.md`/`fn-behaviour-tests.md` (inherited from the pgtap-expert
+  reference) carry this latent bug — the shipped `db/fnb-todo/test/*.sql` are the corrected pattern;
+  copy **those**.
+- **No data-modifying CTE inside an assertion (verified 2026-07-21).** Postgres allows a
+  `WITH … (UPDATE/INSERT/DELETE … RETURNING) …` only at statement top level, so
+  `is( (WITH u AS (UPDATE … RETURNING 1) SELECT count(*) FROM u), … )` errors ("must be at the top
+  level"). To assert a cross-tenant write is a no-op, run the `UPDATE`/`DELETE` as a **plain
+  statement** (0 rows, no raise — the row is RLS-invisible), then `test._logout()` and read the row
+  back as owner with `is(...)` to prove it's unchanged.

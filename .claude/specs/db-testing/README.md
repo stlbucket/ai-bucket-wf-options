@@ -37,7 +37,7 @@ by a new `pnpm db-test`. pgTAP is never shipped into the deployed schema.
 | D3 | pgTAP installed once into a **`tap`** schema (`CREATE EXTENSION pgtap SCHEMA tap`) | ~1000 functions don't pollute `public`; runner puts `tap` on `search_path` |
 | D4 | Runner = new **`scripts/db-test.ts`** against the **running dev DB**, mirroring `db-exec.ts`/`_env.ts` | reuses existing tooling; rolled-back txns leave no trace on the dev DB |
 | D5 | **Separate gate** — `pnpm db-test`, **not** folded into `pnpm test`/turbo | turbo `test` is per-package vitest and must run without Docker/Postgres; DB tests need both |
-| D6 | pgTAP provisioning = **extend the `postgis/postgis` image** + add the `CREATE EXTENSION` beside PostGIS in `pg-bootstrap.sh` | durable, matches how PostGIS is already provisioned; the `postgis/postgis` image lacks pgTAP |
+| D6 | pgTAP provisioning is **dev-only, two-halves**: OS package baked into a dev `docker/db.Dockerfile`; the **extension created on demand** by the runner (`db/_test/setup.sql`). `pg-bootstrap.sh` untouched | the `postgis/postgis` image lacks pgTAP; on-demand create keeps its ~1000 fns out of the DB until tests run, and keeps pgTAP **out of prod** (managed PG never builds this image). Evolved from "add to pg-bootstrap.sh", which would have leaked pgTAP into prod |
 | D7 | **Pilot `fnb-todo` first**, then one package per later phase | simplest package (one table, clear `_fn`/`_api` split) proves the harness + all three categories end-to-end before scale-out |
 | D8 | Grant-shape tests **pin current reality** and document divergences as GAPs | the actual `fnb-todo` grants/security differ from the idealized model (see below); a hardening pass is a separate spec |
 
@@ -69,20 +69,23 @@ Surfacing exactly these gaps is the point (`0260`). Tightening them is out of sc
 
 ## Implementation Task List
 
-### Phase 1 — Harness + `fnb-todo` pilot (proves the whole pattern)
-- [ ] **pgTAP provisioning** (D3/D6): Dockerfile `FROM postgis/postgis`, add `postgresql-<major>-pgtap`;
-      add `CREATE SCHEMA tap` + `CREATE EXTENSION pgtap SCHEMA tap` beside PostGIS in
-      `infra/docker/pg-bootstrap.sh` (+ dev init). **Hand rebuild to the user; verify read-only.**
-- [ ] **`scripts/db-test.ts`** (D4): resolve `db/<pkg>/test/*.sql`; create the `test` helper schema
-      preamble (`_login/_logout/_seed_*`) then drop it; psql-fallback runner with `finish(true)` gate;
-      optional pg_prove path; per-file pass/fail summary; non-zero exit on failure.
-- [ ] Add `"db-test": "tsx scripts/db-test.ts"` to root `package.json` (D5).
-- [ ] Resolve seed-helper shapes against real `app.tenant`/`app.resident`/`res.resource`
-      (with `fnb-db-designer`) — the pilot's correctness depends on these.
-- [ ] `db/fnb-todo/test/010-rls.sql` — tenant isolation on `todo.todo` (`rls-tests.md`).
-- [ ] `db/fnb-todo/test/020-api-permissions.sql` — `create_todo` gate + grant-shape pins + GAP notes.
-- [ ] `db/fnb-todo/test/030-fn-behaviour.sql` — create/status-cascade/delete-cascade/deep-copy/name-guard.
-- [ ] **User runs `pnpm db-test fnb-todo`; all green.** Verify read-only.
+### Phase 1 — Harness + `fnb-todo` pilot (proves the whole pattern) — IMPLEMENTED, pending user rebuild+run
+- [x] **pgTAP provisioning** (D3/D6): `docker/db.Dockerfile` (`FROM postgis/postgis` + `postgresql-${PG_MAJOR}-pgtap`);
+      `docker-compose.yml` `db` service now `build`s it. Extension created on demand by the runner
+      (`db/_test/setup.sql`), **not** in `pg-bootstrap.sh`. **Rebuild is the user's hand-off.**
+- [x] **`scripts/db-test.ts`** (D4): resolves `db/<pkg>/test/*.sql` (all / one pkg / prefix); runs
+      `db/_test/setup.sql` (pgTAP + `test` helper schema `_login/_logout/_seed_*`) then
+      `db/_test/teardown.sql`; psql runner parsing TAP for `not ok`/plan-mismatch; per-file
+      pass/fail summary; non-zero exit + pgtap-missing hand-off message. (pg_prove path deferred.)
+- [x] Added `"db-test": "tsx scripts/db-test.ts"` to root `package.json` (D5).
+- [x] Seed-helper shapes resolved against real `app.tenant`/`app.resident` (verified columns; the
+      `res.resource` deferred FK means no registry row needed under ROLLBACK) — in `db/_test/setup.sql`.
+- [x] `db/fnb-todo/test/010-rls.sql` — tenant isolation on `todo.todo` (`rls-tests.md`).
+- [x] `db/fnb-todo/test/020-api-permissions.sql` — `create_todo` gate + grant-shape pins + GAP notes.
+- [x] `db/fnb-todo/test/030-fn-behaviour.sql` — create side effects / name guard / status cascade / template guard.
+- [x] **`pnpm db-test fnb-todo` → all 3 files green** (2026-07-21, after the user's image rebuild).
+      Verification surfaced + fixed two seed/test bugs: the immediate `resident_urn` FK (seed must
+      register the resident) and the data-modifying-CTE restriction (both now in `_shared.md`).
 
 ### Phase 2+ — Roll out (one package per phase, security-critical first)
 Deploy-order list, each phase = its own `test/` tree (`010`/`020`/`030` where the package has
@@ -96,12 +99,13 @@ tables/api/fn respectively; skip a file the package doesn't warrant):
       skills (R21) and register nothing new in `skill-map.md` beyond the existing `pgtap-expert`.
 
 ## Remaining Open Questions
-- [ ] **Seed helpers** — hand-write against real `app.tenant`/`app.resident`, or reuse `db/seed.sql`?
-      (`_shared.md`) — resolve before Phase 1 tests.
-- [ ] **Grant-shape tests** — pin reality (D8, recommended) or encode desired-and-failing to gate a
-      hardening pass? (`api-permission-tests.md`)
-- [ ] **pg_prove availability** — dedicated image, host binary, or psql-only forever? (`harness.md`)
-- [ ] **`db-rebuild`** — should it re-create the `tap` extension, or is that one-time bootstrap?
+- [x] **Seed helpers** — RESOLVED: hand-written against the real `app.tenant`/`app.resident` columns
+      in `db/_test/setup.sql` (explicit-id helpers; no `res.resource` seeding needed under ROLLBACK).
+- [x] **Grant-shape tests** — RESOLVED: pin reality (D8); divergences recorded as GAP assertions.
+- [ ] **pg_prove availability** — dedicated image, host binary, or psql-only forever? (Currently
+      psql + TAP-parsing in `db-test.ts`; works with the stock `postgres:18` client. `harness.md`.)
+- [ ] **`db-rebuild`** — re-create the `tap` extension, or leave it to the on-demand runner path?
+      (Runner recreates it idempotently each run, so no action needed unless a faster path is wanted.)
 - [ ] **CI DB** — disposable-DB job now, or dev-only until the rollout matures? (managed PG's pgTAP
       allow-list is unknown — out of scope for the pilot.)
 

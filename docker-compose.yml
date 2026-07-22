@@ -22,7 +22,14 @@ volumes:
 services:
 
   db:
-    image: postgis/postgis
+    # Dev image = PostGIS + pgTAP (docker/db.Dockerfile). pgTAP's OS package is baked in so
+    # scripts/db-test.ts can `CREATE EXTENSION pgtap` on demand; prod uses managed Postgres and
+    # never builds this. Rebuild after first adding this: `docker compose build db` (spec
+    # .claude/specs/db-testing/harness.md §1).
+    build:
+      context: .
+      dockerfile: docker/db.Dockerfile
+    image: fnb-db-pgtap:local
     platform: linux/amd64
     container_name: function_bucket
     networks:

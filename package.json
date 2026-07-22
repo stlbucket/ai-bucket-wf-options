@@ -13,6 +13,7 @@
     "db-rebuild": "tsx scripts/db-rebuild.ts",
     "db-psql": "tsx scripts/db-psql.ts",
     "db-exec": "tsx scripts/db-exec.ts",
+    "db-test": "tsx scripts/db-test.ts",
     "db-status": "tsx scripts/db-status.ts",
     "dep-audit": "tsx scripts/dep-audit.ts",
     "graphql-api-generate": "tsx scripts/graphql-api-generate.ts",

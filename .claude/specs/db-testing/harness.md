@@ -10,36 +10,36 @@ mirrors the existing `scripts/db-*.ts` family.
 
 ---
 
-## 1. Provisioning pgTAP (the one genuinely new infra piece)
+## 1. Provisioning pgTAP — dev-only, in two halves (IMPLEMENTED)
 
-The dev DB runs on the **`postgis/postgis`** image (`docker-compose.yml:25`). That image ships
-PostGIS but **not** pgTAP — pgTAP is a separate `postgresql-<major>-pgtap` OS package plus a
-`CREATE EXTENSION`. Two ways in; pick one in the README's locked table:
+The dev DB ran on the stock **`postgis/postgis`** image, which ships PostGIS but **not** pgTAP
+(a separate `postgresql-<major>-pgtap` OS package + a `CREATE EXTENSION`). Design landed:
 
-**Option A (recommended) — extend the pg image.** A small `Dockerfile` `FROM postgis/postgis:<tag>`
-that `apt-get install`s `postgresql-<major>-pgtap`, then `CREATE EXTENSION pgtap SCHEMA tap`
-alongside the existing PostGIS create in `infra/docker/pg-bootstrap.sh`
-(and the dev init path). Durable, matches how PostGIS is already provisioned.
-
-```sh
-# infra/docker/pg-bootstrap.sh — add beside the PostGIS line (guarded, no-op if unavailable):
-PGDATABASE="$APP_DB" psql -v ON_ERROR_STOP=1 \
-  -c "CREATE SCHEMA IF NOT EXISTS tap" \
-  -c "CREATE EXTENSION IF NOT EXISTS pgtap SCHEMA tap"
+**Half 1 — OS package baked into a dev-only image (`docker/db.Dockerfile`).**
+```dockerfile
+FROM postgis/postgis
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends "postgresql-${PG_MAJOR}-pgtap" \
+ && rm -rf /var/lib/apt/lists/*
 ```
+`PG_MAJOR` is set by the base postgres image, so the package always matches the running major (no
+tag pinning). `docker-compose.yml`'s `db` service now `build`s this (`image: fnb-db-pgtap:local`).
 
-**Option B (no image rebuild) — load pgTAP from SQL into `tap`.** Mount/`\i` the versioned
-`pgtap.sql` into the `tap` schema (the pre-extension load path). Avoids touching the image but
-means carrying the `pgtap.sql` blob and version in-repo.
+**Half 2 — the EXTENSION is created on demand by the runner**, not at bootstrap: `db/_test/setup.sql`
+runs `CREATE EXTENSION IF NOT EXISTS pgtap SCHEMA tap` (superuser `postgres`) at the start of every
+`pnpm db-test`. So pgTAP's ~1000 functions exist **only while/after you run DB tests**, never
+otherwise, and `infra/docker/pg-bootstrap.sh` is **untouched** — production uses managed Postgres
+(`infra/compose/docker-compose.prod.yml`) and never builds this image, so **pgTAP never reaches
+prod**. (This is why D6 evolved from "add to pg-bootstrap.sh" to "dev image + on-demand" — the
+bootstrap path would have leaked pgTAP into prod.)
 
-> ⚠️ **Repo rule:** *never rebuild/restart the env yourself — ask the user, then verify read-only.*
-> The implementor writes the Dockerfile/bootstrap edit and the runner; the **user** rebuilds the pg
-> image and confirms `SELECT tap.pg_version();` (or `\dx pgtap`) succeeds. This is a hand-off task,
-> not an automated step.
+> ⚠️ **Repo rule / hand-off:** *never rebuild the env yourself.* The implementor wrote the Dockerfile
+> + compose change; the **user** runs `docker compose build db && docker compose up -d db` once, then
+> `pnpm db-test fnb-todo`. The runner fails fast with these exact instructions if the pgtap OS
+> package is missing (extension create errors).
 
-> Managed-Postgres note: DO/AWS managed clusters only allow a fixed extension allow-list.
-> pgTAP availability there is **out of scope for the pilot** — this suite targets local/dev + CI
-> throwaway DBs, never prod. [FILL IN if a managed CI DB is later chosen.]
+> Managed-Postgres note: DO/AWS clusters only allow a fixed extension allow-list; pgTAP availability
+> there is **out of scope** — this suite targets local/dev (+ a future CI throwaway DB), never prod.
 
 ---
 
@@ -74,7 +74,10 @@ Steps the script performs:
      non-zero → the runner aggregates exit codes and fails the run. Sets
      `search_path = tap, public, "$user"` via `PGOPTIONS` or a per-file `SET search_path`.
 
-5. Exit non-zero if any file failed; print a per-file pass/fail summary.
+5. Exit non-zero if any file failed. Output is **verbose**: psql runs in `-qtA` (bare-TAP) mode and
+   the runner parses it, printing every assertion by name (`✓ <desc>` / `✗ <desc>`) grouped under
+   each file with an `(passed/planned)` count, then a final `files, assertions passed` summary. On
+   failure it also prints the plan-mismatch note + `#` diagnostics / stderr for that file.
 
 > **Locked:** ship the **psql-only fallback first** (works with the existing `postgres:18` image,
 > zero new infra beyond the extension), and treat the pg_prove path as an enhancement. The test

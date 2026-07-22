@@ -52,6 +52,7 @@ directly only for a pure "how does this technology work?" question.
 | 16 | **airports-expert** | OurAirports dataset — seven bulk CSVs (no API), live column lists/enum vocab/nullability, parsing gotchas (produced by #3) |
 | 17 | **terraform-export** | Terraform/HCL for the `infra/terraform/` deployment code: HCL blocks, reusable modules + per-env tfvars, remote state / `s3` backend (AWS **and** DO Spaces), provider version constraints, `init→plan→apply`, `output -json` → `render-env.mjs` |
 | 18 | **n8n-cli** | Operator loop for the **parallel n8n engine** (R22): workflow build + export-to-repo (`n8n/workflows/*.json`), credentials, executions — `N8N_URL`/`N8N_API_KEY` from `.env` (user-level skill) |
+| 19 | **pgtap-expert** | PostgreSQL unit testing with pgTAP: assertion catalog, schema/constraint/function shape, RLS-policy & grant behaviour tests, result-set/exception/perf asserts, `runtests()` + `pg_prove`. Generic reference — not wired into the repo (sqitch `verify` remains the deploy smoke check) |
 
 **Retired reference:** **graphile-worker-expert** — the workflow engine it documented is gone (R22:
 now #11 claude-agent-sdk + #18 n8n-cli). Read only when spelunking old branches/history; never for new work.

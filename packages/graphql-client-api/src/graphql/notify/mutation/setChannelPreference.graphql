@@ -1,0 +1,10 @@
+mutation SetChannelPreference($channel: NotificationChannel!, $enabled: Boolean!) {
+  setChannelPreference(input: { _channel: $channel, _enabled: $enabled }) {
+    channelPreference {
+      channel
+      enabled
+      destination
+      verifiedAt
+    }
+  }
+}

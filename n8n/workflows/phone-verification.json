@@ -1,0 +1,83 @@
+{
+  "id": "PhoneVerif01Fnb",
+  "name": "phone-verification",
+  "active": true,
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 400],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "phone-verification",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnbwebhooksecr01",
+          "name": "fnb-webhook-secret"
+        }
+      },
+      "id": "b1a00000-0000-4000-8000-0000000000b1",
+      "webhookId": "b1a00000-0000-4000-8000-0000000000b2"
+    },
+    {
+      "name": "Request Code",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [440, 400],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select notify_fn.request_phone_verification($1::uuid, $2::citext) as code",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body.profileId, $('Webhook').item.json.body.phone ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "b1a00000-0000-4000-8000-0000000000b3"
+    },
+    {
+      "name": "Send OTP SMS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 400],
+      "parameters": {
+        "method": "POST",
+        "url": "http://n8n:5678/webhook/send-notification",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: 'sms', templateKey: 'phone-verify', to: $('Webhook').item.json.body.phone, vars: { code: $json.code }, profileId: $('Webhook').item.json.body.profileId, tenantId: $('Webhook').item.json.body.tenantId }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnbwebhooksecr01",
+          "name": "fnb-webhook-secret"
+        }
+      },
+      "id": "b1a00000-0000-4000-8000-0000000000b4"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Request Code", "type": "main", "index": 0 }]]
+    },
+    "Request Code": {
+      "main": [[{ "node": "Send OTP SMS", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "errorWorkflow": "0E8QFQyYGSyHHq0g"
+  },
+  "pinData": {}
+}

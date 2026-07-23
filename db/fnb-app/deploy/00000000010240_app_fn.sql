@@ -357,6 +357,7 @@ CREATE OR REPLACE FUNCTION app_fn.install_anchor_application()
               ,row('tenant-site-admin-asset-manager'::citext,'Asset Manager'::citext,'{"p:app-admin-super"}'::citext[],'i-lucide-grid-3x3'::citext,'/storage/assets',0)::app_fn.tool_info
               ,row('tenant-site-admin-wf-n8n'::citext,'Workflows'::citext,'{"p:app-admin-super"}'::citext[],'i-lucide-workflow'::citext,'/tenant/site-admin/wf-n8n',0)::app_fn.tool_info
               ,row('tenant-site-admin-send-test'::citext,'Send Test'::citext,'{"p:app-admin-super"}'::citext[],'i-lucide-send'::citext,'/tenant/site-admin/send-test',0)::app_fn.tool_info
+              ,row('tenant-site-admin-sms-test'::citext,'SMS Test'::citext,'{"p:app-admin-super"}'::citext[],'i-lucide-message-square-text'::citext,'/tenant/site-admin/sms-test',0)::app_fn.tool_info
             ]::app_fn.tool_info[]
           )::app_fn.module_info
           ,row(

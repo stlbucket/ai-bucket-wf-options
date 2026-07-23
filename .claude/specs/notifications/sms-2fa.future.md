@@ -1,9 +1,19 @@
 # SMS & 2FA — future design
 
 ## Status
-**Future** — design locked (D8/D9), implementation deferred to Phase 5+. `fnb-notify` is built
-multi-channel from day one (the `channel` enum + `notify.notification` already carry SMS), so this
-adds a dispatch branch + ZITADEL wiring, **no DB migration**.
+**Partially promoted (2026-07-22).** The **non-auth** half of this design is now concrete, buildable
+spec — SMS Phase 0 (dev sink + SMS-Test page) and Phase 1 (profile preferences + phone verification):
+
+- Dev sink comparison resolved → **log-sink** (D11, `infrastructure.md`); the browsable inbox is the
+  **SMS-Test page** (`sms-test.ui.md` / `sms-test.data.md`).
+- Preferred-method(s) chooser → `profile-preferences.ui.md` / `.data.md` (D12 `notify.channel_preference`).
+- Non-auth phone verification (the SMS gate, D13) → `phone-verification.workflow.md` +
+  `notify.phone_verification` (`_shared.data.md`).
+
+**Auth-grade 2FA (§1 below) stays Future / Phase 5+** — ZITADEL owns it (D9). `fnb-notify` is
+multi-channel from day one (the `channel` enum + `notify.notification` already carry SMS), so all of
+this adds dispatch branches + ZITADEL wiring, **no core-schema migration** (the two new user-owned
+tables aside).
 
 ## The core split
 
@@ -35,11 +45,15 @@ the running ZITADEL version. If ZITADEL only offers **Twilio** as an SMS provide
 the fallback is: ZITADEL keeps its **own Twilio credential** for MFA SMS only (accepting a second
 sender for auth codes), while all *non-auth* SMS still flows through n8n. Decide when verified.
 
-### 2. Non-auth SMS — n8n owns it (app-triggered)
+### 2. Non-auth SMS — n8n owns it (app-triggered) → **now specced (Phase 0/1)**
 Transactional texts (notifications, alerts) and **phone-number verification outside login** (e.g.
 verifying a phone on a profile) go through the normal path: app →
-`triggerWorkflow("send-notification", { channel:"sms", … })` → Twilio → row. Identical shape to
-email; just the `sms` branch of `send-notification`.
+`triggerWorkflow("send-notification", { channel:"sms", … })` → provider → row. Identical shape to
+email; just the `sms` branch of `send-notification`. **This half is now concrete:**
+- Dev sink = **log-sink** (D11); browse via the **SMS-Test page** (`sms-test.*`).
+- Phone verification (the gate that lets a user *enable* SMS, D13) = `phone-verification.workflow.md`
+  + `notify_api.verify_phone_code` (`profile-preferences.data.md`). App-owned OTP is acceptable
+  **only** here (non-auth), never for §1's login step-up.
 
 ## Why not app-owned 2FA?
 Rejected (README Considered & rejected): building your own OTP + n8n step-up would re-create
@@ -52,9 +66,12 @@ be reused.
 
 - **Twilio** (Resend is email-only). Also what ZITADEL integrates natively — which is exactly why
   the HTTP-provider → n8n path unifies cleanly.
-- **Dev:** no "Mailpit for SMS." Dev SMS uses the **log-sink** provider (D10) — `record_send` writes
-  the row, nothing is dispatched. Optionally use Twilio test credentials/magic numbers for a real
-  round-trip when needed.
+- **Dev:** the "Mailpit for SMS" question was evaluated across three options
+  (`infrastructure.md` — mock-Twilio-with-UI vs. log-sink vs. Prism) and resolved to the **log-sink**
+  (D10 confirmed as D11): `record_send` writes the row, nothing is dispatched, and the **SMS-Test
+  page** (`sms-test.ui.md`) renders the captured body as the in-app inbox. The mock-Twilio-with-UI
+  container is the pre-approved upgrade (`NOTIFY_SMS_PROVIDER=mock-twilio`) if a Twilio-shaped
+  round-trip is ever needed; Twilio test credentials/magic numbers cover a pre-prod real round-trip.
 
 ## Env (already stubbed in `infrastructure.md`)
 `NOTIFY_SMS_PROVIDER` (`log-sink` | `twilio`), `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`,

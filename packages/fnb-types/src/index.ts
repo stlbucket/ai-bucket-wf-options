@@ -72,4 +72,5 @@ export type {
   Notification,
   NotificationChannel,
   NotificationStatus,
+  ChannelPreference,
 } from '@/notification'

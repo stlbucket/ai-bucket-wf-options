@@ -85,6 +85,22 @@
       },
 
       /*
+       * notify.phone_verification holds bcrypt-hashed OTP codes — never in the graph. All access is
+       * via notify_fn (SECURITY DEFINER); RLS is deny-all to clients too. (notifications spec,
+       * _shared.data.md → SMS additions / D13)
+       */
+      'notify.phone_verification': {
+        tags: { behavior: '-*' },
+      },
+
+      /*
+       * notify.channel_preference is user-owned: reads go through the auto-generated list
+       * (RLS-scoped to jwt.profile_id() via channel_pref_self); writes only through
+       * notify_api.set_channel_preference / verify_phone_code (SECURITY INVOKER → notify_fn).
+       * Default mutations are already disabled globally (makeV4Preset disableDefaultMutations).
+       */
+
+      /*
        * Game server (game-server spec, _shared.data.md §PostGraphile exposure):
        * - game_event_state holds authoritative state + per-seat snapshots (ship
        *   positions!) — never in the graph; reads only via game_api.game_view.

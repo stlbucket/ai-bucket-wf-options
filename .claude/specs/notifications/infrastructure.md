@@ -30,6 +30,29 @@ dev**, so nothing hits a real inbox.
 ```
 Add `mailpit-data` to the top-level `volumes:`. No healthcheck gate needed — n8n retries sends.
 
+## Dev SMS sink — the "Mailpit for SMS" comparison (D11)
+
+SMS has **no SMTP-style protocol** — providers are HTTP APIs — so a true Mailpit parallel is a
+*mock provider endpoint + web inbox + assert API*. Three options were evaluated (2026-07-22):
+
+| Option | Catches the provider call | Web inbox | Assert API | Verdict |
+|---|---|---|---|---|
+| **Mock-Twilio + UI** — `dgeorgiev/twillio-sms-mock`, `notfoundsam/sms-mock-server` (containers with a browsable, auto-refreshing SMS inbox on their own host port) | ✅ Twilio-shaped HTTP | ✅ | ✅ REST | Truest parallel, but **unofficial small projects** → must pin a digest / vendor (house convention); +1 compose service to own. |
+| **Log-sink** (chosen) — `send-notification` sms branch writes `notify.notification`, dispatches nothing; the **SMS-Test page** (`sms-test.ui.md`) renders the captured body as the inbox | ❌ no HTTP round-trip | ◑ in-app page | ✅ query the table | **Zero new infra**, RLS-scoped, already the audit trail; the in-app page *is* the inbox. Trade-off: no Twilio-shaped round-trip (won't catch a malformed provider call — that surfaces first against Twilio test creds / staging). |
+| **Prism + Twilio OpenAPI** — `stoplight/prism:4 mock … twilio_api_v2010.json` | ✅ validates request vs. the real contract | ❌ | ◑ response only | Great **CI/contract check**, not a browsable catcher. Kept as an optional CI add-on, not the dev sink. |
+
+Honorable mentions (rejected as the primary): Twilio **test credentials + magic numbers** (real API,
+no charge/send, but needs internet + an account and has no capture UI — good for a pre-prod
+round-trip), Twilio **dev-phone** (needs a real number), **Beeceptor** (hosted, not offline).
+
+**Decision (D11): log-sink is the dev SMS sink** (confirms the original D10). Rationale: the fnb
+posture is "dev catches everything with zero real delivery + a browsable UI"; the log-sink already
+delivers the *catch* + *audit trail*, and the **SMS-Test page supplies the browsable UI** in-app, so
+a second container earns its keep only if a Twilio-shaped round-trip becomes necessary — at which
+point the mock-Twilio-with-UI container is the pre-approved upgrade path (add it behind
+`NOTIFY_SMS_PROVIDER=mock-twilio` without touching the schema). Prism is the optional CI contract
+check. This keeps the infra footprint at exactly **one dev sink service (Mailpit, email only)**.
+
 ## Environment variables
 
 Add to `.env` + `.env.example`:
@@ -38,7 +61,7 @@ Add to `.env` + `.env.example`:
 # ─── Notifications ────────────────────────────────────────────────────────────
 # Channel/provider selection consumed inside the n8n send-notification workflow.
 NOTIFY_EMAIL_PROVIDER=mailpit            # dev: mailpit | prod: resend
-NOTIFY_SMS_PROVIDER=log-sink             # dev: log-sink | prod: twilio
+NOTIFY_SMS_PROVIDER=log-sink             # dev: log-sink (chosen, D11) | mock-twilio (opt-in upgrade) | prod: twilio
 
 # Email — Mailpit (dev)
 NOTIFY_SMTP_HOST=mailpit

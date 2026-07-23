@@ -1,0 +1,5 @@
+mutation VerifyPhoneCode($phone: String!, $code: String!) {
+  verifyPhoneCode(input: { _phone: $phone, _code: $code }) {
+    json
+  }
+}

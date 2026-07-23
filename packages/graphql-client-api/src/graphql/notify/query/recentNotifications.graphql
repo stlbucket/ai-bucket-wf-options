@@ -11,6 +11,7 @@ query RecentNotifications($channel: NotificationChannel, $itemLimit: Int) {
     subject
     tenantId
     provider
+    payload
     createdAt
     sentAt
   }

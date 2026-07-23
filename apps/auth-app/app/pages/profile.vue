@@ -21,5 +21,11 @@ const { user } = useAuth()
       <UserProfile :user="user!" />
       <ChangePasswordForm />
     </div>
+
+    <!-- Preferred notification method(s) — reads/writes notify GraphQL (the one data-bound card on
+         this otherwise claims-only page). SMS is gated on phone verification (D13). -->
+    <div class="w-full max-w-4xl">
+      <NotificationPreferences />
+    </div>
   </div>
 </template>

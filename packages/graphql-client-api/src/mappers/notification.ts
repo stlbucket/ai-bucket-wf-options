@@ -18,6 +18,7 @@ export const toNotification = (f: NotificationRow): Notification => ({
   subject: f.subject ?? null,
   tenantId: f.tenantId ? String(f.tenantId) : null,
   provider: f.provider ?? null,
+  payload: (f.payload ?? {}) as Record<string, unknown>,
   createdAt: new Date(f.createdAt),
   sentAt: f.sentAt ? new Date(f.sentAt) : null,
 })

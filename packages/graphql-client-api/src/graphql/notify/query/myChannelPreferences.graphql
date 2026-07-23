@@ -1,0 +1,8 @@
+query MyChannelPreferences {
+  channelPreferencesList {
+    channel
+    enabled
+    destination
+    verifiedAt
+  }
+}

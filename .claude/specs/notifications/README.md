@@ -12,6 +12,15 @@ end-to-end through the authenticated UI (Mailpit delivery + `notify.notification
 caller's tenant/profile). Phase 3 (invitation email) and Phase 5+ (SMS/2FA) remain **deferred** —
 this README is their durable entry point. Locked decisions captured 2026-07-22.
 
+**SMS track added (2026-07-22).** The multi-channel `channel` enum was there from day one (D8); the
+SMS *dispatch/UX* is now specced across two near-term phases plus the deferred auth-grade 2FA:
+- **SMS Phase 0** — dev SMS **sink** (log-sink, D11 — chosen after a 3-option "Mailpit for SMS"
+  comparison, `infrastructure.md`) + a site-admin **SMS-Test page** that renders the captured body
+  as the in-app inbox (`sms-test.*`).
+- **SMS Phase 1** — a profile **preferred-method(s)** chooser (`profile-preferences.*`, D12
+  `notify.channel_preference`) gated on **phone verification** (D13, `phone-verification.workflow.md`).
+- **Phase 5+** — auth-grade SMS **2FA** stays deferred to ZITADEL (D9, `sms-2fa.future.md`).
+
 **Scope split (decided 2026-07-22 at plan time):**
 - **This plan → Phases 1, 2, 4** — the `fnb-notify` DB module, the `send-notification` +
   `notification-webhook` workflows, and the **site-admin `send-test` page**. A complete,
@@ -63,6 +72,9 @@ lazy invite into an actual email and establishes the pipeline everything else ri
 | D8 | SMS channel | **`fnb-notify` is multi-channel from day one** (schema has `channel`); SMS **dispatch** is Phase 5+ | Avoids a migration later; SMS provider = **Twilio** (Resend is email-only) |
 | D9 | SMS + 2FA | **ZITADEL owns the MFA ceremony**; SMS delivery pointed at an **n8n webhook** (HTTP SMS provider) | Don't rebuild IdP-grade step-up; keep n8n the single delivery chokepoint (`sms-2fa.future.md`) |
 | D10 | Dev SMS | **Log-only sink channel** (record to `notify.notification`, don't dispatch) | No "Mailpit for SMS"; keeps dev SMS observable without a carrier |
+| D11 | Dev SMS sink (re-evaluated) | **Log-sink confirmed** over mock-Twilio-with-UI + Prism (3-option comparison, `infrastructure.md`); the **SMS-Test page** is the browsable inbox | Zero new infra + already the audit trail; the in-app page supplies the UI. mock-Twilio (`NOTIFY_SMS_PROVIDER=mock-twilio`) is the pre-approved upgrade if a Twilio-shaped round-trip is needed; Prism = optional CI contract check |
+| D12 | Preferred method(s) | **`notify.channel_preference`** table (per `(profile, channel)`), user-owned with a public `notify_api` two-layer mutation (RLS `profile_id = jwt.profile_id()`) | Keeps `app.profile` lean + notify concerns module-cohesive; multi-select "methods" plural |
+| D13 | SMS enable gate | **SMS can't be enabled until the phone is verified** — non-auth OTP via `phone-verification` workflow + `notify.phone_verification`; app-owned OTP acceptable (non-auth only) | Don't text unverified numbers; app-owned OTP is fine off the login path (auth-grade stays with ZITADEL, D9) |
 
 ## Files in this spec
 
@@ -76,7 +88,12 @@ lazy invite into an actual email and establishes the pipeline everything else ri
 | `zitadel-codes.data.md` | ZITADEL **return-code** wiring — request init/verify codes via API, dispatch through `send-notification` |
 | `send-test.ui.md` | **Site-admin** `send-test` page — compose form (channel/to/template/body), send, result toast |
 | `send-test.data.md` | Test page data — composable → `triggerWorkflow('send-notification', …)` carve-out; recent-sends list |
-| `sms-2fa.future.md` | **(future)** SMS channel + 2FA — ZITADEL MFA ownership, HTTP-SMS-provider → n8n webhook, Twilio, phone verification |
+| `sms-test.ui.md` | **SMS Phase 0** — site-admin **SMS-Test page** = compose SMS + the **log-sink inbox** (renders captured body; the "Mailpit for SMS") |
+| `sms-test.data.md` | SMS-Test data — `triggerWorkflow('send-notification', {channel:SMS})` + `RecentSmsNotifications` (channel-filtered, body exposed) |
+| `profile-preferences.ui.md` | **SMS Phase 1** — `<NotificationPreferences>` card on `/auth/profile`: choose method(s) + inline phone verification |
+| `profile-preferences.data.md` | Preferences data — `notify.channel_preference` read/write + `verify_phone_code`; `useNotificationPreferences` |
+| `phone-verification.workflow.md` | **SMS Phase 1** — the `phone-verification` n8n workflow (generate+persist OTP, send via `send-notification`) |
+| `sms-2fa.future.md` | Non-auth SMS **now promoted** (Phase 0/1); **auth-grade 2FA stays future** — ZITADEL MFA + HTTP-SMS-provider → n8n webhook |
 
 ## Implementation Task List
 
@@ -125,12 +142,39 @@ Phased build order; each phase is independently verifiable.
 - [ ] Verify (authenticated UI): send a test email from the page → Mailpit + row + toast + the
       recent-sends table (needs a super-admin browser session).
 
-### Phase 5+ — SMS channel + 2FA (`sms-2fa.future.md`)  ← deferred
-- [ ] Twilio provider in `send-notification` (sms branch); dev stays log-sink.
+### SMS Phase 0 — dev sink + SMS-Test page (`sms-test.*`, `infrastructure.md`)  ← ready to build
+- [ ] `send-notification` **`sms` branch**: `log-sink` provider — render body → `notify_fn.record_send`
+      (channel `sms`, provider `log-sink`, status `sent`, rendered body in `payload`), **dispatch nothing**.
+- [ ] Expose the **rendered-body projection** for SMS rows (reconcile with the `_shared.data.md`
+      PII/hide Open Question) so the inbox can show message content.
+- [ ] **SMS-Test page** `/tenant/site-admin/sms-test` (`p:app-admin-super`): compose form +
+      channel-filtered **SMS inbox** table (body visible). `useSmsTest` + `useRecentSmsNotifications`
+      (may share a `channel`-arg composable with `send-test`).
+- [ ] Remove the disabled `SMS` option from the email `send-test` page; cross-link to SMS-Test.
+- [ ] Nav entry (icon `i-lucide-message-square-text`) edited into `…010240_app_fn.sql` (lands on reseed).
+- [ ] Verify: POST an SMS via the page → `notify.notification` row (`sms`/`log-sink`/`sent`) + body
+      visible in the inbox + toast.
+
+### SMS Phase 1 — profile preferences + phone verification (`profile-preferences.*`, `phone-verification.workflow.md`)  ← ready to build
+- [ ] `_shared.data.md` schema: `notify.channel_preference` + `notify.phone_verification`;
+      `notify_api.set_channel_preference` / `notify_api.verify_phone_code` (two-layer, R8) +
+      `notify_fn.request_phone_verification`; RLS self-scoped (`profile_id = jwt.profile_id()`);
+      `n8n_worker` execute on the new `notify_fn` routine. Sqitch change + revert/verify/pgTAP.
+- [ ] `ChannelPreference` in `fnb-types` + mapper (`toChannelPreference`) + barrels; expose the
+      preference read + the two mutations via `notify_api` (codegen).
+- [ ] `useNotificationPreferences()` (read + `setEnabled` + `requestPhoneVerification` + `verifyPhoneCode`),
+      thin re-export in auth-app.
+- [ ] `<NotificationPreferences>` card on `/auth/profile` (D13 gate: SMS switch disabled until
+      `verifiedAt`); update `auth-app/profile.ui.md` + `profile.data.md`.
+- [ ] `n8n/workflows/phone-verification.json` + `WORKFLOW_REGISTRY` entry (authenticated;
+      `profileId` from claims). Template `phone-verify`.
+- [ ] Verify: pick SMS → send code → read it from the SMS-Test inbox (dev) → verify → SMS enables.
+
+### Phase 5+ — auth-grade SMS **2FA** (`sms-2fa.future.md`)  ← deferred (ZITADEL-owned)
+- [ ] Twilio provider in `send-notification` (`sms` branch) for prod; dev stays log-sink.
 - [ ] ZITADEL: enable MFA/login policy; point SMS delivery at the n8n **HTTP SMS provider** webhook
       (verify availability on the running ZITADEL version — Open Question).
-- [ ] Non-auth SMS + phone-verification path (app → `triggerWorkflow`, same as email).
-- [ ] `send-test` page gains the SMS channel.
+- [ ] `notification-webhook`: Twilio status-callback mapping (delivered/undelivered/failed).
 
 ## Remaining Open Questions
 
@@ -161,3 +205,16 @@ Phased build order; each phase is independently verifiable.
   outbound DX. Note preserved so a future inbound need can reconsider.
 - **Fold the table into `fnb-n8n`** — mixes engine-log and app-notification concerns; rejected for
   a dedicated `fnb-notify` (D2).
+- **Mock-Twilio-with-UI container as the dev SMS sink** (`dgeorgiev/twillio-sms-mock`,
+  `notfoundsam/sms-mock-server`) — the *truest* Mailpit parallel (Twilio-shaped endpoint + browsable
+  inbox), but an unofficial project to pin/vendor and a second compose service; the log-sink + the
+  in-app SMS-Test page already give the catch + inbox (D11). **Kept as the pre-approved upgrade**
+  (`NOTIFY_SMS_PROVIDER=mock-twilio`) for when a Twilio-shaped round-trip is needed.
+- **Prism serving Twilio's OpenAPI as the dev sink** — validates the request against the real
+  contract but has no browsable inbox; better as an **optional CI contract check** than the dev
+  sink. Twilio **test credentials + magic numbers** cover a pre-prod real round-trip (needs
+  internet + an account, no capture UI) — neither replaces the log-sink for everyday dev.
+- **Channel preferences as columns on `app.profile`** — simplest, but mixes notification concerns
+  into the core identity table; rejected for a module-owned `notify.channel_preference` (D12).
+- **App-owned OTP for the phone-verification gate** — accepted here because it is **non-auth**
+  (profile phone verification, not the login step-up); auth-grade 2FA still stays with ZITADEL (D9).

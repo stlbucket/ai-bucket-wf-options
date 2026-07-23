@@ -18,5 +18,12 @@ Password management is ZITADEL self-service now. `<ChangePasswordForm>`, `useAut
 and `POST /api/auth/change-password` are deleted (superseded issue
 `0070__auth______change-password-stub`).
 
+### Notification preferences — added (SMS Phase 1, notifications spec)
+The `<NotificationPreferences>` card **does** read/write `notify` GraphQL (the page's one data-bound
+card): `notify.channel_preference` via `useNotificationPreferences()`, plus the phone-verification
+round-trip (`triggerWorkflow('phone-verification')` + `verify_phone_code`). This is the only fetch on
+an otherwise claims-only page. Full contract: `.claude/specs/notifications/profile-preferences.data.md`.
+
 ## Types
-`ProfileClaims` from `@function-bucket/fnb-types` (hand-written source of truth).
+`ProfileClaims` from `@function-bucket/fnb-types` (hand-written source of truth). `ChannelPreference`
+(also from `fnb-types`) backs the notification-preferences card.

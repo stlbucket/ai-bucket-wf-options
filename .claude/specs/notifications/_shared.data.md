@@ -184,8 +184,117 @@ Barrel-export from `packages/fnb-types/src/index.ts`. Codegen types stay interna
 No new permission key is required for v1 — the invitation send is system-initiated inside the
 workflow (runs as `n8n_worker`, not a user). The test page reuses `p:app-admin-super`.
 
+## SMS additions — channel preferences + phone verification (D12/D13)
+
+Added for the SMS work: user-chosen **preferred method(s)** (`profile-preferences.*`) and the
+non-auth **phone-verification** gate (D13). Both tables live in `notify` and are **user-owned** —
+unlike `notify.notification` (writes only inside the workflow), these carry a **public mutation
+surface** (`notify_api` two-layer, R8) RLS-scoped to `profile_id = jwt.profile_id()`.
+
+### Table: `notify.channel_preference`
+
+One row per `(profile, channel)`. `enabled` = the user selected this method; `verified_at` gates
+SMS (email is implicitly verified — ZITADEL owns identity).
+
+```sql
+CREATE TABLE notify.channel_preference (
+  id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  profile_id uuid NOT NULL REFERENCES app.profile(id) ON DELETE CASCADE,
+  channel notify.notification_channel NOT NULL,
+  enabled boolean NOT NULL DEFAULT false,
+  destination citext,                          -- resolved target: E.164 phone (sms) / email (email); null → fall back to app.profile
+  verified_at timestamptz,                     -- email: set on create; sms: set by verify_phone_code
+  created_at timestamptz NOT NULL DEFAULT current_timestamp,
+  updated_at timestamptz NOT NULL DEFAULT current_timestamp,
+  UNIQUE (profile_id, channel)
+);
+CREATE INDEX idx_notify_channel_pref_profile ON notify.channel_preference (profile_id);
+```
+
+### Table: `notify.phone_verification`
+
+Ephemeral OTP store for the non-auth phone-verification round-trip. Codes are **hashed**, expiring,
+attempt-limited. Consumed rows are kept for audit (or reaped — `[FILL IN]`).
+
+```sql
+CREATE TABLE notify.phone_verification (
+  id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  profile_id uuid NOT NULL REFERENCES app.profile(id) ON DELETE CASCADE,
+  phone citext NOT NULL,                        -- E.164
+  code_hash text NOT NULL,                      -- never store plaintext
+  expires_at timestamptz NOT NULL,
+  attempts integer NOT NULL DEFAULT 0,
+  consumed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT current_timestamp
+);
+CREATE INDEX idx_notify_phone_verif_profile ON notify.phone_verification (profile_id, consumed_at);
+```
+
+### Functions (extends `notify_fn` / `notify_api`)
+
+```
+-- Preferences (user-owned; two-layer R8)
+notify_api.set_channel_preference(_channel notify.notification_channel, _enabled boolean) returns notify.channel_preference
+  -- SECURITY INVOKER → notify_fn.set_channel_preference (DEFINER): upsert on (jwt.profile_id(), _channel).
+  -- RAISES if enabling 'sms' while its verified_at is null (D13 belt-and-suspenders).
+
+-- Phone verification
+notify_fn.request_phone_verification(_profile_id uuid, _phone citext) returns text  -- returns plaintext code (n8n_worker only)
+  -- generate 6-digit code, store code_hash + expires_at, invalidate prior unconsumed rows, reset attempts.
+notify_api.verify_phone_code(_phone citext, _code text) returns jsonb  -- { verified, reason? }
+  -- SECURITY INVOKER → notify_fn.verify_phone_code (DEFINER): newest unconsumed row for jwt.profile_id();
+  --   check hash + expiry + attempts; on success mark consumed + upsert channel_preference(sms).verified_at/destination
+  --   (+ optionally app.profile.phone). Increments attempts on failure.
+```
+
+### Grants + RLS (self-owned)
+
+```sql
+alter table notify.channel_preference enable row level security;
+alter table notify.phone_verification enable row level security;
+
+-- A user reads/writes only their own preference rows.
+CREATE POLICY channel_pref_self ON notify.channel_preference
+  FOR SELECT USING (profile_id = jwt.profile_id());
+-- No direct INSERT/UPDATE policy: writes go through notify_fn (DEFINER) called by notify_api,
+-- which binds profile_id = jwt.profile_id(). (Same forge-prevention posture as the outbox.)
+
+-- phone_verification: no client SELECT (codes are hashed and never read by the client);
+-- all access is via notify_fn DEFINER. Grant execute on the new notify_fn routines to n8n_worker
+-- (request_phone_verification) — verify_* runs as the authenticated caller via notify_api.
+grant execute on all functions in schema notify_fn to n8n_worker;  -- default-privileges already cover new fns
+```
+
+### fnb-types (extends `packages/fnb-types/src/notification.ts`)
+
+```ts
+export type ChannelPreference = {
+  channel: NotificationChannel          // 'EMAIL' | 'SMS'
+  enabled: boolean
+  destination: string | null
+  verifiedAt: Date | null
+}
+```
+Barrel-export alongside `Notification`; mapper `toChannelPreference` (`src/mappers/channelPreference.ts`).
+
+### Permission keys (addition)
+
+| Key | Gates |
+|---|---|
+| _authenticated_ (no new key) | Read/write **own** channel preferences + verify **own** phone (RLS `profile_id = jwt.profile_id()`) |
+
+No new permission key — preferences are self-owned, gated by RLS on the caller's profile, not a
+license permission.
+
 ## Open Questions
-- [ ] `payload` retention/redaction (store rendered body or template vars only?).
+- [ ] `payload` retention/redaction (store rendered body or template vars only?). **Interacts with
+      the SMS-Test page** — the log-sink inbox *needs* the rendered body visible (`sms-test.data.md`),
+      so decide the body projection + whether to hide it from the email read type.
 - [ ] `update_delivery` allowed status transitions (terminal-state protection).
-- [ ] Self-read RLS policy (`profile_id = jwt.profile_id()`) — only if a user-facing history ships.
+- [ ] Self-read RLS policy on `notify.notification` (`profile_id = jwt.profile_id()`) — only if a
+      user-facing history ships (distinct from the preference self-read above, which is required).
 - [ ] Which columns to hide from the exposed read type.
+- [ ] Phone-verification constants: code length, TTL, max attempts, resend cooldown.
+- [ ] Mirror the verified number to `app.profile.phone`, or keep it only on the SMS preference
+      `destination`? (Recommend mirroring for a single source of truth.)
+- [ ] `phone_verification` retention (keep consumed rows for audit vs. reap).

@@ -14,10 +14,12 @@ Full-viewport-height centered column:
 
 - Heading: `Your Profile`
 - Home link: `<UButton to="/" external icon="i-lucide-house" label="Home" variant="ghost" />`
-- Single centered card (`max-w-md mx-auto`):
-  - `<UserProfile :user="user" />` — from `packages/auth-layer`; displays profile info
-  - (`<ChangePasswordForm>` was removed at the ZITADEL cutover — password management is
-    ZITADEL self-service)
+- Card grid (`md:grid-cols-2`, stack on mobile — UC5):
+  - `<UserProfile :user="user" />` — from `packages/auth-layer`; displays profile info (claims only)
+  - `<ChangePasswordForm />` — self-service password change (password-self-service spec)
+  - `<NotificationPreferences />` — **SMS Phase 1** (added by the notifications spec):
+    choose preferred method(s) + inline phone verification. Unlike the other two cards this one reads
+    `notify` GraphQL. Spec: `.claude/specs/notifications/profile-preferences.ui.md` / `.data.md`.
 
 ## Data
 All data comes from `useAuth()` composable — no server fetch on this page.

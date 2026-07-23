@@ -35,7 +35,14 @@ const WORKFLOW_REGISTRY: Record<string, { permission: string | string[] | null }
   // forgot-password workflow the public (unauthenticated) home-page route hits, so the workflow is
   // unchanged. Tenant-scoping: the admin can only supply an email they are already RLS-authorized to
   // see on the tenant-app user detail page (app.resident policies). Bounded harm (reset email only).
-  'forgot-password': { permission: 'p:app-admin' }
+  'forgot-password': { permission: 'p:app-admin' },
+  // Non-auth phone verification (notifications spec, phone-verification.workflow.md; D13): { phone }.
+  // Any authenticated user verifies their OWN phone — profileId is injected from the caller's claims
+  // by this plugin (below), never trusted from the body. The workflow mints an OTP
+  // (notify_fn.request_phone_verification) and delivers it by calling send-notification's webhook
+  // internally with the shared secret, so the send-notification key's p:app-admin-super gate does
+  // NOT block a normal user. Auth-grade 2FA stays ZITADEL-owned (D9), not this path.
+  'phone-verification': { permission: null }
 }
 
 interface TriggerClaims {

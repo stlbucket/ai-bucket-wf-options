@@ -6,8 +6,19 @@
 > pg-image rebuild + first run to the user, then verify read-only.
 
 ## Status
-**Draft** — pilot on `fnb-todo`, then roll out one package per phase. Resolve the `[FILL IN]`s and
-Open Questions (seed-helper shapes; grant-shape pin-vs-desired) before the pilot lands.
+**Implemented — Phases 1–3 green (Phase 3 CI gate authored, pending owner CI-enable).** Harness
+proven, every db package has a `test/` tree, `pnpm db-test` is a working dev gate. **Current
+coverage: 36 files / 225 assertions** across all 12 packages (27/159 before Phase 3; 23/135 at the
+2026-07-21 rollout). Phase 3 (plan `.claude/issues/**/0267__testing___pgtap-phase3-coverage-gaps…`)
+closed the api-permission + fn-behaviour gaps, deepened `fnb-app` RLS to all 16 tables, and added a
+disposable-DB CI workflow (`.github/workflows/db-test.yml`).
+
+**Coverage now (post-Phase-3):** RLS (`010`) on 11/12 packages + all 16 `fnb-app` RLS tables;
+api-permission / grant-shape (`020`) on `fnb-app`, `fnb-loc`, `fnb-storage` (+ the earlier
+game/msg/n8n/notify/todo); fn-behaviour (`030`) on `fnb-n8n`, `fnb-storage`,
+`fnb-location-datasets`, `fnb-airports` (+ earlier app/res/msg/loc/game). **Two GAPs documented for
+a future hardening spec:** `loc_api` is entirely ungated (RLS-only isolation), and
+`loc_fn.delete_location` calls `res_fn.archive_resource` unconditionally (cross-tenant archive).
 
 ## Purpose
 
@@ -88,6 +99,9 @@ Surfacing exactly these gaps is the point (`0260`). Tightening them is out of sc
       register the resident) and the data-modifying-CTE restriction (both now in `_shared.md`).
 
 ### Phase 2 — Roll out across all packages — DONE (2026-07-21): `pnpm db-test` = 23 files / 135 assertions green
+> **Reconciled 2026-07-23:** suite is now **27 files / 159 assertions** — the four items marked
+> *(out-of-band)* below shipped with the otp-login + notifications features after the rollout and are
+> back-filled here for accuracy.
 Every db package now has a `test/` tree (`010`/`020`/`030` where warranted):
 - [x] `fnb-auth` — `030-jwt-helpers.sql` (auth.user is dropped → the value is the `jwt.*` helpers:
       identity accessors, `has_permission`, `enforce_permission`, empty-claims). **Found a live bug** —
@@ -103,7 +117,19 @@ Every db package now has a `test/` tree (`010`/`020`/`030` where warranted):
 - [x] `fnb-n8n` — `010-rls.sql` (**null-tenant super-admin branch**) + `020` (workflow_runs gate).
 - [x] `fnb-location-datasets` · `fnb-airports` — `010-rls.sql` structural public-catalog smoke (RLS on,
       SELECT-only, no write policy, anon reads).
+- [x] `fnb-app` — `031-otp-login.sql` *(out-of-band, otp-login spec)*: `auth.deep_link`/`auth.otp_login`
+      schema shape + `auth.session.auth_method`. Behavioral OTP flow (deep_link → code → verify →
+      residency) is exercised end-to-end in the otp-login plan's Phase 5, not here.
+- [x] `fnb-notify` — `010-rls.sql` *(out-of-band, notifications spec)*: `notify.notification`
+      `view_notifications_super_admin` — **both** branches incl. the tenant-less (`tenant_id IS NULL`)
+      path; no write policy (writes via `notify_fn`/`n8n_worker`).
+- [x] `fnb-notify` — `020-api-permissions.sql` *(out-of-band)*: `notify_api.notifications()` enforces
+      `p:app-admin-super`.
+- [x] `fnb-notify` — `030-prefs.sql` *(out-of-band)*: `channel_pref_self` RLS + `set_channel_preference`
+      upsert + the D13 unverified-sms gate + the phone-verification round-trip (wrong code
+      fails/increments; correct code verifies, mirrors to `app.profile.phone`, enables sms).
 - [ ] Add a CI job (disposable DB → deploy → `db-test`) once the dev flow is proven (`harness.md` §4).
+      **→ moved to Phase 3.**
 - [ ] If the harness approach becomes a documented convention, update `global-rules.md` + both
       skills (R21) and register nothing new in `skill-map.md` beyond the existing `pgtap-expert`.
 
@@ -125,6 +151,55 @@ now asserts the correct true/all-held + false/one-missing behaviour.
       `loc` (create_location: tenant/resident_urn/urn/register + bad-resident), `game`
       (create_game: lobby/seats/roster/register + type-availability + seat-bounds guards), `app`
       (session lifecycle: create/revoke/revoke_my_sessions/claims fail-closed).
+
+### Phase 3 — Close the coverage gaps + gate it in CI — DONE (2026-07-23; CI-verify pending owner)
+Executed via plan `0267`. Filled the two weak layers (api-permission + fn-behaviour) where the
+surface warranted, deepened `fnb-app` RLS to all 16 tables, and authored the CI gate. Each item is a
+`db/<pkg>/test/*.sql` file authored against **actual behaviour** (D8 — pin reality, flag divergences
+as GAP assertions; hardening deferred to a separate spec). Files added: `fnb-app/020` + `013-rls-catalog`
++ `014-rls-support-comment`; `fnb-loc/020`; `fnb-storage/020` (lockout) + `030`; `fnb-n8n/030`;
+`fnb-location-datasets/030`; `fnb-airports/030`; and `.github/workflows/db-test.yml`.
+Reality corrections found during execution: `storage_api` does not exist (storage `020` = a
+grant-shape lockout of the `n8n_worker`-only `storage_fn`); `res_api` has only `resolve_urn` (no
+`020` written — `res_fn` behaviour already covered in Phase 2); `fnb-app` gates live in `app_fn`
+(tested at the `app_api` boundary). Remaining follow-ups: enable the CI workflow (owner); optional
+`pg_prove` adoption; the R21 convention-docs pass if the harness becomes a documented convention.
+
+The original per-item backlog (all landed unless noted):
+
+**3a — api-permission (`020`) gaps** — only 5/12 packages gate-test `<module>_api` today.
+- [ ] **`fnb-app` `020-api-permissions.sql`** *(highest priority — 16-table core, currently zero
+      api-permission coverage)*: gate + grant-shape on the `app_api` surface that actually checks
+      keys (tenant/resident/license/support admin mutations). Pin reality; GAP-note any ungated api fn.
+- [ ] `fnb-res` `020` — `res_api` register/lookup surface: permission gate + grant shape.
+- [ ] `fnb-loc` `020` — `loc_api.create_location` (+ any update/delete) permission gate.
+- [ ] `fnb-storage` `020` — `storage_api` asset mutations: `p:app-user`/`p:app-admin` gate + anon lockout.
+
+**3b — fn-behaviour (`030`) gaps** — missing on 4 packages.
+- [ ] `fnb-n8n` `030-fn-behaviour.sql` — `n8n_fn` run-log side effects (`workflow_run` insert/status
+      transitions) under the `n8n_worker` role.
+- [ ] `fnb-storage` `030-fn-behaviour.sql` — `storage_fn` asset lifecycle (create → quarantine →
+      scan-result status cascade) + bad-input guards.
+- [ ] `fnb-location-datasets` · `fnb-airports` `030` — **only if** these packages have a `_fn` layer
+      with real side effects; if they are pure public catalogs (sync via n8n `sync-*` workflows, no
+      in-DB mutation fns) then `030` is **N/A** — record that here rather than writing an empty file.
+
+**3c — deepen the `fnb-app` security core** (16 RLS tables; `010`+`011`+`012` cover the main ones).
+- [ ] Audit the 16 RLS tables against the three `010/011/012` files; add assertions for any table
+      with no tenant-isolation coverage (candidates: `application`, the `license_pack*`/`license_type*`
+      join/catalog tables, `support_ticket_comment`, `permission`). Extend the existing files or add
+      `013-*`; keep one rolled-back txn per file.
+
+**3d — enforce it (promote from dev-only to a gate).**
+- [ ] CI job: disposable Postgres → sqitch deploy (full order) → `pnpm db-test` → non-zero on any
+      `not ok`/plan-mismatch. Resolve the managed-PG pgTAP allow-list question first (`harness.md` §4;
+      CI builds `docker/db.Dockerfile`, so pgTAP is available there — the allow-list only matters if
+      CI ever points at managed PG). Unblocks the two long-standing Phase-2 `[ ]` items.
+- [ ] Decide `pg_prove` vs psql-fallback for CI (Open Question below) — psql-fallback is sufficient to
+      start; pg_prove only if richer TAP diagnostics are wanted in CI logs.
+
+**On completion:** if Phase 3 makes the harness a documented, CI-enforced convention, update
+`global-rules.md` + both skills (R21) per the existing Phase-2 tail item.
 
 ## Remaining Open Questions
 - [x] **Seed helpers** — RESOLVED: hand-written against the real `app.tenant`/`app.resident` columns

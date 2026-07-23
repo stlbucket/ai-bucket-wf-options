@@ -169,6 +169,9 @@ db/<pkg>/test/
 - The stack's own `raise exception '30000: …'` / `'30028…'` etc. surface as SQLSTATE **`P0001`**
   with that message text → assert with `throws_ok(sql, 'P0001', NULL, 'label')` or match the message.
 - `citext` columns/args: `col_type_is(…, 'citext')`; pass permission arrays as plain `text[]`.
+- **`like()` matcher gotcha (verified 2026-07-23).** pgTAP's `like(got, pattern, desc)` can fail
+  overload resolution (`function like(text, unknown, unknown) does not exist`) when the pattern/desc
+  are bare string literals. Assert the boolean instead: `ok((select … ) like '%needle%', 'desc')`.
 - Match `_fn`/`_api` arg-type arrays to the catalog **exactly** — copy from
   `pg_get_function_identity_arguments`, not from memory.
 - **psql interpolation gotcha (verified 2026-07-21).** psql substitutes only the **`:'var'` quoted

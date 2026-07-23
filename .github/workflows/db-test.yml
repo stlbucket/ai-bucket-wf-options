@@ -1,0 +1,102 @@
+# pgTAP DB test gate (spec .claude/specs/db-testing/, plan 0267 Phase 3d / harness.md §4).
+# Runs the db/<pkg>/test/*.sql suite against a DISPOSABLE Postgres: build the dev db image
+# (PostGIS + pgTAP, docker/db.Dockerfile) → deploy every sqitch package + seed → `pnpm db-test`.
+# Hermetic and prod-safe: pgTAP is created on demand into the `tap` schema, on a throwaway DB that
+# is torn down after the run; managed prod Postgres never builds this image.
+#
+# DESIGN ONLY — the repo owner reviews + commits this and owns enabling Actions. It replicates ONLY
+# the `db` compose service by hand (network + build + run) so it needs none of the other services'
+# env; `pnpm db-deploy` / `pnpm db-test` already `docker run --network fnb-network` exactly as in dev.
+name: db-test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'db/**'
+      - 'scripts/db-deploy.ts'
+      - 'scripts/db-test.ts'
+      - 'scripts/_env.ts'
+      - 'docker/db.Dockerfile'
+      - '.github/workflows/db-test.yml'
+  pull_request:
+    paths:
+      - 'db/**'
+      - 'scripts/db-deploy.ts'
+      - 'scripts/db-test.ts'
+      - 'scripts/_env.ts'
+      - 'docker/db.Dockerfile'
+      - '.github/workflows/db-test.yml'
+
+concurrency:
+  group: db-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  db-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # The scripts read these from the shell (scripts/_env.ts loads .env with override:false, so the
+    # missing-in-CI .env is a no-op and these env vars win). Same targets as .env.example, but a
+    # throwaway credential + no host port — everything talks over the fnb-network.
+    env:
+      POSTGRES_DB: fnb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PG_URL: postgresql://postgres:postgres@function_bucket:5432/fnb
+      DB_URL: db:pg://postgres:postgres@function_bucket:5432/fnb
+      # Deploy order (must match .env.example): fnb-n8n before storage/dataset packages; fnb-game last.
+      DEPLOY_PACKAGES: fnb-auth fnb-app fnb-n8n fnb-notify fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets fnb-airports fnb-game
+      # fnb-n8n's policies change creates the n8n_worker login role with this password (throwaway).
+      N8N_WORKER_PG_PASSWORD: ci-n8n-worker
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4 # reads the packageManager field (pnpm@10)
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install workspace deps
+        run: pnpm install --frozen-lockfile
+
+      # ── Stand up ONLY the db service by hand (the network name the db-* scripts hardcode) ──
+      - name: Create fnb-network
+        run: docker network create fnb-network
+
+      - name: Build the dev db image (PostGIS + pgTAP)
+        run: docker build -f docker/db.Dockerfile -t fnb-db-pgtap:local .
+
+      - name: Start disposable Postgres (container name = the PG_URL host)
+        run: |
+          docker run -d --name function_bucket --network fnb-network \
+            -e POSTGRES_DB=fnb -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
+            fnb-db-pgtap:local
+
+      - name: Wait for Postgres to accept connections
+        run: |
+          for i in $(seq 1 30); do
+            if docker exec function_bucket pg_isready -h 127.0.0.1 -U postgres -d fnb >/dev/null 2>&1; then
+              echo "postgres ready"; exit 0
+            fi
+            echo "waiting for postgres ($i)…"; sleep 2
+          done
+          echo "postgres did not become ready in time"; docker logs function_bucket; exit 1
+
+      # ── Deploy the full sqitch order + seed, then run the pgTAP suite ──
+      - name: Deploy sqitch packages + seed
+        run: pnpm db-deploy
+
+      - name: Run pgTAP suite (pnpm db-test)
+        run: pnpm db-test
+
+      # ── Tear the disposable DB down (runs even on failure) ──
+      - name: Tear down
+        if: always()
+        run: |
+          docker rm -f function_bucket || true
+          docker network rm fnb-network || true

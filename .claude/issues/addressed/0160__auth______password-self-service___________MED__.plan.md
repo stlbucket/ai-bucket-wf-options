@@ -6,8 +6,11 @@
 > Derived from that README's Implementation Task List (Phases 0–4).
 
 ## Status
-In-flight (2026-07-22). **Phase 0 confirmed live; Phases 1–3 fully authored; all code-side
-surfaces verified live via HMR.** Two env-side steps remain (cannot hot-reload — handed to the user).
+**Done (verified live 2026-07-23).** Phases 0–3 built; both env-side steps confirmed (n8n
+`forgot-password` active + graphql-api registry loaded); forgot-password verified end-to-end to
+email delivery (Mailpit), incl. the enumeration-safe unknown-email no-op and 400 validation. Only
+the interactive browser walkthrough of change-password + the admin-reset button remains (deferred to
+user testing; both sit on proven-live layers). See "Live verification (2026-07-23)" below.
 
 Done this session:
 - **Phase 0** — ZITADEL v4.15.3 `SetPassword` `currentPassword` arm CONFIRMED live (throwaway-user
@@ -43,16 +46,28 @@ precedent, with zero schema change / no sqitch deploy / no GraphQL surface. `_sh
   in `docker/zitadel/seed.mjs` (`ensureLoginPolicy`, runs dev+prod). Verified live: `hidePasswordReset
   = true`; seed `node --check` passes. Now the home-page flow is the only reset path. (zitadel-expert.)
 
-### Remaining (env-side — user action; do not self-restart per project rule)
-1. **n8n**: import + activate `forgot-password.json` and **restart n8n** (webhooks register only at
-   startup — the invite-user lesson). Until then `/webhook/forgot-password` 404s → the route 502s.
-2. **graphql-api-app**: **restart** so the `forgot-password` `WORKFLOW_REGISTRY` entry loads (the
-   admin-reset button's `triggerWorkflow('forgot-password')` else hits "unknown workflow").
+### Env-side steps — DONE (verified live 2026-07-23)
+1. **n8n**: `forgot-password` workflow is imported **and active** (`n8n list:workflow --active=true`
+   → `ForgotPass01Fnb|forgot-password`). ✓
+2. **graphql-api-app**: restarted; `WORKFLOW_REGISTRY['forgot-password'] = { permission: 'p:app-admin' }`
+   loaded (`trigger-workflow.plugin.ts:38`). ✓
 
-### Not yet live-verified (blocked on the two steps above)
-- End-to-end forgot-password (home → email → set-password → login) + the unknown-email no-op.
-- Change-password happy path + wrong-current inline error + weak-new policy toast (needs a login).
-- Admin-reset button → set-password email.
+### Live verification (2026-07-23) — forgot-password proven end-to-end
+- **Route** `/auth/api/forgot-password`: well-formed email → **200 `{ok:true}`** (webhook chain live,
+  not 502); malformed / empty body → **400** (no side effects). ✓
+- **Full chain to email**: reset for a known seeded user (`my-app-tenant-admin@example.com`) →
+  Mailpit received **"Reset your fnb password"** to that address (route → n8n webhook → resolve
+  reset-link code [ZITADEL] → send-notification → SMTP). ✓
+- **Enumeration-safe no-op**: unknown email (`nonexistent-probe@…`) → 200, no email generated. ✓
+- All code surfaces present + built: forgot-password route/page, `change-password.post.ts`,
+  `ChangePasswordForm` mounted in `profile.vue`, db-access `selectMyIdpUserId` (+ barrel),
+  `useAdminResetPassword`, admin-reset button on `admin/user/[id].vue`.
+
+### Remaining — user browser walkthrough only (deferred to user testing)
+- Change-password happy path + wrong-current inline error + weak-new policy toast (needs an
+  interactive ZITADEL login).
+- Admin-reset **button** click — fires the same `triggerWorkflow('forgot-password')` workflow proven
+  above to deliver email, so verified at every layer beneath the click.
 
 ## (original) Status
 Identified (2026-07-22). Authored from the spec README; not started. Direct successor to

@@ -68,11 +68,11 @@ const SEED_USERS = [
   { email: 'our-app-tenant-user@example.com', givenName: 'our-app-tenant', familyName: 'user' },
 ]
 
-// Superset of db/seed-large.sql: 4 tenants x { admin, floater, user-01..07 }. seed-large's
+// Superset of db/seed-large.sql: 2 tenants x { admin, floater, user-01..07 }. seed-large's
 // per-tenant user counts are randomized (4-7), so this seeds the full possible roster —
 // extras a given run didn't materialize in the DB are harmless: their first OIDC login just
 // provisions a fresh profile with no residencies (app_fn.provision_idp_user email match).
-for (let t = 1; t <= 4; t++) {
+for (let t = 1; t <= 2; t++) {
   const nn = String(t).padStart(2, '0')
   const roles = [
     'admin',

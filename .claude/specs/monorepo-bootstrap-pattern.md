@@ -151,10 +151,10 @@ pnpm-install    ├→ packages-watch → [all apps]
 - Runs all sqitch deploy commands and exits (`restart: "no"`)
 - `DEPLOY_PACKAGES` (required, `${DEPLOY_PACKAGES:?}`) controls which packages to deploy — it lives
   in `.env` as the single source of truth and carries the full ordered list (`fnb-auth fnb-app
-  fnb-n8n fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets
-  fnb-airports fnb-game`; `fnb-n8n` must precede `fnb-storage`/`fnb-location-datasets`/`fnb-airports` —
-  `n8n_worker` grants for the asset-scan + sync workflows). PostGraphile exposes the module schemas
-  (`graphile.config.ts` `pgServices.schemas`), so all eleven must deploy or it fails at boot.
+  fnb-n8n fnb-notify fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets
+  fnb-airports fnb-game`; `fnb-n8n` must precede `fnb-notify`/`fnb-storage`/`fnb-location-datasets`/`fnb-airports` —
+  `n8n_worker` grants for the notify send + asset-scan + sync workflows). PostGraphile exposes the
+  module schemas (`graphile.config.ts` `pgServices.schemas`), so all twelve must deploy or it fails at boot.
   `.env.example` ships the full list pre-filled (not a comment).
 - **`SEED_DATA`** (`${SEED_DATA:-full}`) selects the seed profile. `full` (default) runs the fat
   `db/seed.sql` (anchor tenant + dev users) and seeds the ZITADEL dev-user roster — today's

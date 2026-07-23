@@ -36,6 +36,14 @@ const WORKFLOW_REGISTRY: Record<string, { permission: string | string[] | null }
   // unchanged. Tenant-scoping: the admin can only supply an email they are already RLS-authorized to
   // see on the tenant-app user detail page (app.resident policies). Bounded harm (reset email only).
   'forgot-password': { permission: 'p:app-admin' },
+  // Targeted deep-link share (OTP-login spec, D14 "Send to residents"): { deepLinkId, url,
+  // subjectLabel, message, residentIds, channels, senderName }. Any authenticated tenant user may
+  // send — tenantId/profileId are injected from the caller's claims by this plugin (below) and the
+  // workflow's resolve_send_recipients is scoped to that tenantId, so foreign resident ids yield no
+  // sends. The client already created the tenant-scoped link (createDeepLink) and passes its id/url;
+  // the workflow (as n8n_worker) resolves each resident's contact and loops send-notification.
+  // Any-of gate (as game-event): admins hold p:app-admin but not the base p:app-user.
+  'send-deep-link': { permission: ['p:app-user', 'p:app-admin'] },
   // Non-auth phone verification (notifications spec, phone-verification.workflow.md; D13): { phone }.
   // Any authenticated user verifies their OWN phone — profileId is injected from the caller's claims
   // by this plugin (below), never trusted from the body. The workflow mints an OTP

@@ -12,4 +12,5 @@
 00000000010270_profile_idp_user [00000000010260_app_bootstrap] 2026-07-08T00:00:00Z Developer <dev@example.com> # ZITADEL idp_user_id mapping column + pre-claims provision_idp_user
 00000000010280_drop_auth_user [00000000010270_profile_idp_user fnb-auth:00000000010200_auth] 2026-07-08T00:00:00Z Developer <dev@example.com> # ZITADEL cutover: rework auth.user readers, drop auth.user/identities/login_user/handle_new_user
 00000000010290_session [00000000010280_drop_auth_user] 2026-07-09T00:00:00Z Developer <dev@example.com> # Server-side sessions: auth.session table, create/claims_for/revoke session fns, revoke_my_sessions
+00000000010295_otp_login [00000000010290_session] 2026-07-22T00:00:00Z Developer <dev@example.com> # OTP login: auth.deep_link + auth.otp_login tables, pre-claims get/request/verify + residency activation + session_info, app_api.create_deep_link
 00000000010300_app_fn_initialize_anchor [00000000010290_session] 2026-07-21T00:00:00Z Developer <dev@example.com> # First-run setup: pre-claims app_fn.anchor_exists + gated app_fn.initialize_anchor

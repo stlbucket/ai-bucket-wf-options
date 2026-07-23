@@ -13,7 +13,7 @@ export type { ProfileClaims }
 export type UseAuthReturn = {
   user: Ref<ProfileClaims | null>
   isLoggedIn: Ref<boolean>
-  loginWithRedirect: () => Promise<void>
+  loginWithRedirect: (returnTo?: string) => Promise<void>
   logout: () => Promise<void>
   goHome: () => Promise<void>
   exitSupport: () => Promise<void>
@@ -56,8 +56,15 @@ export const useAuth = (): UseAuthReturn => {
   // ZITADEL hosted-login ceremony (zitadel-login-pattern.md): browser-only full-page redirect
   // to the auth-app OIDC start route; the callback sets the same sealed session cookie and
   // lands on /login?oidc=success, where claims hydrate via the normal GraphQL path.
-  async function loginWithRedirect(): Promise<void> {
-    await navigateTo(`${config.public.authAppUrl}/api/auth/oidc/login`, { external: true })
+  //
+  // Optional `returnTo` (root-relative path) rides the whole round-trip so the caller lands back
+  // where they started instead of home — the deep-link "Sign in with ZITADEL" case
+  // (auth-app/login.data.md §Return-to). It is validated (isSafeReturnTo) server-side at park time
+  // and again on consume; here we only forward it as a query param.
+  async function loginWithRedirect(returnTo?: string): Promise<void> {
+    const base = `${config.public.authAppUrl}/api/auth/oidc/login`
+    const url = returnTo ? `${base}?returnTo=${encodeURIComponent(returnTo)}` : base
+    await navigateTo(url, { external: true })
   }
 
   async function logout(): Promise<void> {

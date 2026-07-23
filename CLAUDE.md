@@ -38,11 +38,15 @@ spec's referee/engine logic; its build is embedded verbatim into the `game-event
 Code nodes by an embed script, not imported by any app) — not one of the ten layer/lib
 packages above, but part of the game server (spec `.claude/specs/game-server/`).
 
-**DB** (`db/`) — eleven sqitch packages (deploy order: `fnb-auth fnb-app fnb-n8n
-fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets fnb-airports fnb-game`;
-`fnb-n8n` must precede `fnb-storage`/`fnb-location-datasets`/`fnb-airports` — `n8n_worker`
-grants for the asset-scan + sync workflows; `fnb-game` is last — needs `fnb-res`'s registry,
-`fnb-app`'s policies, and `fnb-n8n`'s `n8n_worker` role). `fnb-n8n` is the n8n run log
+**DB** (`db/`) — twelve sqitch packages (deploy order: `fnb-auth fnb-app fnb-n8n
+fnb-notify fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets fnb-airports fnb-game`;
+`fnb-n8n` must precede `fnb-notify`/`fnb-storage`/`fnb-location-datasets`/`fnb-airports` — `n8n_worker`
+grants for the notify send + asset-scan + sync workflows; `fnb-game` is last — needs `fnb-res`'s registry,
+`fnb-app`'s policies, and `fnb-n8n`'s `n8n_worker` role). `fnb-notify` is the notification outbox +
+user channel preferences + phone-verification OTP store (`notify.notification` send log gated
+`p:app-admin-super`, `notify.channel_preference`, `notify.phone_verification`; writes via `notify_fn`
+over `n8n_worker` — the send-notification/webhook/phone-verification n8n workflows; spec:
+`.claude/specs/notifications/`). `fnb-n8n` is the n8n run log
 (`n8n.workflow_run` + the `n8n_worker` service role — the **sole workflow engine**, R22:
 trigger routing in the `triggerWorkflow` registry; engine state in the separate
 `n8n_engine` DB, definitions in the repo `n8n/` dir; specs: `.claude/specs/n8n-parallel-engine/`

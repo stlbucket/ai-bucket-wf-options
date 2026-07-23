@@ -42,8 +42,9 @@ Recon checklist — record every answer in a new `.claude/skills/<dataset>-exper
 - **Access**: none / API key / OAuth? Which header/param carries the key? Rate limits, SLA,
   politeness posture (volunteer-run → sequential requests, no client-side loops).
   **Keys are env-only**: pick a `<NAME>_API_KEY` var; add it to `.env` (real value — user
-  supplies), `.env.example` (placeholder), and the **worker-app** service env in
-  `docker-compose.yml` (optional `${VAR:-}` unless the sync cannot run without it). The spec
+  supplies), `.env.example` (placeholder), and the **n8n** service env in
+  `docker-compose.yml` (or an `n8n/credentials/*.tpl` credential) — optional `${VAR:-}` unless the
+  sync cannot run without it; the `sync-<name>` n8n workflow reads it. The spec
   and the expert skill record the var *name*, never a value.
 - **Entities**: how many logical tables does the data imply? Relations between them?
 - **Pagination**: page/per_page, cursor, or offset? Max page size? Where does the total count
@@ -113,5 +114,5 @@ is stable, plain-user RLS reads work, no write mutations exist.
 - `fnb-stack-spec` / `fnb-stack-implementor` — the orchestrators this skill drives
 - `new-db-package` · `sqitch-expert` · `fnb-db-designer` — DB mechanics when a dedicated
   schema/package is chosen
-- `graphile-worker-expert` — the sync task handler
+- `n8n-cli` — the workflow engine (R22): the `sync-<name>` n8n workflow is the sync task handler
 - `breweries-expert` — the canonical dataset expert skill this pattern produced

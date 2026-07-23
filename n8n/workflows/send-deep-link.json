@@ -1,0 +1,83 @@
+{
+  "id": "SendDeepLink1Fn",
+  "name": "send-deep-link",
+  "active": true,
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 400],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-deep-link",
+        "authentication": "headerAuth",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnbwebhooksecr01",
+          "name": "fnb-webhook-secret"
+        }
+      },
+      "id": "b1a00000-0000-4000-8000-0000000000c1",
+      "webhookId": "b1a00000-0000-4000-8000-0000000000c2"
+    },
+    {
+      "name": "Resolve Recipients",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [440, 400],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select * from app_fn.resolve_send_recipients($1::uuid, $2::uuid[], $3::text[])",
+        "options": {
+          "queryReplacement": "={{ [ $('Webhook').item.json.body.tenantId, $('Webhook').item.json.body.residentIds, $('Webhook').item.json.body.channels ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "fnbn8nworkerpg01",
+          "name": "fnb-n8n-worker"
+        }
+      },
+      "id": "b1a00000-0000-4000-8000-0000000000c3"
+    },
+    {
+      "name": "Send Each",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 400],
+      "parameters": {
+        "method": "POST",
+        "url": "http://n8n:5678/webhook/send-notification",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: $json.channel, templateKey: 'deep-link-share', to: $json.destination, subject: $json.channel === 'email' ? (($('Webhook').item.json.body.senderName || 'Someone') + ' shared ' + ($('Webhook').item.json.body.subjectLabel || 'an item') + ' with you') : undefined, vars: { senderName: $('Webhook').item.json.body.senderName, message: $('Webhook').item.json.body.message, subjectLabel: $('Webhook').item.json.body.subjectLabel, url: $('Webhook').item.json.body.url }, tenantId: $('Webhook').item.json.body.tenantId, profileId: $json.profile_id }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "fnbwebhooksecr01",
+          "name": "fnb-webhook-secret"
+        }
+      },
+      "id": "b1a00000-0000-4000-8000-0000000000c4"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Resolve Recipients", "type": "main", "index": 0 }]]
+    },
+    "Resolve Recipients": {
+      "main": [[{ "node": "Send Each", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "errorWorkflow": "0E8QFQyYGSyHHq0g"
+  },
+  "pinData": {}
+}

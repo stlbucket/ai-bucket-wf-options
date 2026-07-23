@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@function-bucket/fnb-auth-layer": "workspace:*",
+    "@function-bucket/fnb-auth-ui": "workspace:*",
     "@function-bucket/fnb-db-access": "workspace:*",
     "@function-bucket/fnb-graphql-client-api": "workspace:*",
     "@function-bucket/fnb-types": "workspace:*",
@@ -21,8 +22,10 @@
     "@iconify-json/simple-icons": "catalog:",
     "@nuxt/ui": "catalog:",
     "@sentry/nuxt": "catalog:",
+    "h3": "catalog:",
     "nuxt": "catalog:",
-    "openid-client": "^6.6.0"
+    "openid-client": "^6.6.0",
+    "vue": "catalog:"
   },
   "devDependencies": {
     "@nuxt/eslint": "catalog:",

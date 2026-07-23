@@ -28,6 +28,47 @@ Authentication is ZITADEL's hosted login (OIDC code+PKCE). Routes in
   `?oidc=success` (hydrate claims → residency flow). `login(email, pwd)` / `changePassword` are
   removed (`auth.login_user` / `auth.user` are dropped; ZITADEL owns credentials).
 
+## Return-to after login (post-login redirect target)
+
+By default the ceremony always lands the user on the stack home (`/`) after the residency flow
+(`goHome()`). Some entry points need the user returned to **where they started** instead — the
+motivating case is the deep-link landing page `/auth/go/<id>` (`.claude/specs/otp-login/`): its
+"Sign in with ZITADEL" button must round-trip the ceremony and come **back to the deep link**, so
+the go page's already-logged-in path (State D) can forward the user to the item. Without a carrier
+the callback hard-redirects to `/auth/login?oidc=success` and `goHome()` sends them to `/`, losing
+the item. (The OTP path has no such problem — it is a self-contained page redirect.)
+
+A **`returnTo` root-relative path** is threaded through the round-trip:
+
+1. **Client.** `useAuth().loginWithRedirect(returnTo?: string)` — when `returnTo` is a non-empty
+   string it appends `?returnTo=<encodeURIComponent(path)>` to the `/api/auth/oidc/login` URL.
+   `LoginForm.vue` (`packages/auth-layer`) gains an optional `returnTo` prop and forwards it to
+   `loginWithRedirect(props.returnTo)`. Bare `loginWithRedirect()` / `<LoginForm />` is unchanged
+   (→ home).
+2. **`GET /api/auth/oidc/login`.** Reads `returnTo` from the query; when `isSafeReturnTo(returnTo)`,
+   parks it in a short-lived httpOnly cookie `oidc_return_to` (same flags + `maxAge` as the existing
+   `oidc_verifier` / `oidc_state` transaction cookies). Invalid/absent → no cookie parked.
+3. **`GET /api/auth/oidc/callback`.** After minting the session, reads **and deletes**
+   `oidc_return_to`. Composes the post-login redirect as `/auth/login?oidc=success` **plus**
+   `&returnTo=<encoded path>` when the cookie was present and still `isSafeReturnTo`. It stays a
+   query param on the `/login` hop (not a direct jump to `returnTo`) because `/login` owns claims
+   hydration + residency selection — the round-trip must pass through it.
+4. **`/auth/login` (`login.vue`).** After `onLoginSuccess` resolves claims + residency, if
+   `route.query.returnTo` is present and `isSafeReturnTo`, it does
+   `navigateTo(returnTo, { external: true })` **instead of** `goHome()`. Applied on both the
+   single-residency auto-select and the modal-select paths. Invalid/absent → `goHome()` (unchanged).
+
+**Security — open-redirect safe, fail-closed.** `isSafeReturnTo(p)` (a small shared helper usable
+server- and client-side): `p` is a string that starts with exactly one `/` (root-relative — **not**
+`//` protocol-relative, **not** `\`), contains no control characters, and is within a sane length
+cap. It is validated at **both** park time (step 2) and consume time (step 4) — a value that fails
+either check is dropped and login falls back to home. `returnTo` never carries an absolute URL or a
+foreign origin.
+
+**Why a cookie (not the OIDC `state`):** mirrors the existing `oidc_verifier` / `oidc_state`
+httpOnly-cookie pattern; ZITADEL does not round-trip arbitrary app params, and `state` is reserved
+for CSRF (openid-client-managed).
+
 ## GraphQL — residency (post-login)
 
 The former REST routes (`GET /api/my-residencies`, `POST /api/assume-residency`) were deleted once

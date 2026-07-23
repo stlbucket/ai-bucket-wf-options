@@ -25,16 +25,17 @@ This project has nine sqitch packages under `db/`, deployed in the order set by 
 db/
   fnb-auth/     ← extensions, jwt helpers, roles — deployed first
   fnb-app/      ← anchor application schema (tenants, residents, licenses)
-  fnb-agent/    ← agent run log + agent_worker role — must precede fnb-storage/
-                  fnb-location-datasets/fnb-airports (agent_worker grants + agent_fn refs)
-  fnb-n8n/      ← n8n run log + n8n_worker role (parallel engine)
+  fnb-n8n/      ← n8n run log + n8n_worker role — the SOLE workflow engine (R22); must precede
+                  fnb-notify/fnb-storage/fnb-location-datasets/fnb-airports (n8n_worker grants)
+  fnb-notify/   ← notification outbox + channel prefs + phone-verification OTP
   fnb-res/      ← URN registry — precedes every URN-registering module
   fnb-msg/      ← messaging domain
   fnb-todo/     ← todo domain
   fnb-loc/      ← location domain
   fnb-storage/  ← asset storage domain
   fnb-location-datasets/ ← public datasets (breweries)
-  fnb-airports/ ← public airports dataset (OurAirports) — last
+  fnb-airports/ ← public airports dataset (OurAirports)
+  fnb-game/     ← event-sourced game platform (game-event n8n referee) — last
 ```
 
 Each package is a self-contained sqitch project:

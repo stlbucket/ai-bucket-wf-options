@@ -19,6 +19,17 @@ export { createSession } from '@/mutations/create-session'
 export { claimsForSession } from '@/mutations/claims-for-session'
 export { revokeSession } from '@/mutations/revoke-session'
 
+// OTP login (spec .claude/specs/otp-login/): pre-claims deep-link read + code request/verify +
+// session-info for the temporary-session banner. All raw pg, called by auth-app's /auth/api/otp/*
+// routes before any session exists.
+export { getDeepLink } from '@/queries/get-deep-link'
+export type { DeepLinkPublic } from '@/queries/get-deep-link'
+export { sessionInfo } from '@/queries/session-info'
+export type { SessionInfo } from '@/queries/session-info'
+export { requestOtpLogin } from '@/mutations/request-otp-login'
+export type { OtpLoginDispatch } from '@/mutations/request-otp-login'
+export { verifyOtpLogin } from '@/mutations/verify-otp-login'
+
 // Authorized (RLS) access outside the GraphQL context
 export { withClaims } from '@/with-claims'
 export { buildJwtPayload } from '@/jwt'

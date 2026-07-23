@@ -11,7 +11,11 @@ create table auth.session (
   profile_id    uuid not null references app.profile (id) on delete cascade,
   created_at    timestamptz not null default now(),
   last_seen_at  timestamptz not null default now(),
-  revoked_at    timestamptz
+  revoked_at    timestamptz,
+  -- auth_method distinguishes the ZITADEL login ceremony from a link-driven OTP quick session
+  -- (spec: .claude/specs/otp-login/). It drives per-method lifetimes in claims_for_session below;
+  -- it is server-side only — never added to request.jwt.claims (nothing in RLS branches on it).
+  auth_method   text not null default 'zitadel' check (auth_method in ('zitadel', 'otp'))
 );
 create index on auth.session (profile_id);
 
@@ -29,14 +33,16 @@ revoke all on auth.session from anon, authenticated, service_role;
 ----------------------------------------------------------------- create_session
 -- Called by the OIDC callback after provision_idp_user; the returned id is sealed into the
 -- cookie as `sid`. The cookie is written only there — renewal never re-seals.
-create or replace function app_fn.create_session(_profile_id uuid)
+-- _auth_method defaults to 'zitadel' so the existing 1-arg call site (the OIDC callback via
+-- db-access createSession) is unchanged; the OTP verify path passes 'otp'.
+create or replace function app_fn.create_session(_profile_id uuid, _auth_method text default 'zitadel')
   returns uuid
   language sql
   volatile
   security definer
   set search_path = pg_catalog, public
   as $$
-    insert into auth.session (profile_id) values (_profile_id) returning id
+    insert into auth.session (profile_id, auth_method) values (_profile_id, _auth_method) returning id
   $$;
 
 ----------------------------------------------------------------- claims_for_session
@@ -56,13 +62,26 @@ create or replace function app_fn.claims_for_session(_session_id uuid)
   as $$
   declare
     _session auth.session;
+    _idle interval;
+    _absolute interval;
   begin
     select * into _session from auth.session where id = _session_id;
 
     if _session.id is null then return null; end if;                                -- unknown
     if _session.revoked_at is not null then return null; end if;                    -- revoked
-    if _session.last_seen_at < now() - interval '24 hours' then return null; end if; -- idle
-    if _session.created_at < now() - interval '7 days' then return null; end if;    -- absolute
+
+    -- Per-method lifetimes. zitadel: idle 24h / absolute 7d (unchanged). otp: sliding 1h idle /
+    -- 8h absolute cap (spec .claude/specs/otp-login/ D2) — "good for an hour unless refreshed
+    -- [by activity]", the cap forcing a fresh code eventually. Assigned after the select because
+    -- they depend on _session.auth_method.
+    if _session.auth_method = 'otp' then
+      _idle := interval '1 hour'; _absolute := interval '8 hours';
+    else
+      _idle := interval '24 hours'; _absolute := interval '7 days';
+    end if;
+
+    if _session.last_seen_at < now() - _idle then return null; end if;              -- idle
+    if _session.created_at < now() - _absolute then return null; end if;            -- absolute
 
     update auth.session set last_seen_at = now()
     where id = _session_id
@@ -88,7 +107,7 @@ create or replace function app_fn.revoke_session(_session_id uuid)
 
 -- Same grant shape as app_fn.provision_idp_user: callable by the login role pre-claims;
 -- USAGE on app_fn was granted at 00000000010260_app_bootstrap.
-grant execute on function app_fn.create_session(uuid) to authenticator;
+grant execute on function app_fn.create_session(uuid, text) to authenticator;
 grant execute on function app_fn.claims_for_session(uuid) to authenticator;
 grant execute on function app_fn.revoke_session(uuid) to authenticator;
 

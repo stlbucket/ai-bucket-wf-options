@@ -1,13 +1,13 @@
 ---
 name: graphile-worker-expert
-description: LEGACY (retired from the fnb stack 2026-07-17 — R22; the workflow engine is now apps/agent-app via the claude-agent-sdk skill). Graphile Worker reference kept only for reading old history/branches or for non-fnb projects. Do not engage for new fnb work — background jobs, workflows, cron, and "Postgres job queue" questions route to the claude-agent-sdk skill and .claude/specs/agentic-workflow-engine/.
+description: LEGACY (retired from the fnb stack 2026-07-17 — R22; the workflow engine is now n8n, the sole engine, via the n8n-cli skill). Graphile Worker reference kept only for reading old history/branches or for non-fnb projects. Do not engage for new fnb work — background jobs, workflows, cron, and "Postgres job queue" questions route to the n8n-cli skill and .claude/specs/n8n-parallel-engine/ + agentic-decommission/.
 ---
 
 # Graphile Worker Expert
 
-> **LEGACY for fnb:** graphile-worker was removed from this stack on 2026-07-17 (agentic
-> workflow engine, `global-rules.md` R22). For any current fnb workflow/job need, use the
-> `claude-agent-sdk` skill. The content below is a general Graphile Worker reference only.
+> **LEGACY for fnb:** graphile-worker was removed from this stack on 2026-07-17 (`global-rules.md`
+> R22 — n8n is now the sole workflow engine). For any current fnb workflow/job need, use the
+> `n8n-cli` skill. The content below is a general Graphile Worker reference only.
 
 Graphile Worker is a job queue that stores jobs in PostgreSQL and executes them on Node.js. It uses `LISTEN`/`NOTIFY` for low latency (typically <3ms schedule-to-execution) and `SKIP LOCKED` for fast, contention-free job fetching. It guarantees at-least-once execution with automatic exponential-backoff retries, and it pairs especially well with Postgres-centric stacks (PostGraphile, PostgREST) where jobs are created from inside the database via triggers or functions.
 

@@ -15,8 +15,10 @@ Full-viewport-height centered column:
 - Heading: `Sign in` (bold)
 - Subheading: `Enter your credentials to continue.` (muted)
 - `<LoginForm>` — from `packages/auth-layer`; a card with a single **"Sign in with ZITADEL"**
-  button → `useAuth().loginWithRedirect()` (full-page redirect into the hosted login; no
-  password fields, no emit)
+  button → `useAuth().loginWithRedirect(props.returnTo)` (full-page redirect into the hosted login;
+  no password fields, no emit). Accepts an optional **`returnTo`** prop (root-relative path); when
+  set, the ceremony returns the user to that path after the residency flow instead of home (see
+  `login.data.md` §Return-to). On `/auth/login` the prop is omitted → home.
 - `<ResidencySelectModal>` — conditionally shown when user has multiple residencies
 
 ## Post-Login Flow
@@ -42,4 +44,4 @@ Emits: `update:open`, `select(residentId)`
 |---|---|
 | Sign in | "Sign in with ZITADEL" button → hosted login ceremony |
 | Select workspace | Radio button + Continue in modal |
-| Redirect after login | Automatic — `goHome()` navigates to home-app |
+| Redirect after login | Automatic — `navigateTo(returnTo)` if a valid `returnTo` rode the round-trip (§Return-to), else `goHome()` → home-app |

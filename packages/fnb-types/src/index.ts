@@ -5,6 +5,7 @@
 
 export type { Urn, ParsedUrn, Resource } from '@/urn'
 export { isUrn, parseUrn, formatUrn } from '@/urn'
+export { isSafeReturnTo } from '@/return-to'
 export type { Resident, ResidentStatus, ResidentType } from '@/resident'
 export type { ProfileClaims, ModuleInfo, ToolInfo, ProfileStatus } from '@/profile-claims'
 export type { Location } from '@/location'

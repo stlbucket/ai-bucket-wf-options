@@ -19,11 +19,11 @@ document and a deploy file disagree, the deploy file wins.
 
 ## Packages and Schema Layout
 
-Eleven sqitch packages, deployed in the order set by `DEPLOY_PACKAGES` in `.env`
-(`fnb-auth fnb-app fnb-agent fnb-n8n fnb-res fnb-msg fnb-todo fnb-loc fnb-storage
-fnb-location-datasets fnb-airports`; `fnb-res` (the URN registry) precedes every registering
-module; `fnb-agent` must precede `fnb-storage`/`fnb-location-datasets`/`fnb-airports` —
-`agent_worker` grants + `agent_fn` refs).
+Twelve sqitch packages, deployed in the order set by `DEPLOY_PACKAGES` in `.env`
+(`fnb-auth fnb-app fnb-n8n fnb-notify fnb-res fnb-msg fnb-todo fnb-loc fnb-storage
+fnb-location-datasets fnb-airports fnb-game`; `fnb-res` (the URN registry) precedes every
+registering module; `fnb-n8n` must precede `fnb-notify`/`fnb-storage`/`fnb-location-datasets`/`fnb-airports`
+— `n8n_worker` grants; `fnb-game` is last — needs `fnb-res`/`fnb-app`/`fnb-n8n`).
 
 Cross-cutting schemas (from `fnb-auth` / `fnb-app`):
 

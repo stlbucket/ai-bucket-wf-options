@@ -12,6 +12,7 @@
 
 import * as oidc from 'openid-client'
 import { provisionIdpUser, createSession } from '@function-bucket/fnb-db-access'
+import { isSafeReturnTo } from '@function-bucket/fnb-types'
 
 export default defineEventHandler(async (event) => {
   const { config } = await getOidcContext()
@@ -27,8 +28,10 @@ export default defineEventHandler(async (event) => {
 
   const codeVerifier = getCookie(event, 'oidc_verifier')
   const expectedState = getCookie(event, 'oidc_state')
+  const returnTo = getCookie(event, 'oidc_return_to')
   deleteCookie(event, 'oidc_verifier')
   deleteCookie(event, 'oidc_state')
+  deleteCookie(event, 'oidc_return_to')
   if (!codeVerifier || !expectedState) {
     throw createError({ statusCode: 401, message: 'Missing or expired OIDC transaction cookies' })
   }
@@ -70,5 +73,13 @@ export default defineEventHandler(async (event) => {
   await deleteAuthCookies(event) // legacy auth.user cleanup; session is re-set below
   await setAppSession(event, { id: profile.id, sid })
 
-  return sendRedirect(event, `${pub.authAppUrl}/login?oidc=success`, 302)
+  // Land on /login?oidc=success — it owns claims hydration + residency selection. When a validated
+  // return-to rode along (auth-app/login.data.md §Return-to), re-emit it as a query so /login
+  // forwards there after the residency flow instead of home. Re-checked fail-closed.
+  const successUrl = new URL(`${pub.authAppUrl}/login`)
+  successUrl.searchParams.set('oidc', 'success')
+  if (isSafeReturnTo(returnTo)) {
+    successUrl.searchParams.set('returnTo', returnTo)
+  }
+  return sendRedirect(event, successUrl.href, 302)
 })

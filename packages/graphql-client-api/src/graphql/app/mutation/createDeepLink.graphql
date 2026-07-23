@@ -1,0 +1,10 @@
+# OTP login deep-link creation (spec .claude/specs/otp-login/ share-link.data.md). Tenant-scoped (D13)
+# — no recipient; app_api.create_deep_link derives the tenant from the URN and returns the new
+# auth.deep_link uuid; the caller builds ${authAppUrl}/go/<id>.
+# NOTE: the input arg names (_subjectUrn/_subjectLabel) and the scalar payload field (uuid) are
+# confirmed by codegen against the live PostGraphile schema — adjust here if codegen differs.
+mutation CreateDeepLink($subjectUrn: String!, $subjectLabel: String) {
+  createDeepLink(input: { _subjectUrn: $subjectUrn, _subjectLabel: $subjectLabel }) {
+    uuid
+  }
+}

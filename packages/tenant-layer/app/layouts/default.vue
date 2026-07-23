@@ -37,6 +37,7 @@ const { public: { authAppUrl } } = useRuntimeConfig()
       </header>
 
       <main class="flex-1 pb-16 lg:pb-0">
+        <OtpSessionBanner />
         <slot />
       </main>
 

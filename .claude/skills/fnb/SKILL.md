@@ -44,18 +44,17 @@ directly only for a pure "how does this technology work?" question.
 | # | Skill | Covers |
 |---|-------|--------|
 | 10 | **postgraphile-5-expert** | PostGraphile 5 config, smart tags/behaviors, grafast context, path-prefix deployment, schema-design-for-GraphQL |
-| 11 | **claude-agent-sdk** | The agent-app workflow engine (R22): `query()` options, custom toolboxes, toolbox closure, harness patterns, live-run gotchas |
+| 11 | **n8n-cli** | The n8n workflow engine (R22, the **sole** engine): build + export workflows to the repo (`n8n/workflows/*.json`), manage credentials + executions on the self-hosted instance (`N8N_URL`/`N8N_API_KEY` from `.env`); app-triggered via graphql-api-app's `triggerWorkflow` (user-level skill) |
 | 12 | **zitadel-expert** | The OIDC ceremony, ZITADEL org/project/app config, service accounts, token validation, self-hosting |
 | 13 | **vue-flow-expert** | Vue Flow canvases (nodes/edges/composables) + elkjs auto-layout (generic — no in-repo consumers since the wf dashboard retired) |
 | 14 | **vue-use-expert** | VueUse composables for reactive/browser/DOM utility needs (user-level skill) |
 | 15 | **breweries-expert** | Open Brewery DB API — endpoints, filters, sort syntax, brewery types, response schema (the first `<dataset>-expert` produced by #3) |
 | 16 | **airports-expert** | OurAirports dataset — seven bulk CSVs (no API), live column lists/enum vocab/nullability, parsing gotchas (produced by #3) |
 | 17 | **terraform-export** | Terraform/HCL for the `infra/terraform/` deployment code: HCL blocks, reusable modules + per-env tfvars, remote state / `s3` backend (AWS **and** DO Spaces), provider version constraints, `init→plan→apply`, `output -json` → `render-env.mjs` |
-| 18 | **n8n-cli** | Operator loop for the **parallel n8n engine** (R22): workflow build + export-to-repo (`n8n/workflows/*.json`), credentials, executions — `N8N_URL`/`N8N_API_KEY` from `.env` (user-level skill) |
-| 19 | **pgtap-expert** | PostgreSQL unit testing with pgTAP: assertion catalog, schema/constraint/function shape, RLS-policy & grant behaviour tests, result-set/exception/perf asserts, `runtests()` + `pg_prove`. Generic reference — not wired into the repo (sqitch `verify` remains the deploy smoke check) |
+| 18 | **pgtap-expert** | PostgreSQL unit testing with pgTAP: assertion catalog, schema/constraint/function shape, RLS-policy & grant behaviour tests, result-set/exception/perf asserts, `runtests()` + `pg_prove`. Generic reference — not wired into the repo (sqitch `verify` remains the deploy smoke check) |
 
 **Retired reference:** **graphile-worker-expert** — the workflow engine it documented is gone (R22:
-now #11 claude-agent-sdk + #18 n8n-cli). Read only when spelunking old branches/history; never for new work.
+n8n is now the sole engine, skill #11 n8n-cli). Read only when spelunking old branches/history; never for new work.
 
 ## Deployment & infra — the DigitalOcean toolkit
 

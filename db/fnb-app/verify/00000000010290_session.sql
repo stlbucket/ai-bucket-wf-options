@@ -1,6 +1,6 @@
 begin;
 
-select id, profile_id, created_at, last_seen_at, revoked_at
+select id, profile_id, created_at, last_seen_at, revoked_at, auth_method
 from auth.session where false;
 
 select 1/count(*) from pg_class

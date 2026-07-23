@@ -5,6 +5,7 @@
 // The callback (callback.get.ts) completes the exchange.
 
 import * as oidc from 'openid-client'
+import { isSafeReturnTo } from '@function-bucket/fnb-types'
 
 const TXN_COOKIE = {
   httpOnly: true,
@@ -23,6 +24,15 @@ export default defineEventHandler(async (event) => {
 
   setCookie(event, 'oidc_verifier', codeVerifier, TXN_COOKIE)
   setCookie(event, 'oidc_state', state, TXN_COOKIE)
+
+  // Optional return-to (auth-app/login.data.md §Return-to): park a validated root-relative path in
+  // a short-lived httpOnly cookie so the callback can land the user back where they started (the
+  // deep-link "Sign in with ZITADEL" case) instead of home. Fail-closed: anything not root-relative
+  // is dropped here and again on consume.
+  const returnTo = getQuery(event).returnTo
+  if (isSafeReturnTo(returnTo)) {
+    setCookie(event, 'oidc_return_to', returnTo, TXN_COOKIE)
+  }
 
   const authorizeUrl = oidc.buildAuthorizationUrl(config, {
     redirect_uri: `${pub.authAppUrl}/api/auth/oidc/callback`,

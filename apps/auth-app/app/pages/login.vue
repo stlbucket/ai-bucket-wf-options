@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ProfileClaims, ResidencyTreeNode } from '@function-bucket/fnb-types'
+import { isSafeReturnTo } from '@function-bucket/fnb-types'
 import { assumeResidency } from '~/composables/useLoginFlow'
 
 const { goHome, isLoggedIn, refreshClaims, user } = useAuth()
@@ -40,9 +41,21 @@ onMounted(async () => {
   if (user.value) await onLoginSuccess(user.value)
 })
 
+// End the ceremony at the requested return-to (auth-app/login.data.md §Return-to) when a valid one
+// rode the round-trip — the deep-link "Sign in with ZITADEL" case — otherwise home. Validated
+// fail-closed; a tampered/foreign value falls back to goHome().
+async function finishLogin() {
+  const returnTo = route.query.returnTo
+  if (isSafeReturnTo(returnTo)) {
+    await navigateTo(returnTo, { external: true })
+    return
+  }
+  await goHome()
+}
+
 async function onLoginSuccess(claims: ProfileClaims) {
   if (claims.residentId) {
-    await goHome()
+    await finishLogin()
     return
   }
 
@@ -64,7 +77,7 @@ async function onSelectResidency(residentId: string) {
   try {
     await assumeResidency($urqlClient, residentId)
     await refreshClaims()
-    await goHome()
+    await finishLogin()
   } finally {
     selecting.value = false
   }

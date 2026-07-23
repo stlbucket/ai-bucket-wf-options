@@ -105,6 +105,25 @@ async function handleUnpin() {
   }
 }
 
+const { shareToLink } = useDeepLink()
+const authAppUrl = useRuntimeConfig().public.authAppUrl as string
+
+// OTP quick-login share (spec .claude/specs/otp-login/, D13): copy a TENANT-SCOPED link that lets any
+// resident of this workspace log in with a code (SMS/email) and land straight on this todo. No
+// assignee required — the opener self-identifies on the landing page.
+async function handleCopyLink() {
+  const tree = todoTree.value
+  if (!tree?.urn) return
+  try {
+    const id = await shareToLink(tree.urn, tree.name)
+    const url = `${authAppUrl}/go/${id}`
+    await navigator.clipboard.writeText(url)
+    toast.add({ title: 'Quick-login link copied', description: url, color: 'success' })
+  } catch {
+    toast.add({ title: 'Could not create link', color: 'error' })
+  }
+}
+
 // 202 accepted — the uploader already toasted; the scan verdict lands later (row shows PENDING).
 function handleUploaded() {
   refreshAssets()
@@ -131,6 +150,21 @@ async function handleDeleteAsset(assetId: string) {
       </div>
 
       <template v-else-if="todoTree">
+        <div class="flex flex-wrap justify-end gap-2">
+          <UButton
+            icon="i-lucide-link"
+            variant="outline"
+            size="sm"
+            @click="handleCopyLink"
+          >
+            Copy quick-login link
+          </UButton>
+          <TodoShareModal
+            :subject-urn="todoTree.urn"
+            :subject-label="todoTree.name"
+            :residents="residents"
+          />
+        </div>
         <div class="hidden md:block">
           <TodoDetail
             :todo-tree="todoTree"

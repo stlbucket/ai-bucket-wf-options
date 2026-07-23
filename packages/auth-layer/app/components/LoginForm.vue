@@ -8,6 +8,11 @@ import { useAuth } from '@function-bucket/fnb-auth-ui'
 // lands on /login?oidc=success, where the page hydrates claims and runs the residency flow.
 const { loginWithRedirect } = useAuth()
 
+// Optional root-relative path the ceremony returns to after the residency flow, instead of home
+// (auth-app/login.data.md §Return-to). The deep-link landing page passes `/auth/go/<id>`; the
+// bare login page omits it → home.
+const props = defineProps<{ returnTo?: string }>()
+
 // Brand wordmark (plan 0500) — assets live in auth-layer/public. Swap per color mode:
 // logo-dark on dark surfaces (transparent), logo-light on light.
 const colorMode = useColorMode()
@@ -25,7 +30,7 @@ const logoSrc = computed(() =>
       </div>
     </template>
 
-    <UButton icon="i-lucide-log-in" block @click="loginWithRedirect()">
+    <UButton icon="i-lucide-log-in" block @click="loginWithRedirect(props.returnTo)">
       Sign in with ZITADEL
     </UButton>
   </UCard>

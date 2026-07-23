@@ -25,7 +25,7 @@ the patterns and rules that govern all implementation in this project.
 ├── graphql-api-pattern.md           ← canonical data stack (DB → PostGraphile → urql/graphql-client-api → composable re-export → page)
 ├── sockets-pattern.md               ← WebSocket / real-time pattern (based on msg module)
 ├── ui-components-rules.md           ← UC1–UC12 UI rules
-├── package-layers-pattern.md        ← all seven packages: compiled libs, Nuxt layers, file inventories
+├── package-layers-pattern.md        ← all ten packages: compiled libs, Nuxt layers, file inventories
 ├── graphql-client-api-package.md    ← codegen details for the client package
 ├── monorepo-bootstrap-pattern.md    ← Docker Compose, Caddy, pnpm workspace, adding a new app
 ├── workspace-dependency-integrity-pattern.md ← R24: per-package dep declarations + per-layer TS projects
@@ -43,9 +43,9 @@ the patterns and rules that govern all implementation in this project.
 
 Per-app spec dirs that exist today: `auth-app/`, `home-app/`, `msg-app/`, `graphql-api-app/`
 (with `_overview.md`, `server-pattern.md`, and the tombstoned `worker-pattern.md` — workflows
-now run in `apps/agent-app`; spec `agentic-workflow-engine/`, rule R22), `asset-storage/`
-(implemented 2026-07-06 — README + infrastructure + endpoint/workflow/graphql data files +
-page/component UI files; scan engine superseded by the agentic spec), and `tenant-app/`
+now run on **n8n**, the sole engine; specs `n8n-parallel-engine/` + `agentic-decommission/`, rule
+R22), `asset-storage/` (implemented 2026-07-06 — README + infrastructure + endpoint/workflow/graphql
+data files + page/component UI files; scan engine is now the n8n `asset-scan` workflow), and `tenant-app/`
 (admin, loc, msg, site-admin, support, tools). The tree is not limited to `tenant-app/`.
 
 ### File naming conventions
@@ -78,7 +78,7 @@ Always read these before writing specs or implementation plans:
 - `graphql-api-pattern.md` — the canonical data stack: DB → PostGraphile 5 → urql/graphql-client-api
   → composable re-export → Vue (plus the REST/H3 carve-out + pre-claims root of trust)
 - `sockets-pattern.md` — real-time pattern based on the `msg` module (GraphQL load + WS incremental read)
-- `package-layers-pattern.md` — all seven packages: compiled libs, Nuxt layers, file inventories, codegen workflow
+- `package-layers-pattern.md` — all ten packages: compiled libs, Nuxt layers, file inventories, codegen workflow
 - `monorepo-bootstrap-pattern.md` — Docker Compose topology, Caddy routing, pnpm workspace config
 - `workspace-dependency-integrity-pattern.md` — R24: every package declares its own deps (shared
   versions once, via the pnpm default catalog / `"catalog:"` protocol); layers are
@@ -202,9 +202,9 @@ Data layer is **urql GraphQL → PostGraphile** across the board (composables in
 
 Other app spec trees: `auth-app/` (login, current-profile-claims, profile), `msg-app/`,
 `graphql-api-app/` (`_overview.md`, `server-pattern.md`, tombstoned `worker-pattern.md`),
-`home-app/`, `agentic-workflow-engine/` (the workflow engine — `apps/agent-app`, R22),
-`asset-storage/` (implemented 2026-07-06: storage-layer/storage-app + quarantine-first
-`asset-scan`, now running on the agentic engine), and `game-server/` (implemented
+`home-app/`, `n8n-parallel-engine/` + `agentic-decommission/` (the workflow engine — n8n, the
+sole engine, R22), `asset-storage/` (implemented 2026-07-06: storage-layer/storage-app +
+quarantine-first `asset-scan`, now running on n8n), and `game-server/` (implemented
 2026-07-20: `db/fnb-game` + `packages/game-engines` + `game-layer`/`game-app` + the
 `game-event` n8n referee — event-sourced N-seat game platform; battleship + checkers are
 playable (checkers = the English-draughts sub-spec `game-server/checkers/`, added 2026-07-20 via

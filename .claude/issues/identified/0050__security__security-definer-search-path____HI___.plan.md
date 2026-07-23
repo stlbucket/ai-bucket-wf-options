@@ -25,6 +25,22 @@ Every other SECURITY DEFINER function omits it, including:
 - `loc_fn`/`todo_fn`/`msg_fn` `handle_update_profile` + `ensure_*_resident` functions.
 - `wf_api.queue_workflow`, `wf_fn.queue_workflow`, `wf_fn.pull_trigger` (`00000000010520_wf_fn.sql`).
 
+### Scope update — 2026-07-22 recurring RLS sweep (0030 leg)
+
+The new `db/fnb-notify` module (landed since 2026-07-19) adds three more unpinned SECURITY DEFINER
+functions to this same class — fold them into the same per-package sqitch change when this item is
+worked (`db/fnb-notify/deploy/00000000011290_notify_prefs_fn.sql`):
+
+- **`notify_fn.request_phone_verification`** — calls **unqualified `crypt()` + `gen_salt('bf')`**
+  (pgcrypto), the exact `auth.login_user` worked-example risk; runs over the `n8n_worker` connection.
+- **`notify_fn.verify_phone_code`** — unqualified `crypt()` comparison; also writes `app.profile`.
+- **`notify_fn.set_channel_preference`** — no unqualified extension calls, but still DEFINER-unpinned.
+
+(The `notify_api` INVOKER wrappers and the STABLE `notify_api.notifications` reader are correctly
+INVOKER and need no pinning. Note: the rest of the notify module is otherwise a *model* of the
+correct grant posture — `notify_fn` is granted only to `n8n_worker` + the two prefs functions to
+`authenticated`, never to `anon`, so it does not add to `0020__security__fn-schema-grant-bypass`.)
+
 ## Implication
 
 A SECURITY DEFINER function without a fixed search_path resolves unqualified identifiers using the

@@ -41,7 +41,7 @@ Do not rely on training data or documentation that predates v4; it will be wrong
   `_`-padded; SEV ∈ `CRT · HI · MED · LOW`) with a self-referential Execution Directive)
 - `.claude/specs/graphql-api-pattern.md` — the canonical data stack (DB → PostGraphile → urql/
   graphql-client-api → composable re-export → Vue) plus the two REST/H3 carve-outs
-- `.claude/specs/package-layers-pattern.md` — the seven packages + codegen workflow
+- `.claude/specs/package-layers-pattern.md` — the ten packages + codegen workflow
 - `.claude/specs/ui-components-rules.md` — UC1–UC12, enforced across all UI
 
 Do not re-describe the stack from memory — cite these. Architecture deep-reference docs live in
@@ -53,8 +53,8 @@ If you have not read the four files above in the current session, read them now 
 **Specialist skills:** this skill owns the *sequence*; the *how* for each layer lives in
 specialist skills routed by `.claude/skills/skill-map.md`. Inline `→ skill <name>` pointers below
 mean: read `.claude/skills/<name>/SKILL.md` (and the reference files its decision guide names)
-before doing that step. For anything not pointed at explicitly — agent workflows/toolboxes
-(`claude-agent-sdk`), ZITADEL/OIDC config (`zitadel-expert`), Vue Flow/elkjs canvases
+before doing that step. For anything not pointed at explicitly — n8n workflows
+(`n8n-cli`), ZITADEL/OIDC config (`zitadel-expert`), Vue Flow/elkjs canvases
 (`vue-flow-expert`), VueUse utilities (`vue-use-expert`) — consult the map.
 
 ---
@@ -99,7 +99,7 @@ apps/msg-app           → Caddy /msg          (port 3000 in Docker)   extends m
 apps/storage-app       → Caddy /storage      (port 3000 in Docker)   extends storage-layer
 apps/game-app          → Caddy /game         (port 3000 in Docker)   extends game-layer — WS only, no user pages (game UI lives in tenant-app)
 apps/graphql-api-app   → Caddy /graphql-api  (port 3000 in Docker)   PostGraphile 5 + extendSchema plugins (triggerWorkflow, downloadUrl)
-apps/agent-app         → HEADLESS (no Caddy)                         primary workflow engine — Claude Agent SDK harness (exerciser, sync-breweries, asset-scan + reaper; sync-airports moved to n8n 2026-07-20); the PARALLEL n8n engine (R22 dual engines) is a compose service trio, not an app — n8n-parallel-engine spec, skill n8n-cli
+(workflow engine)      → n8n compose trio (n8n-db-init, n8n-import, n8n) — HEADLESS, not an app; the SOLE workflow engine (R22). Definitions n8n/workflows/*.json; app triggers via graphql-api-app's triggerWorkflow (WORKFLOW_REGISTRY); write-back as n8n_worker via _fn. Specs n8n-parallel-engine/ + agentic-decommission/, skill n8n-cli
 packages/auth-layer      Nuxt layer: layout, AppNav, LoginForm, UserProfile, useAuth; server/utils claims+cookies
 packages/tenant-layer    Nuxt layer: extends auth-layer; server/middleware/auth.ts (applyEventClaims)
 packages/msg-layer       Nuxt layer: extends tenant-layer; WebSocket carve-out server/
@@ -110,8 +110,8 @@ packages/auth-ui         compiled lib: useAuth() — claims in localStorage, fet
 packages/db-access       compiled lib: pre-claims root of trust (raw pg), 2-arg withClaims; types come from fnb-types
 packages/graphql-client-api  compiled lib: .graphql docs + codegen hooks + mappers + composables (the default data layer)
 packages/game-engines    pure TS, vitest-covered, NO runtime app consumer — the game referee/engine logic, embedded verbatim into the game-event n8n workflow's Code nodes (game-server spec)
-db/fnb-auth  fnb-app  fnb-agent  fnb-n8n  fnb-res  fnb-msg  fnb-todo  fnb-loc  fnb-storage  fnb-location-datasets  fnb-airports  fnb-game   sqitch packages
-docker/Caddyfile        path-based proxy: /auth→auth-app, /tenant→tenant-app, /graphql-api→graphql-api-app, /msg→msg-app, /storage→storage-app, /game→game-app, /→home-app (agent-app not routed)
+db/fnb-auth  fnb-app  fnb-n8n  fnb-notify  fnb-res  fnb-msg  fnb-todo  fnb-loc  fnb-storage  fnb-location-datasets  fnb-airports  fnb-game   sqitch packages
+docker/Caddyfile        path-based proxy: /auth→auth-app, /tenant→tenant-app, /graphql-api→graphql-api-app, /msg→msg-app, /storage→storage-app, /game→game-app, /→home-app (n8n runs on its own host port, not proxied)
 ```
 
 `db-types` is retired (was Kysely/Kanel) — `db-access` + `graphql-client-api` replaced it.
@@ -122,14 +122,15 @@ Enum values in `fnb-types` mirror the GraphQL enum values (UPPERCASE); timestamp
 `graphql-client-api` barrel does NOT `export *` the generated module.
 All routed apps share one Caddy entry point; each listens on `:3000` inside its container.
 `NUXT_APP_BASE_URL` sets the path prefix so Nuxt asset URLs and the router base are correct.
-`agent-app` is the headless exception (no Caddy route, no base URL) — the primary
-workflow engine (R22 dual engines: fnb→agent is trigger-endpoint-only with the shared secret;
-agent→fnb is `agent_worker`-via-`_fn` from tool handlers only; closed toolboxes; deterministic
-reaper); see `monorepo-bootstrap-pattern.md` → Headless apps. Writing/altering workflow
-definitions, toolboxes, or the harness → skill `claude-agent-sdk`. The **parallel n8n engine**
-(R22) is a compose service trio on its own host port — per-workflow engine assignment lives in
-the `triggerWorkflow` plugin's `WORKFLOW_REGISTRY`; spec `.claude/specs/n8n-parallel-engine/`,
-operator loop → skill `n8n-cli`.
+**n8n is the sole workflow engine** (R22) — not a Nuxt app but a compose service trio
+(`n8n-db-init`, `n8n-import`, `n8n`) on its own host port (not behind Caddy, no base URL), with
+engine state in a separate `n8n_engine` DB and definitions versioned in the repo as
+`n8n/workflows/*.json`. App-originated triggers go through graphql-api-app's `triggerWorkflow`
+mutation — the `WORKFLOW_REGISTRY` in `server/graphile/trigger-workflow.plugin.ts` maps a
+`workflowKey` → the permission it requires; n8n writes back to the DB as the `n8n_worker` role via
+the `<module>_fn` surface only (same posture as the notify send + asset-scan + dataset-sync
+workflows). Writing/altering workflow definitions or the operator loop → skill `n8n-cli`; specs
+`.claude/specs/n8n-parallel-engine/` + `.claude/specs/agentic-decommission/`.
 
 ---
 
@@ -595,7 +596,7 @@ export default defineConfig({ test: { passWithNoTests: true } })
 | OIDC login/callback (ZITADEL) | `apps/auth-app/server/api/auth/oidc/{login,callback,logout}.get.ts` + `server/utils/oidc.ts` |
 | WS message read (withClaims carve-out) | `packages/msg-layer/server/api/topics/[id]/messages/[msgId].get.ts` |
 | Upload endpoint (withClaims carve-out) | `packages/storage-layer/server/api/upload.post.ts` |
-| agent workflow engine (harness/workflows/tools) | `apps/agent-app/server/lib/{agent-harness.ts,agent-workflows/,agent-tools/}` (skill `claude-agent-sdk`) |
+| workflow engine (n8n) | `n8n/workflows/*.json` (definitions) + `apps/graphql-api-app/server/graphile/trigger-workflow.plugin.ts` (`triggerWorkflow` / `WORKFLOW_REGISTRY`); skill `n8n-cli` |
 | Caddy config (dev proxy) | `docker/Caddyfile` |
 | docker-compose | `docker-compose.yml` |
 
@@ -657,7 +658,7 @@ Core specs in `.claude/specs/` (the single source — do not restate them inline
 - `global-rules.md` — R1–R24 (required reading)
 - `graphql-api-pattern.md` — the canonical data stack: DB → PostGraphile 5 → urql/graphql-client-api
   → composable re-export → Vue, plus the REST/H3 carve-out and pre-claims root of trust
-- `package-layers-pattern.md` — the seven packages: compiled libs, Nuxt layers, file inventories, codegen workflow
+- `package-layers-pattern.md` — the ten packages: compiled libs, Nuxt layers, file inventories, codegen workflow
 - `graphql-client-api-package.md` — codegen details for the client package
 - `sockets-pattern.md` — WebSocket / real-time pattern (GraphQL initial load + WS incremental read)
 - `ui-components-rules.md` — UC1–UC12

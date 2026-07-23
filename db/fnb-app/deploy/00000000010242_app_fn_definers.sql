@@ -398,4 +398,231 @@ CREATE OR REPLACE FUNCTION app_api.get_ab_listings(_profile_id uuid)
   BEGIN
     return query select * from app_fn.get_ab_listings(jwt.uid(), jwt.tenant_id());
   end;
-  $$;  
+  $$;
+
+----------------------------------------------------------------- tenant tree helpers
+-- DEFINER: parent/ancestor tenant rows are not visible to a workspace member under RLS
+-- (only own tenant + direct children); walking the whole tree needs to bypass RLS.
+CREATE OR REPLACE FUNCTION app_fn.tenant_tree_root(_tenant_id uuid)
+  RETURNS uuid
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  AS $function$
+    with recursive up as (
+        select id, parent_tenant_id from app.tenant where id = _tenant_id
+      union all
+        select t.id, t.parent_tenant_id
+        from app.tenant t join up on t.id = up.parent_tenant_id
+    )
+    select id from up where parent_tenant_id is null limit 1;
+  $function$
+  ;
+
+CREATE OR REPLACE FUNCTION app_fn.tenant_tree_ids(_root_id uuid)
+  RETURNS setof uuid
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  AS $function$
+    with recursive down as (
+        select id from app.tenant where id = _root_id
+      union all
+        select t.id from app.tenant t join down on t.parent_tenant_id = down.id
+    )
+    select id from down;
+  $function$
+  ;
+
+----------------------------------------------------------------- tenant_spine_ids
+-- The "vertical spine" through a node: ancestors + self + own subtree. Used by the Manage-Residents
+-- pool so the candidate set spans the lineage up to the root PLUS the node's own descendants,
+-- excluding sibling branches. DEFINER: ancestor rows are not visible to a member under RLS.
+CREATE OR REPLACE FUNCTION app_fn.tenant_spine_ids(_tenant_id uuid)
+  RETURNS setof uuid
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  AS $function$
+    with recursive up as (          -- self + ancestors (walk to root)
+        select id, parent_tenant_id from app.tenant where id = _tenant_id
+      union all
+        select t.id, t.parent_tenant_id
+        from app.tenant t join up on t.id = up.parent_tenant_id
+    ),
+    down as (                        -- self + descendants (walk the subtree)
+        select id from app.tenant where id = _tenant_id
+      union all
+        select t.id from app.tenant t join down on t.parent_tenant_id = down.id
+    )
+    select id from up
+    union
+    select id from down;             -- union dedupes the shared self row
+  $function$
+  ;
+
+----------------------------------------------------------------- workspace_resident_pool
+-- The "Manage Residents" candidate pool: every distinct person (real profile) holding a resident
+-- anywhere on the current node's SPINE (ancestor lineage up to the root + the node's own subtree;
+-- sibling branches excluded), annotated with whether they are a member of THIS node. Serves all
+-- nestable node types (workspace/client/organization) identically.
+CREATE OR REPLACE FUNCTION app_fn.workspace_resident_pool(_workspace_tenant_id uuid)
+  RETURNS setof app_fn.workspace_resident_candidate
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY DEFINER
+  AS $function$
+  BEGIN
+    return query
+    with pool as (
+      select distinct r.profile_id
+      from app.resident r
+      where r.tenant_id in (select app_fn.tenant_spine_ids(_workspace_tenant_id))
+        and r.profile_id is not null       -- real people only (skip pending, profile-less invites)
+        and r.type <> 'support'            -- exclude support residents
+    )
+    select
+      p.id
+      ,p.email
+      ,coalesce(p.display_name, split_part(p.email,'@',1))::citext
+      ,p.full_name
+      ,home_t.name
+      ,wr.id
+      ,wr.status
+      ,(wr.id is not null and wr.status <> 'removed')
+    from pool
+    join app.profile p        on p.id = pool.profile_id
+    left join app.resident home_r on home_r.profile_id = p.id and home_r.type = 'home'
+    left join app.tenant   home_t on home_t.id = home_r.tenant_id
+    left join app.resident wr on wr.profile_id = p.id
+                             and wr.tenant_id = _workspace_tenant_id
+                             and wr.type in ('home','guest')
+    order by 3;
+  end;
+  $function$
+  ;
+
+CREATE OR REPLACE FUNCTION app_api.workspace_resident_pool()
+  RETURNS setof app_fn.workspace_resident_candidate
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY INVOKER
+  AS $function$
+  BEGIN
+    perform jwt.enforce_permission('p:app-admin');
+    return query select * from app_fn.workspace_resident_pool(jwt.tenant_id());
+  end;
+  $function$
+  ;
+
+----------------------------------------------------------------- remove_profile_from_tree_workspaces
+-- Deactivation cascade: soft-remove a person from EVERY workspace in a tenant's tree.
+-- Called from app_fn.block_resident (00000000010240_app_fn.sql).
+CREATE OR REPLACE FUNCTION app_fn.remove_profile_from_tree_workspaces(_profile_id uuid, _from_tenant_id uuid)
+  RETURNS void
+  LANGUAGE plpgsql
+  VOLATILE
+  SECURITY DEFINER
+  AS $function$
+  DECLARE
+    _root uuid;
+  BEGIN
+    _root := app_fn.tenant_tree_root(_from_tenant_id);
+
+    update app.resident r
+      set status = 'removed', updated_at = current_timestamp
+      where r.profile_id = _profile_id
+        and r.status not in ('blocked_individual','blocked_tenant','removed')
+        and r.tenant_id in (
+          select id from app.tenant
+          where type in ('workspace','client','organization')
+            and id in (select app_fn.tenant_tree_ids(_root))
+        );
+
+    update app.license l
+      set status = 'inactive', updated_at = current_timestamp
+      from app.resident r
+      where l.resident_id = r.id
+        and r.profile_id = _profile_id
+        and r.status = 'removed'
+        and l.status = 'active'
+        and r.tenant_id in (select app_fn.tenant_tree_ids(_root));
+  end;
+  $function$
+  ;
+
+----------------------------------------------------------------- set_workspace_membership
+CREATE OR REPLACE FUNCTION app_fn.set_workspace_membership(
+    _workspace_tenant_id uuid
+    ,_profile_id uuid
+    ,_member boolean
+    ,_actor_profile_id uuid
+  )
+  RETURNS app.resident
+  LANGUAGE plpgsql
+  VOLATILE
+  SECURITY DEFINER
+  AS $function$
+  DECLARE
+    _ws app.tenant;
+    _wr app.resident;
+    _email citext;
+  BEGIN
+    select * into _ws from app.tenant where id = _workspace_tenant_id;
+    if _ws.parent_tenant_id is null then
+      raise exception '30000: NOT AUTHORIZED';   -- current tenant is not a workspace
+    end if;
+
+    -- target must already belong to the same tenant tree
+    if not exists (
+      select 1 from app.resident r
+      where r.profile_id = _profile_id
+        and r.tenant_id in (select app_fn.tenant_tree_ids(app_fn.tenant_tree_root(_workspace_tenant_id)))
+    ) then
+      raise exception '30000: NOT AUTHORIZED';
+    end if;
+
+    if not _member and _profile_id = _actor_profile_id then
+      raise exception '31010: CANNOT REMOVE SELF FROM WORKSPACE';
+    end if;
+
+    _email := (select email from app.profile where id = _profile_id);
+    select * into _wr from app.resident
+      where profile_id = _profile_id and tenant_id = _workspace_tenant_id and type in ('home','guest');
+
+    if _member then                                       -- ADD / re-activate
+      if _wr.id is null then
+        _wr := app_fn.invite_user(_workspace_tenant_id, _email, 'user');  -- guest + app-user license
+      end if;
+      -- dormant membership (entered later via assume_residency — matches create_workspace creator)
+      update app.resident set status = 'inactive', updated_at = current_timestamp
+        where id = _wr.id returning * into _wr;
+      update app.license set status = 'active', updated_at = current_timestamp
+        where resident_id = _wr.id and status = 'inactive';
+    else                                                  -- REMOVE (soft)
+      update app.resident set status = 'removed', updated_at = current_timestamp
+        where id = _wr.id returning * into _wr;
+      update app.license set status = 'inactive', updated_at = current_timestamp
+        where resident_id = _wr.id and status = 'active';
+    end if;
+
+    return _wr;
+  end;
+  $function$
+  ;
+
+CREATE OR REPLACE FUNCTION app_api.set_workspace_membership(_profile_id uuid, _member boolean)
+  RETURNS app.resident
+  LANGUAGE plpgsql
+  VOLATILE
+  SECURITY INVOKER
+  AS $function$
+  DECLARE
+    _resident app.resident;
+  BEGIN
+    perform jwt.enforce_permission('p:app-admin');
+    _resident := app_fn.set_workspace_membership(jwt.tenant_id(), _profile_id, _member, jwt.profile_id());
+    return _resident;
+  end;
+  $function$
+  ;

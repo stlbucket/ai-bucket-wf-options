@@ -491,6 +491,7 @@ CREATE OR REPLACE FUNCTION app_fn.current_profile_claims(_profile_id uuid)
       _profile_claims.profile_id = _resident.profile_id;
       _profile_claims.tenant_id = _resident.tenant_id;
       _profile_claims.tenant_name = _resident.tenant_name;
+      _profile_claims.tenant_type = (select type from app.tenant where id = _resident.tenant_id);
       _profile_claims.resident_id = _resident.id;
       _profile_claims.permissions = (
         select array_agg(distinct ltp.permission_key)
@@ -1093,6 +1094,11 @@ CREATE OR REPLACE FUNCTION app_fn.block_resident(_resident_id uuid)
 
     -- perform app_fn.configure_user_metadata(_resident.profile_id);
 
+    -- deactivation cascade: a blocked person loses workspace access across the whole tenant tree
+    if _resident.profile_id is not null then
+      perform app_fn.remove_profile_from_tree_workspaces(_resident.profile_id, _resident.tenant_id);
+    end if;
+
     return _resident;
   end;
   $function$
@@ -1504,6 +1510,50 @@ CREATE OR REPLACE FUNCTION app_api.update_tenant(_input app_fn.update_tenant_inp
   BEGIN
     PERFORM jwt.enforce_permission('p:app-admin-super');
     RETURN app_fn.update_tenant(_input);
+  END;
+  $$;
+
+----------------------------------------------------------------- set_nested_tenant_type
+-- p:app-admin path to relabel a DIRECT-CHILD nested tenant among the interchangeable nestable
+-- node types {workspace, client, organization}. update_tenant is p:app-admin-super and owns
+-- root-type edits; this DEFINER body is scoped to children of the acting tenant only.
+CREATE OR REPLACE FUNCTION app_fn.set_nested_tenant_type(_tenant_id uuid, _type app.tenant_type)
+    RETURNS app.tenant
+    LANGUAGE plpgsql
+    VOLATILE
+    SECURITY DEFINER
+  AS $$
+  DECLARE
+    _tenant app.tenant;
+  BEGIN
+    IF _type NOT IN ('workspace','client','organization') THEN
+      RAISE EXCEPTION 'not a nestable tenant type: %', _type USING ERRCODE = '22023';
+    END IF;
+
+    UPDATE app.tenant
+      SET type = _type, updated_at = now()
+      WHERE id = _tenant_id
+        AND parent_tenant_id = jwt.tenant_id()   -- direct child of the acting tenant only
+      RETURNING * INTO _tenant;
+
+    IF _tenant IS NULL THEN
+      RAISE EXCEPTION 'not a direct child of the current tenant: %', _tenant_id
+        USING ERRCODE = '42501';
+    END IF;
+
+    RETURN _tenant;
+  END;
+  $$;
+
+CREATE OR REPLACE FUNCTION app_api.set_nested_tenant_type(_tenant_id uuid, _type app.tenant_type)
+    RETURNS app.tenant
+    LANGUAGE plpgsql
+    VOLATILE
+    SECURITY INVOKER
+  AS $$
+  BEGIN
+    PERFORM jwt.enforce_permission('p:app-admin');
+    RETURN app_fn.set_nested_tenant_type(_tenant_id, _type);
   END;
   $$;
   -- ================================================================

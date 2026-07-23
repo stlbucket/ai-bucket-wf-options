@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
+import type { TenantType } from '@function-bucket/fnb-types'
 import type { WorkspaceResidentView } from '@function-bucket/fnb-graphql-client-api'
 import { useWorkspaceDetail } from '~/composables/useWorkspaces'
 
@@ -22,8 +23,32 @@ const {
   fetching,
   deactivateWorkspace,
   activateWorkspace,
-  enterWorkspace
+  enterWorkspace,
+  setNestedType
 } = useWorkspaceDetail(String(route.params.id))
+
+// Nested-type editor (p:app-admin). Every tenant reachable here is a direct child, so the
+// interchangeable nestable trio is always the valid option set.
+const canManageType = computed(() => user.value?.permissions?.includes('p:app-admin') ?? false)
+const NESTED_TYPE_OPTIONS = ['workspace', 'client', 'organization'].map(v => ({ label: v, value: v }))
+const typeForm = ref('')
+const savingType = ref(false)
+watchEffect(() => {
+  if (workspace.value) typeForm.value = String(workspace.value.type).toLowerCase()
+})
+
+async function onSaveType() {
+  if (!workspace.value) return
+  savingType.value = true
+  try {
+    await setNestedType(typeForm.value.toUpperCase() as TenantType)
+    toast.add({ title: 'Type updated', color: 'success' })
+  } catch {
+    toast.add({ title: 'Failed to update type', color: 'error' })
+  } finally {
+    savingType.value = false
+  }
+}
 
 // The current user's own residency in this workspace (drives the Enter button)
 const myResident = computed(
@@ -157,7 +182,31 @@ async function onEnter() {
           <div class="text-muted">
             Type
           </div>
-          <div>{{ statusLabel(String(workspace.type)) }}</div>
+          <div>
+            <div
+              v-if="canManageType"
+              class="flex items-center gap-2"
+            >
+              <USelect
+                v-model="typeForm"
+                :items="NESTED_TYPE_OPTIONS"
+                :disabled="savingType"
+                size="sm"
+              />
+              <UButton
+                size="sm"
+                variant="soft"
+                :loading="savingType"
+                :disabled="typeForm === String(workspace.type).toLowerCase()"
+                @click="onSaveType"
+              >
+                Save
+              </UButton>
+            </div>
+            <template v-else>
+              {{ statusLabel(String(workspace.type)) }}
+            </template>
+          </div>
           <div class="text-muted">
             ID
           </div>

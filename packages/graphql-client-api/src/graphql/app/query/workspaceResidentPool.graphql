@@ -1,0 +1,11 @@
+query WorkspaceResidentPool {
+  workspaceResidentPoolList {
+    profileId
+    email
+    displayName
+    fullName
+    homeTenantName
+    workspaceResidentId
+    isMember
+  }
+}

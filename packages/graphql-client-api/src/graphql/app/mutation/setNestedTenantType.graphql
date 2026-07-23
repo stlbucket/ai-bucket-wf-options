@@ -1,0 +1,13 @@
+mutation SetNestedTenantType(
+  $tenantId: UUID!
+  $type: TenantType!
+) {
+  setNestedTenantType(input: {
+    _tenantId: $tenantId
+    _type: $type
+  }) {
+    tenant {
+      ...Tenant
+    }
+  }
+}

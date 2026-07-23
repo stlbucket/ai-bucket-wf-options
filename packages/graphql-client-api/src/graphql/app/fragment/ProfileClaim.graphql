@@ -8,5 +8,6 @@ fragment ProfileClaim on ProfileClaim {
   email
   displayName
   tenantName
+  tenantType
   # applicationKey
 }

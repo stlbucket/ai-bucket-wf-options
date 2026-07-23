@@ -3,7 +3,15 @@
 
 export type TenantStatus = 'ACTIVE' | 'INACTIVE' | 'PAUSED'
 
-export type TenantType = 'ANCHOR' | 'CUSTOMER' | 'DEMO' | 'TEST' | 'TRIAL' | 'WORKSPACE'
+export type TenantType =
+  | 'ANCHOR'
+  | 'CLIENT'
+  | 'CUSTOMER'
+  | 'DEMO'
+  | 'ORGANIZATION'
+  | 'TEST'
+  | 'TRIAL'
+  | 'WORKSPACE'
 
 import type { Urn } from '@/urn'
 

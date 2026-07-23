@@ -2,6 +2,8 @@
 
 begin;
 
+drop function if exists app_api.set_nested_tenant_type(uuid, app.tenant_type) cascade;
+drop function if exists app_fn.set_nested_tenant_type(uuid, app.tenant_type) cascade;
 drop function if exists app_api.throw_error(citext) cascade;
 drop function if exists app_api.get_myself() cascade;
 drop function if exists app_fn.leave_address_book(uuid) cascade;

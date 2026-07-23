@@ -29,11 +29,13 @@ export interface SubscriptionPackDetail {
 }
 
 export function useAdminResidents() {
-  const { data, fetching, error } = useTenantResidentsQuery()
+  const { data, fetching, error, executeQuery } = useTenantResidentsQuery()
   return {
     data: computed(() => (data.value?.residents ?? []).map(toResident)),
     fetching,
     error,
+    // exposed so pages can refresh the list after out-of-band changes (e.g. workspace roster edits)
+    executeQuery,
   }
 }
 

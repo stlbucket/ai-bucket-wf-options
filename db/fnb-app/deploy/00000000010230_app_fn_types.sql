@@ -29,7 +29,21 @@ create type app_fn.profile_claims as (
   ,email citext
   ,display_name citext
   ,tenant_name citext
+  ,tenant_type app.tenant_type
   ,modules app_fn.module_info[]
+);
+----------------------------------------------------------------------------------------------
+-- Candidate row for the workspace "Manage Residents" pool: one distinct person (profile) in the
+-- current workspace's tenant tree, with whether they are a member of THIS workspace.
+create type app_fn.workspace_resident_candidate as (
+  profile_id uuid
+  ,email citext
+  ,display_name citext
+  ,full_name citext
+  ,home_tenant_name citext
+  ,workspace_resident_id uuid
+  ,workspace_status app.resident_status
+  ,is_member boolean
 );
 ----------------------------------------------------------------------------------------------
 create type app_fn.license_type_info as (

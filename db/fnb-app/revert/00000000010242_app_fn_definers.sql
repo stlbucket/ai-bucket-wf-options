@@ -2,6 +2,14 @@
 
 begin;
 
+drop function if exists app_api.set_workspace_membership(uuid, boolean) cascade;
+drop function if exists app_fn.set_workspace_membership(uuid, uuid, boolean, uuid) cascade;
+drop function if exists app_fn.remove_profile_from_tree_workspaces(uuid, uuid) cascade;
+drop function if exists app_api.workspace_resident_pool() cascade;
+drop function if exists app_fn.workspace_resident_pool(uuid) cascade;
+drop function if exists app_fn.tenant_spine_ids(uuid) cascade;
+drop function if exists app_fn.tenant_tree_ids(uuid) cascade;
+drop function if exists app_fn.tenant_tree_root(uuid) cascade;
 drop function if exists app_api.get_ab_listings(uuid) cascade;
 drop function if exists app_fn.demo_profile_residencies() cascade;
 drop function if exists app_api.demo_profile_residencies() cascade;

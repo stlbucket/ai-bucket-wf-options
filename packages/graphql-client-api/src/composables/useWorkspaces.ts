@@ -6,6 +6,7 @@ import type {
   ResidentStatus,
   Tenant,
   TenantSubscription,
+  TenantType,
 } from '@function-bucket/fnb-types'
 import { toTenant } from '../mappers/tenant'
 import { toResident } from '../mappers/resident'
@@ -17,6 +18,7 @@ import {
   useCreateWorkspaceMutation,
   useDeactivateWorkspaceMutation,
   useMyProfileResidenciesQuery,
+  useSetNestedTenantTypeMutation,
   useWorkspaceByIdQuery,
 } from '../generated/fnb-graphql-api'
 import { assumeResidency, ENTERABLE_STATUSES } from './useResidency'
@@ -95,6 +97,7 @@ export function useWorkspaceDetail(tenantId: string) {
   })
   const { executeMutation: execDeactivate } = useDeactivateWorkspaceMutation()
   const { executeMutation: execActivate } = useActivateWorkspaceMutation()
+  const { executeMutation: execSetType } = useSetNestedTenantTypeMutation()
 
   const workspace = computed<Tenant | null>(() => {
     const t = data.value?.tenant
@@ -138,6 +141,14 @@ export function useWorkspaceDetail(tenantId: string) {
     await assumeResidency(client, residentId)
   }
 
+  // Relabel this nested tenant among the interchangeable nestable node types
+  // (workspace/client/organization). p:app-admin, direct-child scoped in the DB.
+  async function setNestedType(type: TenantType): Promise<void> {
+    const result = await execSetType({ tenantId, type })
+    if (result.error) throw result.error
+    refresh()
+  }
+
   return {
     workspace,
     residents,
@@ -148,5 +159,6 @@ export function useWorkspaceDetail(tenantId: string) {
     deactivateWorkspace,
     activateWorkspace,
     enterWorkspace,
+    setNestedType,
   }
 }

@@ -5,6 +5,11 @@ Referenced by `index.data.md` and `[id].data.md`. Do not duplicate here.
 ## Status
 Implemented — GraphQL (2026-07-10). Divergences from the draft are recorded in README.md → Implementation corrections.
 
+> **Extended by `../nestable-tenant-types/`** (2026-07-23): `chk_workspace_parent` generalizes to
+> `chk_nested_parent` over `{workspace, client, organization}`, and a new `p:app-admin`
+> `app_api.set_nested_tenant_type` (direct-child scoped) lets a parent admin relabel a nested
+> tenant among the trio. That spec is authoritative for both.
+
 ## Navigation
 
 Already registered in DB (`db/fnb-app/deploy/00000000010240_app_fn.sql`, admin module):

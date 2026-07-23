@@ -3,6 +3,11 @@
 ## Status
 Implemented — GraphQL
 
+> **Extended by `../../admin/nestable-tenant-types/`** (2026-07-23): the Type `USelect` becomes
+> context-aware — nested tenants (`parentTenantId != null`) offer `{workspace, client,
+> organization}`, roots offer `{anchor, customer, demo, test, trial}`. The detail query must
+> select `parentTenantId`. That spec is authoritative.
+
 ## Route
 `/tenant/site-admin/tenant/[id]` — see `[id].ui.md` for UI details
 

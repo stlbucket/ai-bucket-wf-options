@@ -7,6 +7,7 @@
 // path already yields these; db-access normalizes its raw-pg (lowercase) value up to match.
 
 import type { ResidencyTreeNode } from '@/residency-tree'
+import type { TenantType } from '@/tenant'
 
 export type ProfileStatus = 'ACTIVE' | 'INACTIVE' | 'BLOCKED'
 
@@ -38,6 +39,9 @@ export interface ProfileClaims {
   email: string | null
   displayName: string | null
   tenantName: string | null
+  // The active residency's tenant type — gates workspace-only UI (e.g. Manage Residents).
+  // Mirrors the GraphQL TenantType enum (UPPERCASE); db-access uppercases the raw-pg value.
+  tenantType: TenantType | null
   modules: ModuleInfo[] | null
   // Populated only by the GraphQL claims path (fetchProfileClaims); the raw-pg server path
   // (db-access) leaves it null — app_fn.profile_claims deliberately has no such field.

@@ -62,6 +62,7 @@ export async function fetchProfileClaims(client: Client): Promise<ProfileClaims 
     email: cpc.email ?? null,
     displayName: cpc.displayName ?? null,
     tenantName: cpc.tenantName ?? null,
+    tenantType: (cpc.tenantType ?? null) as TenantType | null,
     modules,
     residencies: (result.data?.myResidencyTreeList ?? [])
       .filter((r): r is NonNullable<typeof r> => r != null)

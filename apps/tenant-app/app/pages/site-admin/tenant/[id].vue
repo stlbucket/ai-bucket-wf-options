@@ -74,10 +74,14 @@ async function onSupport(t: Tenant) {
   }
 }
 
-const typeOptions = ['anchor', 'customer', 'demo', 'test', 'trial'].map(v => ({
-  label: v,
-  value: v
-}))
+// A nested tenant (has a parent) may only be one of the interchangeable nestable node types;
+// a root tenant may only be a root type. The chk_nested_parent DB constraint is the backstop.
+const ROOT_TYPES = ['anchor', 'customer', 'demo', 'test', 'trial']
+const NESTED_TYPES = ['workspace', 'client', 'organization']
+const isNestedTenant = computed(() => tenant.value?.parentTenantId != null)
+const typeOptions = computed(() =>
+  (isNestedTenant.value ? NESTED_TYPES : ROOT_TYPES).map(v => ({ label: v, value: v }))
+)
 </script>
 
 <template>

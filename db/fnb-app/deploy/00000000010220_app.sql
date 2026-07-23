@@ -6,8 +6,10 @@ create schema if not exists app_fn;
 ----------------------------------------------------------------------------------------------
 create type app.tenant_type as enum (
     'anchor'
+    ,'client'         -- nested node type (child-only), interchangeable with workspace/organization
     ,'customer'
     ,'demo'
+    ,'organization'   -- nested node type (child-only), interchangeable with workspace/client
     ,'test'
     ,'trial'
     ,'workspace'
@@ -44,6 +46,7 @@ create type app.resident_status as enum (
     ,'blocked_individual'
     ,'blocked_tenant'
     ,'supporting'
+    ,'removed'   -- soft-removed from a workspace roster (reversible; distinct from dormant 'inactive')
   );
 --------------------------------------------------------------------------------------------
 create type app.license_type_assignment_scope as enum (
@@ -148,8 +151,10 @@ create table if not exists app.tenant (
     ,type app.tenant_type not null default 'customer'
     ,status app.tenant_status not null default 'active'
     ,parent_tenant_id uuid null references app.tenant(id)
-    -- exactly the workspace type carries a parent
-    ,constraint chk_workspace_parent check ((type = 'workspace') = (parent_tenant_id is not null))
+    -- the nestable node types carry a parent; every other (root) type does not
+    ,constraint chk_nested_parent check (
+       (type in ('workspace','client','organization')) = (parent_tenant_id is not null)
+     )
   );
 --------------------------------------------------------------------------------------------
 CREATE TABLE app.tenant_subscription (

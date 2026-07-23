@@ -1,0 +1,13 @@
+mutation SetWorkspaceMembership(
+  $profileId: UUID!
+  $member: Boolean!
+) {
+  setWorkspaceMembership(input: {
+    _profileId: $profileId
+    _member: $member
+  }) {
+    resident {
+      ...Resident
+    }
+  }
+}

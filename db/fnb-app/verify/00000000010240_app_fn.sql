@@ -8,5 +8,6 @@ select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace wh
 select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'app_fn' and p.proname = 'create_tenant';
 select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'app_api' and p.proname = 'current_profile_claims';
 select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'app_api' and p.proname = 'subscribe_tenant_to_license_pack';
+select p.proname from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'app_api' and p.proname = 'set_nested_tenant_type';
 
 rollback;

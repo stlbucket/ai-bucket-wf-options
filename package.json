@@ -15,6 +15,7 @@
     "db-exec": "tsx scripts/db-exec.ts",
     "db-test": "tsx scripts/db-test.ts",
     "db-status": "tsx scripts/db-status.ts",
+    "db-introspect": "tsx scripts/db-introspect.ts",
     "dep-audit": "tsx scripts/dep-audit.ts",
     "graphql-api-generate": "tsx scripts/graphql-api-generate.ts",
     "env-build": "tsx scripts/env-build.ts",

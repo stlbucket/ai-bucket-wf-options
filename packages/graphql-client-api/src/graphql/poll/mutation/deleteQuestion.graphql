@@ -1,0 +1,5 @@
+mutation DeleteQuestion($questionId: UUID!) {
+  deleteQuestion(input: { _questionId: $questionId }) {
+    clientMutationId
+  }
+}

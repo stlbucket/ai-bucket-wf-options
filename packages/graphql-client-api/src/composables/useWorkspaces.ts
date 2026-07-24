@@ -21,6 +21,7 @@ import {
   useSetNestedTenantTypeMutation,
   useWorkspaceByIdQuery,
 } from '../generated/fnb-graphql-api'
+import type { TenantType as GqlTenantType } from '../generated/fnb-graphql-api'
 import { assumeResidency, ENTERABLE_STATUSES } from './useResidency'
 
 // Composable view types (global-rules R4)
@@ -144,7 +145,9 @@ export function useWorkspaceDetail(tenantId: string) {
   // Relabel this nested tenant among the interchangeable nestable node types
   // (workspace/client/organization). p:app-admin, direct-child scoped in the DB.
   async function setNestedType(type: TenantType): Promise<void> {
-    const result = await execSetType({ tenantId, type })
+    // Public signature stays on the fnb-types union (R3); the generated mutation variable is a
+    // nominal enum, so bridge it the same way the mappers do (`as unknown as`).
+    const result = await execSetType({ tenantId, type: type as unknown as GqlTenantType })
     if (result.error) throw result.error
     refresh()
   }

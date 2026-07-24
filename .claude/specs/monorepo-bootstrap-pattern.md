@@ -142,6 +142,22 @@ pnpm-install    ├→ packages-watch → [all apps]
 > `NUXT_APP_BASE_URL`, `NUXT_HOST=0.0.0.0`, `NUXT_PORT=3000`, in-container port `3000`.
 > `cp .env.example .env` yields a bootable dev environment. See `env-consolidation.plan.md`.
 
+**URL env-var inventory.** Four service-URL vars exist; each has ≥1 real consumer. Do **not**
+reintroduce a per-app URL var without a consumer that reads its `runtimeConfig` key:
+
+| Var | Consumers | Why it can't be derived away |
+|---|---|---|
+| `NUXT_PUBLIC_AUTH_APP_URL` | every app (login/logout/OTP/onboard links) + the `invite-user`/`forgot-password` n8n workflows (build `verifyUrl`/`setPasswordUrl`) | OIDC `redirect_uri` must match a ZITADEL-registered value exactly; n8n has no browser context |
+| `NUXT_PUBLIC_GRAPHQL_API_URL` | every app's urql plugin (`pub.graphqlApiUrl`); **also** the host-side codegen schema URL (`packages/graphql-client-api/codegen.ts` reads `process.env.NUXT_PUBLIC_GRAPHQL_API_URL`) | runtime transport endpoint |
+| `NUXT_PUBLIC_UPLOAD_URL` | storage-layer `useAssetUpload`/`useAssetDelete` (`pub.uploadUrl`) | multipart upload endpoint |
+| `NUXT_AUTH_APP_INTERNAL_URL` | `auth-ui/use-auth.ts` **SSR-only** (logout fetch) | inside a container `localhost:PORT` is the container's own loopback, not Caddy — server-to-server calls need the container-network address |
+
+Removed 2026-07-23 (retired via the `.env`-consolidation cleanup): `GRAPHQL_SCHEMA_URL` (was a
+byte-for-byte duplicate of `NUXT_PUBLIC_GRAPHQL_API_URL` — codegen now reads that var directly),
+and `NUXT_PUBLIC_MSG_APP_URL` + `NUXT_MSG_APP_INTERNAL_URL` (both were declared as `msgAppUrl` /
+`msgAppInternalUrl` runtimeConfig keys in `tenant-app/nuxt.config.ts` with **zero code readers** —
+the msg module is served as in-app routes under the tenant-layer, not via a cross-app URL).
+
 **`db`** — PostGIS (postgres with geospatial extensions):
 - Image: `postgis/postgis` (required for `loc` module; harmless for others)
 - Port: `${DB_HOST_PORT:?}:5432` on host
@@ -151,10 +167,10 @@ pnpm-install    ├→ packages-watch → [all apps]
 - Runs all sqitch deploy commands and exits (`restart: "no"`)
 - `DEPLOY_PACKAGES` (required, `${DEPLOY_PACKAGES:?}`) controls which packages to deploy — it lives
   in `.env` as the single source of truth and carries the full ordered list (`fnb-auth fnb-app
-  fnb-n8n fnb-notify fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets
+  fnb-n8n fnb-notify fnb-res fnb-msg fnb-todo fnb-poll fnb-loc fnb-storage fnb-location-datasets
   fnb-airports fnb-game`; `fnb-n8n` must precede `fnb-notify`/`fnb-storage`/`fnb-location-datasets`/`fnb-airports` —
   `n8n_worker` grants for the notify send + asset-scan + sync workflows). PostGraphile exposes the
-  module schemas (`graphile.config.ts` `pgServices.schemas`), so all twelve must deploy or it fails at boot.
+  module schemas (`graphile.config.ts` `pgServices.schemas`), so all thirteen must deploy or it fails at boot.
   `.env.example` ships the full list pre-filled (not a comment).
 - **`SEED_DATA`** (`${SEED_DATA:-full}`) selects the seed profile. `full` (default) runs the fat
   `db/seed.sql` (anchor tenant + dev users) and seeds the ZITADEL dev-user roster — today's

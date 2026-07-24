@@ -1,0 +1,9 @@
+mutation UpdatePoll($pollId: UUID!, $title: String, $description: String, $closesAt: Datetime) {
+  updatePoll(
+    input: { _pollId: $pollId, _title: $title, _description: $description, _closesAt: $closesAt }
+  ) {
+    poll {
+      id
+    }
+  }
+}

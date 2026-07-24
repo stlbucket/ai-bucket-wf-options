@@ -125,10 +125,11 @@ The exact SQL pattern for registering a new module — including the `ROW(...)::
 casting syntax, ordinal integers, and what it creates (application, module, tool, license_type,
 permission, license_pack, auto-subscribe existing tenants).
 
-**B6. Nav section registration pattern (nav-register.ts plugin)**
-The exact Nuxt plugin code shape — `useNavRegistry().register([{title, permissionKey, items}])`.
-permissionKey can be a string OR an array of strings (any of which satisfies the gate).
-The filtering happens at runtime in `useAppNav().availableSections`.
+**B6. Nav section registration pattern (nav-register.ts plugin)** — ~~MOOT / do not mine~~
+The `nav-register.ts` / `useNavRegistry()` plugin pattern this item proposed documenting is
+**retired** — it no longer exists in code. Nav is entirely claims-driven: DB `app.module`/`app.tool`
+rows → `ProfileClaims.modules` → `useAppNav().availableSections` (`packages/tenant-layer`), with
+permission gating done at the DB when claims are built (R14). Nothing to mine here.
 
 ---
 
@@ -282,7 +283,7 @@ Mark each item: keep (migrate to specs) or drop.
 - [ ] **B3** — License pack mechanics (number_of_licenses -1/0/N, anchor vs base pack)
 - [ ] **B4** — Module/Tool navigation structure for anchor application
 - [ ] **B5** — `install_basic_application` call signature (exact SQL pattern)
-- [ ] **B6** — Nav section registration pattern (nav-register.ts plugin, array permissionKey)
+- [~] **B6** — ~~Nav section registration pattern (nav-register.ts plugin)~~ MOOT — pattern retired, nav is claims-driven (see B6 detail above)
 - [ ] **C1** — Three partial unique indexes enforcing anchor tenant exclusivity (exact SQL)
 - [ ] **C2** — Three residency uniqueness constraints (exact SQL)
 - [ ] **C3** — Invited users: `view_own_resident_email` RLS policy (nullable profile_id)

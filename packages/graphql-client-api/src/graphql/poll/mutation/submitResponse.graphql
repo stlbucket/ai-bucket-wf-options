@@ -1,0 +1,8 @@
+mutation SubmitResponse($pollId: UUID!, $answers: [AnswerInputRecordInput!]!) {
+  submitResponse(input: { _pollId: $pollId, _answers: $answers }) {
+    response {
+      id
+      submittedAt
+    }
+  }
+}

@@ -1,0 +1,5 @@
+mutation DeletePoll($pollId: UUID!) {
+  deletePoll(input: { _pollId: $pollId }) {
+    clientMutationId
+  }
+}

@@ -122,6 +122,27 @@
       },
 
       /*
+       * Poll module (tenant-app/tools/poll spec, _shared.data.md §5): only poll.poll keeps its
+       * root fields (single lookup for pollById; list is RLS-safe — read_poll hides others'
+       * drafts). The child tables are reachable only through the poll relation (already
+       * draft-gated) + poll_api functions — drop their root all-rows fields so a member cannot
+       * enumerate raw responses/answers from the query root. Single lookups + FK relations stay.
+       * Response/answer row visibility (own vs attributed) is enforced by RLS on the relation.
+       */
+      'poll.question': {
+        tags: { behavior: '-query:resource:list -query:resource:connection' },
+      },
+      'poll.option': {
+        tags: { behavior: '-query:resource:list -query:resource:connection' },
+      },
+      'poll.response': {
+        tags: { behavior: '-query:resource:list -query:resource:connection' },
+      },
+      'poll.answer': {
+        tags: { behavior: '-query:resource:list -query:resource:connection' },
+      },
+
+      /*
        * URN registry: res.module_permission is pure RLS plumbing — never served.
        * (urn-registry spec, client.data.md §1. Hub-relation renames, e.g.
        * assetsBySubjectUrn → assets on Resource, land after first codegen once the

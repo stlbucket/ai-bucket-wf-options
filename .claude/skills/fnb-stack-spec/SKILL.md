@@ -199,6 +199,7 @@ Data layer is **urql GraphQL → PostGraphile** across the board (composables in
 | `support` | tickets/index, tickets/new, tickets/[id] | Implemented — GraphQL |
 | `loc` | index, [id] | Implemented — GraphQL (`useLocations`) |
 | `games` | battleship/index, battleship/[id], checkers/index, checkers/[id], tic-tac-toe/index (Coming Soon) | Implemented — GraphQL (`useGames`/`useGame`/`useGameTypes`) + n8n referee (`game-event` workflow); battleship + checkers playable |
+| `tools/poll` | index (list), [id] (draft editor · published two-column answer/results/discussion) | Implemented 2026-07-23 — GraphQL (`usePollList`/`usePollDetail`/`usePollMsg`); URN entity `db/fnb-poll`; yes/no + multiple-choice + date-list (yes/no per date), per-question `allow_note` answer notes (attributed-only), authored + respondent date/times, per-poll results visibility, per-question inline expandable results, discussion (published only); OTP share deferred (otp-login-gated) |
 
 Other app spec trees: `auth-app/` (login, current-profile-claims, profile), `msg-app/`,
 `graphql-api-app/` (`_overview.md`, `server-pattern.md`, tombstoned `worker-pattern.md`),

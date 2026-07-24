@@ -25,7 +25,7 @@ Implemented
   profileStatus, permissions, email, displayName, tenantName, modules }
 ```
 
-### `useAppNav()` — from `packages/auth-layer`
+### `useAppNav()` — from `packages/tenant-layer`
 - `availableSections: ComputedRef<NavSection[]>` — derived from `ProfileClaims.modules`
 - Filters nav entries by permission; groups tools under their module
 
@@ -34,4 +34,4 @@ Implemented
 - Used to construct the sign-in link: `${authAppUrl}/login`
 
 ## Types
-All types (`ProfileClaims`, `NavSection`) come from `packages/auth-ui` and `packages/auth-layer` — no db-types involved on this page.
+Types: `ProfileClaims` comes from `@function-bucket/fnb-types` (via `useAuth`); `NavSection`/`NavItem` are defined in `packages/tenant-layer/app/composables/useAppNav.ts` — no db-types involved on this page.

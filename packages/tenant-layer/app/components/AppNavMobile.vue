@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useAuth } from '@function-bucket/fnb-auth-layer/app/composables/useAuth'
 import { useRoute } from 'nuxt/app'
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useAppNav } from '../composables/useAppNav'
 
 const route = useRoute()
-const { availableSections, navOpen, openNav, closeNav } = useAppNav()
+const { availableSections, navOpen, openNav, closeNav, hydrateSectionState } = useAppNav()
 const { isLoggedIn } = useAuth()
+
+onMounted(() => hydrateSectionState())
 
 // The first couple of tools double as bottom-bar tabs; the rest live behind Menu.
 const primaryItems = computed(() => availableSections.value.flatMap((s) => s.items).slice(0, 2))

@@ -38,6 +38,33 @@ Exception that must be preserved: `app_fn.profile_claims_for_user` is deliberate
 `authenticator` (`db/fnb-app/deploy/00000000010260_app_bootstrap.sql`) — that is the correct model
 to generalize.
 
+### Scope update — 2026-07-23 (recurring RLS audit): `poll_fn` joins the affected set
+
+`db/fnb-poll/deploy/00000000011130_poll_policies.sql:11-17` repeats the blanket
+`grant all on all routines in schema poll_fn to anon, authenticated, service_role` (+ matching
+`alter default privileges`). Two concrete exposures:
+
+5. **`poll_fn.get_poll_results(_poll_id, _tenant_id, _resident_id, _is_admin)`** —
+   `db/fnb-poll/deploy/00000000011120_poll_fn.sql:398`, the module's one SECURITY DEFINER
+   function. All four identity/authority inputs are caller-controlled parameters: a direct
+   caller (anon included) can pass `_is_admin := true` + any `_tenant_id` and read another
+   tenant's poll results — including **attributed** per-respondent rows for polls whose
+   `results_visibility` is `attributed`, and aggregate counts even for `hidden` polls. The
+   `poll_api.get_poll_results` gate (`jwt.enforce_permission('p:poll')` + jwt-derived args) is
+   skipped entirely.
+6. **License-gate bypass on the INVOKER `poll_fn` writers** — the rest of `poll_fn` is
+   SECURITY INVOKER, so tenant RLS still fences rows, but every `poll_api` mutation's
+   `jwt.enforce_permission('p:poll')` license gate is skippable by naming `poll_fn.*` directly:
+   a tenant member whose license lacks the poll module can still create/edit polls
+   (`write_poll_ins` RLS checks only tenant match), and the `_is_admin boolean` parameter on
+   `poll_fn.upsert_question`/`set_poll_status`/etc. lets a non-admin pass `true` to take the
+   admin branch on another member's non-draft poll within their tenant.
+
+Fix is the same pattern as items 1–4: revoke the blanket `poll_fn` grants + default privileges,
+grant back per-function only where an `_api` gate fronts it (and prefer jwt-derived identity over
+caller-supplied `_resident_id`/`_is_admin` where feasible). Note `poll_fn.get_poll_results` also
+pins `search_path = pg_catalog, public` rather than the house `''` — align when touched.
+
 ## Implication
 
 The two-layer security pattern (R8: gate in `_api`, work in `_fn`) is currently decorative for any

@@ -1,0 +1,7 @@
+mutation UpsertOption($questionId: UUID!, $o: OptionInputRecordInput!) {
+  upsertOption(input: { _questionId: $questionId, _o: $o }) {
+    option {
+      id
+    }
+  }
+}

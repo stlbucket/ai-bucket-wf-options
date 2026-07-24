@@ -3,7 +3,8 @@ name: fnb-db-designer
 description: >
   Expert in the fnb project's database design patterns — schema layout, permission model,
   RLS policies, function conventions, and license-based access control. Use this skill when
-  the user asks to design a new table, add permissions, create a sqitch change, wire up RLS
+  the user asks to design a new table, add permissions, shape the DDL inside a sqitch change
+  (plan/deploy mechanics themselves → `sqitch-expert`), wire up RLS
   policies, or asks "how do we handle X in the database?" for the fnb project. Also triggers
   when the user asks how the auth/permission system works or how to extend it.
 ---
@@ -19,8 +20,8 @@ document and a deploy file disagree, the deploy file wins.
 
 ## Packages and Schema Layout
 
-Twelve sqitch packages, deployed in the order set by `DEPLOY_PACKAGES` in `.env`
-(`fnb-auth fnb-app fnb-n8n fnb-notify fnb-res fnb-msg fnb-todo fnb-loc fnb-storage
+Thirteen sqitch packages, deployed in the order set by `DEPLOY_PACKAGES` in `.env`
+(`fnb-auth fnb-app fnb-n8n fnb-notify fnb-res fnb-msg fnb-todo fnb-poll fnb-loc fnb-storage
 fnb-location-datasets fnb-airports fnb-game`; `fnb-res` (the URN registry) precedes every
 registering module; `fnb-n8n` must precede `fnb-notify`/`fnb-storage`/`fnb-location-datasets`/`fnb-airports`
 — `n8n_worker` grants; `fnb-game` is last — needs `fnb-res`/`fnb-app`/`fnb-n8n`).

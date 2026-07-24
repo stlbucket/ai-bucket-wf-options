@@ -1,0 +1,9 @@
+mutation CreatePoll($title: String!, $description: String) {
+  createPoll(input: { _title: $title, _description: $description }) {
+    poll {
+      id
+      urn
+      status
+    }
+  }
+}

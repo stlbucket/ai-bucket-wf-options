@@ -1,0 +1,13 @@
+query PollResults($pollId: UUID!) {
+  getPollResultsList(_pollId: $pollId) {
+    questionId
+    optionId
+    label
+    candidateAt
+    voteCount
+    yesCount
+    noCount
+    otherCount
+    respondentCount
+  }
+}

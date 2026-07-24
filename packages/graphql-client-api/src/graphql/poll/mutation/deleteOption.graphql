@@ -1,0 +1,5 @@
+mutation DeleteOption($optionId: UUID!) {
+  deleteOption(input: { _optionId: $optionId }) {
+    clientMutationId
+  }
+}

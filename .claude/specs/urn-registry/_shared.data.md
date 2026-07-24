@@ -163,6 +163,7 @@ INSERT INTO res.module_permission (module, permission_key) VALUES
   ('app',     'p:app-user'),      -- support tickets + tenant + resident registry rows
   ('msg',     'p:discussions'),
   ('todo',    'p:todo'),
+  ('poll',    'p:poll'),          -- tenant polls (tenant-app/tools/poll)
   ('loc',     NULL),              -- loc.location policy is jwt.tenant_id() = tenant_id
   ('wf',      NULL),              -- wf policies are membership-shaped (currently commented out)
   ('storage', 'p:app-user');

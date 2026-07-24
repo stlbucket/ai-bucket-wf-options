@@ -6,9 +6,12 @@ import { fileURLToPath } from 'url'
 // Load the repo-root .env (single source of truth) so the schema URL isn't hardcoded here.
 loadEnv({ path: resolve(dirname(fileURLToPath(import.meta.url)), '../../.env') })
 
-const schemaUrl = process.env.GRAPHQL_SCHEMA_URL
+// Codegen introspects the running GraphQL server — same endpoint the apps hit at runtime.
+const schemaUrl = process.env.NUXT_PUBLIC_GRAPHQL_API_URL
 if (!schemaUrl) {
-  throw new Error('Missing required environment variable: GRAPHQL_SCHEMA_URL (set it in .env)')
+  throw new Error(
+    'Missing required environment variable: NUXT_PUBLIC_GRAPHQL_API_URL (set it in .env)',
+  )
 }
 
 const config: CodegenConfig = {

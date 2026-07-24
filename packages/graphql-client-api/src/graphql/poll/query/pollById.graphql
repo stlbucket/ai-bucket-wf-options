@@ -1,0 +1,5 @@
+query PollById($id: UUID!, $myUrn: String!) {
+  poll(id: $id) {
+    ...PollDetail
+  }
+}

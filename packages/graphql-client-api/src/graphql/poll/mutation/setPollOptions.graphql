@@ -1,0 +1,19 @@
+mutation SetPollOptions(
+  $pollId: UUID!
+  $allowChangeAfterSubmit: Boolean!
+  $resultsVisibility: ResultsVisibility!
+) {
+  setPollOptions(
+    input: {
+      _pollId: $pollId
+      _allowChangeAfterSubmit: $allowChangeAfterSubmit
+      _resultsVisibility: $resultsVisibility
+    }
+  ) {
+    poll {
+      id
+      allowChangeAfterSubmit
+      resultsVisibility
+    }
+  }
+}

@@ -49,6 +49,7 @@ insert into res.module_permission (module, permission_key) values
   ('app',     'p:app-user')      -- support tickets + tenant + resident registry rows
   ,('msg',     'p:discussions')
   ,('todo',    'p:todo')
+  ,('poll',    'p:poll')
   ,('loc',     null)             -- loc.location policy is jwt.tenant_id() = tenant_id
   ,('wf',      null)             -- wf policies are membership-shaped (currently commented out)
   ,('storage', null);          -- tenant membership: admins hold app-admin only (no p:app-user)

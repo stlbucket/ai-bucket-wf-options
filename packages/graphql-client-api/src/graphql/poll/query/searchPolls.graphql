@@ -1,0 +1,5 @@
+query SearchPolls($options: SearchPollsOptionInput!, $myUrn: String!) {
+  searchPollsList(_options: $options) {
+    ...PollSummary
+  }
+}

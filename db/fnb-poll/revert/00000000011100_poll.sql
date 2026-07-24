@@ -1,0 +1,10 @@
+drop table if exists poll.answer;
+drop table if exists poll.response;
+drop table if exists poll.option;
+drop table if exists poll.question;
+drop table if exists poll.poll;
+drop type if exists poll.results_visibility;
+drop type if exists poll.question_type;
+drop type if exists poll.poll_status;
+drop schema if exists poll_fn;
+drop schema if exists poll;

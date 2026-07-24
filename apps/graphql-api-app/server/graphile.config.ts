@@ -35,6 +35,8 @@ const preset: GraphileConfig.Preset = {
         'loc_api',
         'todo',
         'todo_api',
+        'poll',
+        'poll_api',
         'n8n',
         'n8n_api',
         'notify',

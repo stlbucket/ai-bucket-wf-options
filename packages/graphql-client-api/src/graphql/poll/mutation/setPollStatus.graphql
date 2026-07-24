@@ -1,0 +1,8 @@
+mutation SetPollStatus($pollId: UUID!, $status: PollStatus!) {
+  setPollStatus(input: { _pollId: $pollId, _status: $status }) {
+    poll {
+      id
+      status
+    }
+  }
+}

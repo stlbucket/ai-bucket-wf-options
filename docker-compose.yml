@@ -408,8 +408,6 @@ services:
       NUXT_PUBLIC_GRAPHQL_API_URL: "${NUXT_PUBLIC_GRAPHQL_API_URL:?}"
       NUXT_AUTH_APP_INTERNAL_URL: "${NUXT_AUTH_APP_INTERNAL_URL:?}"
       NUXT_SESSION_SECRET: "${NUXT_SESSION_SECRET:?}"
-      NUXT_PUBLIC_MSG_APP_URL: "${NUXT_PUBLIC_MSG_APP_URL:?}"
-      NUXT_MSG_APP_INTERNAL_URL: "${NUXT_MSG_APP_INTERNAL_URL:?}"
       # storage-layer's uploadUrl runtimeConfig (tenant-app extends storage-layer — issue 0330).
       # Uploads still POST same-origin to storage-app via Caddy /storage; no S3_* needed here.
       NUXT_PUBLIC_UPLOAD_URL: "${NUXT_PUBLIC_UPLOAD_URL:?}"

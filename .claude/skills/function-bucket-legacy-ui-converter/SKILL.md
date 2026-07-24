@@ -182,8 +182,8 @@ packages/
   auth-ui/         — Vue 3 auth UI + useAuth() (claims in localStorage via GraphQL)
   db-access/       — Pre-claims root of trust (raw pg), 2-arg withClaims, hand-written types
   graphql-client-api/ — urql GraphQL codegen hooks + composables (the default data layer)
-db/                — twelve sqitch packages, all deployed:
-  fnb-auth, fnb-app, fnb-n8n, fnb-notify, fnb-res, fnb-msg, fnb-todo, fnb-loc, fnb-storage, fnb-location-datasets, fnb-airports, fnb-game
+db/                — thirteen sqitch packages, all deployed:
+  fnb-auth, fnb-app, fnb-n8n, fnb-notify, fnb-res, fnb-msg, fnb-todo, fnb-poll, fnb-loc, fnb-storage, fnb-location-datasets, fnb-airports, fnb-game
 ```
 
 **Where each module's UI lands:**

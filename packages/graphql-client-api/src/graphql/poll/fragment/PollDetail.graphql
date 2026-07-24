@@ -1,0 +1,54 @@
+fragment PollDetail on Poll {
+  id
+  urn
+  tenantId
+  title
+  description
+  status
+  closesAt
+  allowChangeAfterSubmit
+  resultsVisibility
+  createdByResidentUrn
+  createdAt
+  updatedAt
+  createdByResident: resourceByCreatedByResidentUrn {
+    resident {
+      displayName
+    }
+  }
+  questionsList {
+    id
+    pollId
+    ordinal
+    questionType
+    prompt
+    required
+    maxSelections
+    allowOther
+    allowNote
+    collectDatetime
+    contextAt
+    optionsList {
+      id
+      questionId
+      ordinal
+      label
+      candidateAt
+    }
+  }
+  myResponse: responsesList(condition: { respondentResidentUrn: $myUrn }) {
+    id
+    pollId
+    respondentResidentUrn
+    submittedAt
+    answersList {
+      id
+      questionId
+      optionId
+      yesNo
+      otherText
+      note
+      answerAt
+    }
+  }
+}

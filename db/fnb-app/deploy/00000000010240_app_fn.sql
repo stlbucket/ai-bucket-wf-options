@@ -226,25 +226,25 @@ CREATE OR REPLACE FUNCTION app_fn.install_anchor_application()
           row(
             'app-user'::citext
             ,'App User'::citext
-            ,'{"p:app-user","p:todo","p:discussions"}'::citext[]
+            ,'{"p:app-user","p:todo","p:discussions","p:poll"}'::citext[]
             ,'user'::app.license_type_assignment_scope
           )::app_fn.license_type_info
           ,row(
             'app-admin'::citext
             ,'App Admin'::citext
-            ,'{"p:app-admin","p:todo","p:todo-admin","p:discussions","p:discussions-admin"}'::citext[]
+            ,'{"p:app-admin","p:todo","p:todo-admin","p:discussions","p:discussions-admin","p:poll","p:poll-admin"}'::citext[]
             ,'admin'::app.license_type_assignment_scope
           )::app_fn.license_type_info
           ,row(
             'app-admin-super'::citext
             ,'App Super Admin'::citext
-            ,'{"p:app-admin-super","p:app-admin","p:app-admin-support","p:todo","p:todo-admin","p:discussions","p:discussions-admin"}'::citext[]
+            ,'{"p:app-admin-super","p:app-admin","p:app-admin-support","p:todo","p:todo-admin","p:discussions","p:discussions-admin","p:poll","p:poll-admin"}'::citext[]
             ,'superadmin'::app.license_type_assignment_scope
           )::app_fn.license_type_info
           ,row(
             'app-admin-support'::citext
             ,'App Support Admin'::citext
-            ,'{"p:app-admin-support","p:todo","p:todo-admin","p:discussions","p:discussions-admin","p:exit-support"}'::citext[]
+            ,'{"p:app-admin-support","p:todo","p:todo-admin","p:discussions","p:discussions-admin","p:exit-support","p:poll","p:poll-admin"}'::citext[]
             ,'support'::app.license_type_assignment_scope
           )::app_fn.license_type_info
           ,row(
@@ -380,6 +380,7 @@ CREATE OR REPLACE FUNCTION app_fn.install_anchor_application()
               row('disc-topics'::citext,'Discussions'::citext,'{"p:app-user","p:app-admin","p:discussions"}'::citext[],'i-lucide-messages-square'::citext,'/tenant/msg',0)::app_fn.tool_info
               ,row('locations'::citext,'Locations'::citext,'{"p:app-user","p:app-admin"}'::citext[],'i-lucide-map-pin'::citext,'/tenant/loc',0)::app_fn.tool_info
               ,row('todo'::citext,'Todo'::citext,'{"p:app-user","p:app-admin"}'::citext[],'i-lucide-tool-case'::citext,'/tenant/tools/todo',0)::app_fn.tool_info
+              ,row('polls'::citext,'Polls'::citext,'{"p:app-user","p:app-admin","p:poll"}'::citext[],'i-lucide-vote'::citext,'/tenant/tools/poll',0)::app_fn.tool_info
             ]::app_fn.tool_info[]
           )::app_fn.module_info
           ,row(

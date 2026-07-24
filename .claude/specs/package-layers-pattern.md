@@ -247,17 +247,18 @@ access is `db-access`'s own pg pool (default reads/mutations go through GraphQL,
 **App directory (`app/`):**
 | File | Purpose |
 |------|---------|
-| `layouts/default.vue` | Full app layout: top bar (hamburger + logo + auth status) + `<AppNav>` slide-in |
-| `pages/index.vue` | Root index page — reads nav registry, renders dashboard grid |
-| `components/AppNav.vue` | Slide-in nav panel |
+| `layouts/default.vue` | App shell: persistent desktop `<AppNav>` sidebar + slim mobile brand bar (`FunctionBucketMark`) + `<main>` (wrapping `<OtpSessionBanner>` + page slot) + `<AppNavMobile>` bottom bar/drawer |
+| `pages/index.vue` | Placeholder landing (greeting + signed-in `user` dump, else a Login button) — the real dashboard grid lives in `home-app`, not here |
+| `components/AppNav.vue` | Desktop sidebar (`lg:`+): brand, `<WorkspaceSwitcher>`, the `<ModuleNavSection>` list, and an inline user footer; whole-nav collapse to an icon rail persisted via `useAppNav` (`fnb:nav-collapsed`) |
+| `components/AppNavMobile.vue` | Mobile (`<lg`) bottom tab bar + full-nav `USlideover` drawer; reuses `<ModuleNavSection>` + `<WorkspaceSwitcher>` |
+| `components/ModuleNavSection.vue` | Renders one nav section from claims `modules`; expanded form is a per-section `UCollapsible` disclosure (spec `.claude/specs/nav-collapsible-sections/`), icon-only in the collapsed rail |
 | `components/WorkspaceSwitcher.vue` | Sidebar current-tenant trigger + residency-tree `UModal`/`UTree`; mounted in `AppNav` + `AppNavMobile` (spec: `.claude/specs/workspace-switcher/`) |
-| `components/AppLogo.vue` | Brand logo |
-| `components/UserProfileStatus.vue` | Avatar + display name in header |
-| `components/NavSection.vue` | Renders a nav section with permission gating |
-| `components/NavItem.vue` | Individual nav link |
-| `composables/useAppNav.ts` | Open/close state for the nav panel |
-| `composables/useNavRegistry.ts` | `useNavRegistry().register([...])` — module nav sections |
-| `plugins/nav-register.ts` | Registers tenant-layer's own nav section (if any) |
+| `components/FunctionBucketMark.vue` | Inline-SVG brand mark (bucket glyph + optional ƒb monogram; `primary`/`secondary` fill) |
+| `components/OtpSessionBanner.vue` | Temporary-session countdown banner for OTP quick-login; polls auth-app `/api/session-info` (pre-claims, same-origin), renders only for `authMethod='otp'` (spec `.claude/specs/otp-login/`) |
+| `components/Loc.vue` | Location display card (name + address lines + coords) from the `fnb-types` `Location` shape |
+| `components/UserProfileStatus.vue` | Avatar + display name + logout/exit-support header widget — **present but currently unmounted** (`AppNav` renders its own inline user footer); dead-code-sweep candidate |
+| `components/TemplateMenu.vue` | **Unused** — leftover Nuxt UI starter-template picker dropdown (scaffolding); dead-code-sweep candidate |
+| `composables/useAppNav.ts` | Nav state from claims `modules` + mobile-drawer open/close + whole-nav-collapse + **per-section collapse** (top-3-open default, localStorage `fnb:nav-section:*`, spec `.claude/specs/nav-collapsible-sections/`) |
 
 **Server directory (`server/middleware/`):**
 | File | Purpose |
@@ -288,7 +289,7 @@ topic create, message list/post, and resident list are **GraphQL** now (via `use
 | `components/TopicList.vue` | Topic list component |
 | `components/MessageThread.vue` | Scrolling message thread |
 | `components/MessageComposer.vue` | Text input + send button |
-| `plugins/nav-register.ts` | Registers `Messages` nav section with `p:discussions` |
+| `composables/useMsgTopics.ts` | Thin re-export of `useMsgTopics` from `graphql-client-api` |
 
 **Server directory (`server/`) — WS carve-out only:**
 | File | Purpose |

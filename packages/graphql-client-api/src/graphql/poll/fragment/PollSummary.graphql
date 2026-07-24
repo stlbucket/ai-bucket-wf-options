@@ -1,0 +1,23 @@
+fragment PollSummary on Poll {
+  id
+  urn
+  title
+  description
+  status
+  closesAt
+  resultsVisibility
+  createdAt
+  updatedAt
+  createdByResident: resourceByCreatedByResidentUrn {
+    resident {
+      displayName
+    }
+  }
+  questions {
+    totalCount
+  }
+  myResponse: responsesList(condition: { respondentResidentUrn: $myUrn }) {
+    id
+    submittedAt
+  }
+}

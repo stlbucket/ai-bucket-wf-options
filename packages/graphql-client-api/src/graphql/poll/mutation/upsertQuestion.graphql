@@ -1,0 +1,7 @@
+mutation UpsertQuestion($pollId: UUID!, $q: QuestionInputRecordInput!) {
+  upsertQuestion(input: { _pollId: $pollId, _q: $q }) {
+    question {
+      id
+    }
+  }
+}

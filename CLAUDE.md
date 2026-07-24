@@ -38,8 +38,8 @@ spec's referee/engine logic; its build is embedded verbatim into the `game-event
 Code nodes by an embed script, not imported by any app) — not one of the ten layer/lib
 packages above, but part of the game server (spec `.claude/specs/game-server/`).
 
-**DB** (`db/`) — twelve sqitch packages (deploy order: `fnb-auth fnb-app fnb-n8n
-fnb-notify fnb-res fnb-msg fnb-todo fnb-loc fnb-storage fnb-location-datasets fnb-airports fnb-game`;
+**DB** (`db/`) — thirteen sqitch packages (deploy order: `fnb-auth fnb-app fnb-n8n
+fnb-notify fnb-res fnb-msg fnb-todo fnb-poll fnb-loc fnb-storage fnb-location-datasets fnb-airports fnb-game`;
 `fnb-n8n` must precede `fnb-notify`/`fnb-storage`/`fnb-location-datasets`/`fnb-airports` — `n8n_worker`
 grants for the notify send + asset-scan + sync workflows; `fnb-game` is last — needs `fnb-res`'s registry,
 `fnb-app`'s policies, and `fnb-n8n`'s `n8n_worker` role). `fnb-notify` is the notification outbox +

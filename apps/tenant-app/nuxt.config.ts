@@ -14,11 +14,9 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // '' sentinels — real values come from NUXT_* runtime env (docker-compose ${VAR:?}).
     // Do not put defaults here: host `pnpm build` evaluates this config without the dev env.
-    msgAppInternalUrl: '',
     public: {
       authAppUrl: '',
       graphqlApiUrl: '',
-      msgAppUrl: '',
       // site-admin n8n Workflows page — editor link-out (NUXT_PUBLIC_N8N_EDITOR_URL);
       // '' hides the button (n8n-parallel-engine spec, wf-n8n.ui.md)
       n8nEditorUrl: ''

@@ -4,7 +4,7 @@ import { useRuntimeConfig } from 'nuxt/app'
 import { computed, onMounted, watch } from 'vue'
 import { useAppNav } from '../composables/useAppNav'
 
-const { availableSections, navCollapsed, toggleCollapsed } = useAppNav()
+const { availableSections, navCollapsed, toggleCollapsed, hydrateSectionState } = useAppNav()
 const { user, isLoggedIn, logout, exitSupport } = useAuth()
 const { public: { authAppUrl } } = useRuntimeConfig()
 
@@ -22,6 +22,7 @@ const initials = computed(() => {
 const NAV_COLLAPSED_KEY = 'fnb:nav-collapsed'
 onMounted(() => {
   navCollapsed.value = localStorage.getItem(NAV_COLLAPSED_KEY) === '1'
+  hydrateSectionState()
 })
 watch(navCollapsed, (v) => localStorage.setItem(NAV_COLLAPSED_KEY, v ? '1' : '0'))
 </script>

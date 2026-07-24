@@ -26,12 +26,13 @@ anchor (application)
 
 1. `app.module` rows → nav sections (gated by module's permission_keys)
 2. `app.tool` rows → nav items within each section (gated by tool's permission_keys)
-3. Nav registration plugins (`nav-register.ts`) use `useNavRegistry().register()`
-4. `useAppNav().availableSections` filters at runtime against `useAuth().user.permissions`
+3. The module/tool rows ride `ProfileClaims.modules` (fetched at auth time into localStorage)
+4. `useAppNav().availableSections` (in `packages/tenant-layer`) derives the sections from those
+   claims and orders them; RLS + permission gating already happened at the DB when claims were built
 
-The DB records are the source of truth for what exists. The nav-register plugin in each
-layer/app is the mechanism that surfaces them to the UI. See b6-nav-section-registration.md
-for the plugin pattern.
+The DB records are the **single** source of truth (R14). There is **no** client-side registry:
+the retired `nav-register.ts` / `useNavRegistry()` plugin pattern no longer exists anywhere in
+code — nav is entirely claims-driven.
 
 ## Adding a New Module's Navigation
 

@@ -17,7 +17,7 @@ Referenced by all `msg/*.data.md` files.
 row('msg'::citext,'Messages'::citext,'{"p:discussions"}'::citext[],
     'i-lucide-messages-square'::citext,'/tenant/msg',0)::app_fn.tool_info
 ```
-Note: msg-layer nav plugin (`packages/msg-layer/app/plugins/nav-register.ts`) registers an empty array — the nav entry above is registered directly in the DB by tenant-app.
+Note: the nav entry above is registered **directly in the DB** (R14) and rides `ProfileClaims.modules` into `useAppNav()`. There is no client-side nav plugin (the old `msg-layer/app/plugins/nav-register.ts` / `useNavRegistry` pattern is retired and no longer exists in code).
 
 ## Permission Model
 | Action | Required |

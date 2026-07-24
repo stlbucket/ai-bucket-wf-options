@@ -23,6 +23,17 @@ export type { ResidencyTreeNode } from '@/residency-tree'
 export type { Profile } from '@/profile'
 export type { Application, Module, Tool } from '@/application'
 export type { Todo, TodoStatus, TodoType } from '@/todo'
+export type {
+  Poll,
+  PollStatus,
+  QuestionType,
+  ResultsVisibility,
+  PollOption,
+  PollQuestion,
+  PollAnswer,
+  PollResponse,
+  PollQuestionResult,
+} from '@/poll'
 export type { SupportTicket, SupportTicketComment, SupportTicketStatus } from '@/support-ticket'
 export type { LocationInfoInput } from '@/location-input'
 export type { WorkflowRunStatus, N8nWorkflowRun } from '@/workflow-run'

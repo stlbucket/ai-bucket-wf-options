@@ -1,0 +1,7 @@
+%syntax-version=1.0.0
+%project=fnb-poll
+
+00000000011100_poll [fnb-app:00000000010220_app fnb-res:00000000011000_res] 2026-07-23T00:00:00Z Developer <dev@example.com> # Create poll schemas, enums, and tables
+00000000011110_poll_fn_types [00000000011100_poll] 2026-07-23T00:00:00Z Developer <dev@example.com> # Create poll function/composite types
+00000000011120_poll_fn [00000000011110_poll_fn_types] 2026-07-23T00:00:00Z Developer <dev@example.com> # Create poll API and internal functions
+00000000011130_poll_policies [00000000011120_poll_fn] 2026-07-23T00:00:00Z Developer <dev@example.com> # Poll schema grants and RLS policies

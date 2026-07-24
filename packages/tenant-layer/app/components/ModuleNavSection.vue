@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import { useRoute } from 'nuxt/app'
+import { computed } from 'vue'
+import { useAppNav } from '../composables/useAppNav'
 import type { NavSection } from '../composables/useAppNav'
 
-defineProps<{ section: NavSection; collapsed?: boolean }>()
+const props = defineProps<{ section: NavSection; collapsed?: boolean }>()
 
 const route = useRoute()
+const { isSectionOpen, setSectionOpen } = useAppNav()
+
+// Per-section disclosure state (only meaningful in the expanded, non-icon-rail branch).
+const open = computed({
+  get: () => isSectionOpen(props.section.key),
+  set: (v) => setSectionOpen(props.section.key, v),
+})
 
 // Highlight the active tool, and keep it highlighted on nested routes
 // (e.g. /tools/todo stays active on /tools/todo/[id]).
@@ -15,13 +24,6 @@ function isActive(itemRoute: string) {
 
 <template>
   <div class="flex flex-col gap-0.5" :class="collapsed ? 'items-center' : ''">
-    <div
-      v-if="!collapsed"
-      class="px-2.5 pt-2 pb-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-white/45"
-    >
-      {{ section.label }}
-    </div>
-
     <template v-if="collapsed">
       <UTooltip
         v-for="item in section.items"
@@ -45,22 +47,36 @@ function isActive(itemRoute: string) {
       </UTooltip>
     </template>
 
-    <template v-else>
-      <NuxtLink
-        v-for="item in section.items"
-        :key="item.key"
-        :to="item.route"
-        :external="true"
-        class="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors"
-        :class="
-          isActive(item.route)
-            ? 'bg-white/15 font-semibold text-white'
-            : 'text-white/85 hover:bg-white/8'
-        "
+    <UCollapsible v-else v-model:open="open" :ui="{ content: 'flex flex-col gap-0.5' }">
+      <button
+        type="button"
+        class="flex w-full items-center justify-between rounded-lg px-2.5 pt-2 pb-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-white/45 transition-colors hover:text-white/70"
       >
-        <UIcon :name="item.icon" class="size-4 shrink-0" />
-        {{ item.label }}
-      </NuxtLink>
-    </template>
+        <span>{{ section.label }}</span>
+        <UIcon
+          name="i-lucide-chevron-down"
+          class="size-3.5 shrink-0 transition-transform duration-150"
+          :class="open ? '' : '-rotate-90'"
+        />
+      </button>
+
+      <template #content>
+        <NuxtLink
+          v-for="item in section.items"
+          :key="item.key"
+          :to="item.route"
+          :external="true"
+          class="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors"
+          :class="
+            isActive(item.route)
+              ? 'bg-white/15 font-semibold text-white'
+              : 'text-white/85 hover:bg-white/8'
+          "
+        >
+          <UIcon :name="item.icon" class="size-4 shrink-0" />
+          {{ item.label }}
+        </NuxtLink>
+      </template>
+    </UCollapsible>
   </div>
 </template>

@@ -27,18 +27,20 @@ and Caddyfile. Only the managed data services, registry, and secret store differ
 ```
 infra/
 ├── README.md                         # this file
-├── compose/docker-compose.prod.yml   # the prod stack (17 services; images from registry, managed PG/S3, Caddy)
+├── compose/docker-compose.prod.yml   # the prod stack (16 services; images from registry, managed PG/S3, Caddy)
 ├── docker/
 │   ├── app.Dockerfile                # multi-stage per-app build (ARG APP, ARG BASE_URL baked at build)
-│   ├── Caddyfile                     # TLS + path routing + id./n8n. subdomains
+│   ├── Caddyfile                     # TLS + path routing + id./n8n. subdomains (+ www -> apex 301)
 │   └── pg-bootstrap.sh               # idempotent managed-PG bootstrap (zitadel/n8n_engine DBs + PostGIS)
 ├── env/
 │   ├── .env.prod.tpl                 # rendered to the box .env (composes URLs from ${DOMAIN})
 │   └── render-env.mjs                # fail-loud renderer (missing key => non-zero)
 ├── scripts/
-│   ├── build-images.sh               # loop 8 apps -> build+push, git-SHA tag
+│   ├── build-images.sh               # 7 apps + hardened n8n image -> build+push, git-SHA tag
 │   ├── deploy.sh                     # ssh box: copy artifacts, registry login, compose pull && up -d
-│   └── health-verify.sh              # post-deploy TLS/health probes
+│   ├── health-verify.sh              # post-deploy TLS/health probes
+│   ├── do-env-build.sh               # pnpm do-env-build — one-command DO deploy (chains the above; user-run)
+│   └── do-env-teardown.sh            # pnpm do-env-teardown — terraform destroy w/ typed confirm (user-run)
 └── terraform/
     ├── modules/{digitalocean, aws, postgres-bootstrap}
     └── environments/{do-prod, aws-prod}       # backend + tfvars + module call (see each env's README)
@@ -54,7 +56,7 @@ build-images.sh  →  terraform apply  →  render-env.mjs  →  deploy.sh  → 
 ```
 
 On the box, `docker compose up -d` runs the one-shots first: **pg-bootstrap** (zitadel/n8n_engine
-DBs + PostGIS) → **db-migrate** (sqitch, 12 packages) → **zitadel-seed** (first boot) →
+DBs + PostGIS) → **db-migrate** (sqitch, 13 packages) → **zitadel-seed** (first boot) →
 **n8n-import**, then the apps + Caddy.
 
 ---
@@ -72,12 +74,18 @@ them.** `render-env.mjs` fails loudly if any is missing.
 | `N8N_ENCRYPTION_KEY` | **IMMUTABLE per environment** |
 | `ANTHROPIC_API_KEY` | n8n `anthropic-api-key` credential (game-event AI) |
 | `N8N_WEBHOOK_SECRET` | n8n webhook shared secret |
+| `RESEND_API_KEY` | prod email (n8n `fnb-smtp` credential → Resend SMTP; verify the domain + SPF/DKIM in Resend first) |
 | `ZITADEL_DB_PASSWORD`, `N8N_ENGINE_DB_PASSWORD` | owner-role passwords (pg-bootstrap) |
 | `N8N_WORKER_PG_PASSWORD` | sqitch-created worker role |
 | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Spaces key / scoped IAM key (NOT MinIO root) |
 | `ZITADEL_ADMIN_USERNAME/EMAIL/PASSWORD` | prod console admin (FirstInstance) |
 | `MAPBOX_ACCESS_TOKEN` | tenant-app maps |
 | `DB_PASSWORD` | **aws-prod only** — RDS master password (`TF_VAR_db_password`) |
+| `SETUP_TOKEN` | first-run `/auth/setup` gate — rendered onto the box AND presented by bootstrap-identities |
+| `SITE_ADMIN_EMAIL/_FIRST_NAME/_LAST_NAME/_PHONE` | site admin identity (bootstrap-identities; laptop-side only, never rendered onto the box) |
+| `SITE_ADMIN_PASSWORD` | site admin ZITADEL password — prod policy: ≥ 8 chars, upper+lower+number+symbol |
+| `SITE_TENANT_NAME` | anchor tenant name (e.g. `Anchor Tenant`) |
+| `N8N_ADMIN_PASSWORD` | n8n owner password — n8n policy: ≥ 8 chars, 1 number, 1 capital |
 
 Infra-derived values (PG host/port/admin creds, bucket, registry, box IP) are **Terraform outputs**,
 not secrets — `render-env.mjs` gets them via `terraform output -json`.
@@ -88,6 +96,11 @@ not secrets — `render-env.mjs` gets them via `terraform output -json`.
 
 **Prereqs:** DO account; a domain (delegate NS to DO); `doctl` auth'd; a DO SSH key; a Spaces state
 bucket `fnb-tfstate-do` (versioning on) + Spaces key/secret; **Terraform ≥ 1.6**.
+
+**One-command path:** with secrets in `~/.config/fnb/prod-secrets.env`, `pnpm do-env-build` chains
+steps 1–4 below (toggles: `SKIP_APPLY`, `SKIP_BUILD`, `AUTO_APPROVE`, `IMAGE_TAG`);
+`pnpm do-env-teardown` destroys the environment (typed confirmation; `PURGE_BUCKET=1` empties the
+assets bucket first). Both are **user-run only**. The manual steps remain the primitive:
 
 ```bash
 # 0. Fill non-secret knobs + put secrets in the store.
@@ -112,8 +125,15 @@ ENVIRONMENT=do-prod BOX_HOST=<reserved_ip> REGISTRY=<docr> IMAGE_TAG=<sha> \
 
 # 4. Verify.
 DOMAIN=<domain> infra/scripts/health-verify.sh
+
+# 5. Bootstrap identities (spec production-runtime.md §9.1; idempotent — do-env-build step 6).
+#    Site admin: POST https://<domain>/auth/api/setup/initialize  (409 = already done, no-op)
+#    n8n owner:  POST https://n8n.<domain>/rest/owner/setup       (no-op once an owner exists)
+#    Requires SITE_ADMIN_*, SITE_TENANT_NAME, SETUP_TOKEN, N8N_ADMIN_PASSWORD in the secrets file.
+#    Afterwards: app login at https://<domain> (ZITADEL), n8n editor at https://n8n.<domain>.
 ```
-Details + notes: `infra/terraform/environments/do-prod/README.md`.
+Details + notes: `infra/terraform/environments/do-prod/README.md`. The CI `deploy.yml` path stops
+at health-verify — bootstrap-identities is a `do-env-build` (operator) step.
 
 ## Runbook — AWS (`aws-prod`)
 
@@ -146,7 +166,7 @@ Details + notes: `infra/terraform/environments/aws-prod/README.md`.
 
 ## CI (GitHub Actions — design; you wire secrets/OIDC)
 
-- **`build-images.yml`** — on tag `v*` (or manual, env input): build 8 images → push to the env's
+- **`build-images.yml`** — on tag `v*` (or manual, env input): build 7 app images + fnb-n8n → push to the env's
   registry (DOCR via doctl / ECR via OIDC), git-SHA tag.
 - **`deploy.yml`** — manual (env + image_tag inputs): `terraform apply` → `render-env.mjs` →
   `deploy.sh` → `health-verify.sh`. `run_apply=false` gives an init+plan-only gate for prod safety.
@@ -156,7 +176,7 @@ a laptop if CI is unavailable.
 
 ## First-boot expectations (Phase 7 verification)
 
-`db-migrate` deploys all 12 sqitch packages · `zitadel-seed` (prod branch — no dev users) runs ·
+`db-migrate` deploys all 13 sqitch packages · `zitadel-seed` (prod branch — no dev users) runs ·
 `n8n-import` imports + publishes (error-handler ACTIVE) · Caddy serves TLS on `<domain>` /
 `id.<domain>` / `n8n.<domain>` · the login ceremony works · an upload scans+promotes (n8n
 asset-scan + ClamAV) · a game plays (n8n referee).

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build + push the 8 production app images, git-SHA tagged. Registry-agnostic:
+# Build + push the 7 production app images + the hardened n8n engine image, git-SHA tagged.
+# Registry-agnostic:
 #   REGISTRY = registry.digitalocean.com/<name>   (DOCR)
 #            | <acct>.dkr.ecr.<region>.amazonaws.com  (ECR)
 # CI (build-images.yml) passes IMAGE_TAG=$GITHUB_SHA; locally it falls back to the current git SHA.
@@ -46,10 +47,13 @@ for app in auth-app home-app tenant-app msg-app game-app graphql-api-app storage
   docker push "$image"
 done
 
-# TODO (deployment effort, plan 0010): build + push the custom n8n image
-# (`${REGISTRY}/fnb-n8n:${IMAGE_TAG}` from `docker/n8n/Dockerfile` — ffmpeg + clamdscan for
-# asset-scan) and reference it from the prod n8n service. The agent-app image is retired
-# (agentic-decommission — n8n is the sole workflow engine).
+# Hardened n8n engine image — stock 2.30.7 + ffmpeg + clamdscan (asset-scan Execute Command
+# nodes). Referenced by the prod compose n8n service. (The agent-app image is retired —
+# agentic-decommission; n8n is the sole workflow engine.)
+n8n_image="${REGISTRY}/fnb-n8n:${IMAGE_TAG}"
+echo "  --> n8n (hardened)  ${n8n_image}"
+docker build -t "$n8n_image" "$ROOT/docker/n8n"
+docker push "$n8n_image"
 
-echo "==> All 7 app images built + pushed @ ${IMAGE_TAG}"
+echo "==> All 7 app images + fnb-n8n built + pushed @ ${IMAGE_TAG}"
 echo "    Pass IMAGE_TAG=${IMAGE_TAG} to the deploy step (deploy.sh / deploy.yml)."

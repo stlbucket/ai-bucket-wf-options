@@ -22,7 +22,9 @@
     "env-build-empty": "tsx scripts/env-build-empty.ts",
     "env-destroy": "tsx scripts/env-destroy.ts",
     "env-rebuild": "tsx scripts/env-destroy.ts && tsx scripts/env-build.ts",
-    "env-rebuild-empty": "tsx scripts/env-destroy.ts && tsx scripts/env-build-empty.ts"
+    "env-rebuild-empty": "tsx scripts/env-destroy.ts && tsx scripts/env-build-empty.ts",
+    "do-env-build": "bash infra/scripts/do-env-build.sh",
+    "do-env-teardown": "bash infra/scripts/do-env-teardown.sh"
   },
   "devDependencies": {
     "@nuxt/eslint": "catalog:",

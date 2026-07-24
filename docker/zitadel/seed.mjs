@@ -56,19 +56,12 @@ const POST_LOGOUT_URI = `${APP_ORIGIN}/`
 // password-complexity policy is relaxed in docker-compose.yml to keep this parity).
 const SEED_PASSWORD = 'poiuytre'
 const SEED_USERS = [
-  { email: 'bucket@function-bucket.net', givenName: 'Bucket', familyName: 'Admin' },
-  { email: 'tacos-AAA@example.com', givenName: 'Tacos', familyName: 'AAA' },
-  { email: 'tacos-BBB@example.com', givenName: 'Tacos', familyName: 'BBB' },
-  { email: 'burritos-AAA@example.com', givenName: 'Burritos', familyName: 'AAA' },
-  { email: 'burritos-BBB@example.com', givenName: 'Burritos', familyName: 'BBB' },
-  { email: 'my-app-tenant-admin@example.com', givenName: 'my-app-tenant', familyName: 'admin' },
-  { email: 'my-app-tenant-user@example.com', givenName: 'my-app-tenant', familyName: 'user' },
-  { email: 'your-app-tenant-admin@example.com', givenName: 'your-app-tenant', familyName: 'admin' },
-  { email: 'your-app-tenant-user@example.com', givenName: 'your-app-tenant', familyName: 'user' },
-  { email: 'our-app-tenant-user@example.com', givenName: 'our-app-tenant', familyName: 'user' },
+  { email: 'site-admin@example.com', givenName: 'Site', familyName: 'Admin' },
+  { email: 'anchor-admin@example.com', givenName: 'Anchor', familyName: 'Admin' },
+  { email: 'anchor-user@example.com', givenName: 'Anchor', familyName: 'User' },
 ]
 
-// Superset of db/seed-large.sql: 2 tenants x { admin, floater, user-01..07 }. seed-large's
+// Superset of the large fixture in db/seed.sql: 2 tenants x { admin, floater, user-01..07 }. The
 // per-tenant user counts are randomized (4-7), so this seeds the full possible roster —
 // extras a given run didn't materialize in the DB are harmless: their first OIDC login just
 // provisions a fresh profile with no residencies (app_fn.provision_idp_user email match).

@@ -70,7 +70,7 @@ jobs:
         run: echo "REGISTRY=${{ steps.ecr.outputs.registry }}" >> "$GITHUB_ENV"
 
       - if: steps.gate.outputs.skip == 'false'
-        name: build + push (8 apps, git-SHA tag)
+        name: build + push (7 apps + fnb-n8n, git-SHA tag)
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: infra/scripts/build-images.sh

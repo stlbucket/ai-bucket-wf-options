@@ -108,6 +108,8 @@ jobs:
           N8N_ENCRYPTION_KEY: ${{ secrets.N8N_ENCRYPTION_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           N8N_WEBHOOK_SECRET: ${{ secrets.N8N_WEBHOOK_SECRET }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}     # fnb-smtp credential (Resend SMTP)
+          SETUP_TOKEN: ${{ secrets.SETUP_TOKEN }}           # first-run /auth/setup gate (§9.1)
           ZITADEL_ADMIN_USERNAME: ${{ secrets.ZITADEL_ADMIN_USERNAME }}
           ZITADEL_ADMIN_EMAIL: ${{ secrets.ZITADEL_ADMIN_EMAIL }}
           ZITADEL_ADMIN_PASSWORD: ${{ secrets.ZITADEL_ADMIN_PASSWORD }}

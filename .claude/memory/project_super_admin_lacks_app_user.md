@@ -5,10 +5,11 @@ metadata:
   type: project
 ---
 
-The default dev super-admin login `bucket@function-bucket.net` (anchor tenant) holds
+The default dev super-admin login `site-admin@example.com` (anchor tenant; was
+`bucket@function-bucket.net` before the 2026-07-24 seed combine) holds
 `p:app-admin`, `p:app-admin-super`, `p:app-admin-support`, `p:todo`/`p:discussions` (+admin
 variants) — but **NOT the base `p:app-user`**. Regular tenant users (e.g.
-`my-app-tenant-user@example.com`) do have `p:app-user`.
+`large-tenant-01-user-01@example.com`) do have `p:app-user`.
 
 **Consequence:** any `<module>_api` function or `WORKFLOW_REGISTRY` entry gated on a plain
 `jwt.enforce_permission('p:app-user')` will raise `30000: NOT AUTHORIZED` for the super-admin

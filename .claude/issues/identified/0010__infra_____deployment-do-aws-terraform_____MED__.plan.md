@@ -73,7 +73,7 @@ Recommended defaults, adopted unless the user overrides at the go/no-go:
 |---|---|---|---|
 | 1 | Domain(s) | Author everything against `var.domain` + `id.${domain}` / `n8n.${domain}`; real value is a tfvars input at deploy. `<domain>` placeholder in runbook. | 2,4,5 (tfvars) |
 | 2 | Regions | `var.region` per module; placeholder `nyc3` (DO) / `us-east-1` (AWS) in the example tfvars. | 4,5 (tfvars) |
-| 3 | ZITADEL prod seed | Add a **`ZITADEL_SEED_MODE=prod`** branch to `seed.mjs`: no dev users, **no** complexity relaxation, https redirect URIs from `APP_ORIGIN`; the concrete prod admin identity is a deploy-time secret, seeding stays scripted+idempotent. | 2 |
+| 3 | ZITADEL prod seed | Add a **`ZITADEL_SEED_MODE=prod`** branch to `seed.mjs`: no dev users, **no** complexity relaxation, https redirect URIs from `APP_ORIGIN`; the concrete prod admin identity is a deploy-time secret, seeding stays scripted+idempotent. **Resolved fully 2026-07-24 by spec D12/D13 → Phase 8** (site admin + n8n owner bootstrapped by `do-env-build` from `SITE_ADMIN_*`). | 2, 8 |
 | 4 | `S3_ENDPOINT` on AWS | **Set the regional endpoint** (`https://s3.<region>.amazonaws.com`) so `requiredEnv('S3_ENDPOINT')` keeps working with **zero app-code change** (verified 3 readers). No code allowance. | 5 |
 | 5 | AWS PostGIS/bootstrap | **On-box one-shot** `psql` container (spec's recommendation) — avoids Terraform needing a VPC network path. Reuses the ported `db-init` logic. | 3,5 |
 | 6 | CDN | Author the CDN resource **behind a `var.enable_cdn` flag** (default `true` DO Spaces CDN / AWS CloudFront); `S3_PUBLIC_BASE_URL` points at it when on, at the origin when off. | 4,5 |
@@ -213,6 +213,32 @@ published (error-handler ACTIVE), Caddy serves TLS on `<domain>` / `id.<domain>`
 the login ceremony works end-to-end, an upload scans+promotes (agent-app + ClamAV path), and a game
 plays (n8n referee path). The assistant reviews pasted logs/outputs; it does not run these.
 
+### Phase 8 — First-run identity bootstrap (spec D12/D13; `production-runtime.md` §9.1; added 2026-07-24)
+
+Scripted, idempotent site-admin + n8n-owner creation as `do-env-build` step 6 (after
+health-verify). Supersedes the OQ3 row's "concrete prod admin identity is a deploy-time secret"
+with the concrete mechanism. Verified anchors:
+
+| Target | Anchor |
+|---|---|
+| setup endpoint contract | `apps/auth-app/server/api/setup/initialize.post.ts` — gates `SETUP_TOKEN` (500 unset / 403 mismatch, constant-time) → required `tenantName`,`email`,`password` (400) → soft anchor gate (**409 `SETUP_ALREADY_COMPLETE` = the idempotent no-op**) → ZITADEL user (422 complexity / 502 unavailable) → `initialize_anchor` → `{ok:true}` |
+| `SETUP_TOKEN` wiring today | dev compose only (`docker-compose.yml` auth-app `${SETUP_TOKEN:?}`); **absent** from `infra/compose/docker-compose.prod.yml` auth-app + `infra/env/.env.prod.tpl` — prod `/auth/setup` currently 500s |
+| n8n owner call | `POST https://n8n.<domain>/rest/owner/setup` `{email,firstName,lastName,password}` — the first-visit setup screen's own call; no-op once an owner exists. **Verify the route exists in the pinned 2.30.7 image before relying on it** (read-only grep of the image's compiled routes) |
+| secrets source | `~/.config/fnb/prod-secrets.env` (sourced by `do-env-build.sh:26,34`) — `SITE_ADMIN_EMAIL/_FIRST_NAME/_LAST_NAME/_PHONE` already present; **user adds** `SITE_ADMIN_PASSWORD`, `SITE_TENANT_NAME`, `SETUP_TOKEN`, `N8N_ADMIN_PASSWORD` |
+
+Work items:
+1. `infra/env/.env.prod.tpl` — add `SETUP_TOKEN=${SETUP_TOKEN}`; `infra/compose/docker-compose.prod.yml`
+   auth-app env — add `SETUP_TOKEN: "${SETUP_TOKEN:?…}"` (mirror the dev line).
+2. `infra/scripts/do-env-build.sh` — step 6 `bootstrap-identities`: require the four new vars
+   (plus the existing identity trio); POST setup/initialize (200 `{ok:true}` first run, 409
+   `SETUP_ALREADY_COMPLETE` re-run no-op, anything else fails loudly with the response body);
+   then POST n8n `/rest/owner/setup` (2xx first run; "already setup" 4xx no-op; else fail).
+3. `.github/workflows/deploy.yml` render step + `infra/README.md` secrets checklist/runbook —
+   add `SETUP_TOKEN` (CI renders the box `.env`; the CI path does NOT run bootstrap-identities —
+   it stays a `do-env-build` step, documented in the runbook).
+4. Verify: `bash -n`; dummy-value `render-env.mjs` render includes `SETUP_TOKEN`; prod
+   `docker compose config` clean; n8n 2.30.7 route grep. Live re-run idempotency = Phase 7 scope.
+
 ---
 
 ## Deploy runbook shape (previewed here; authored in full at `infra/README.md`, Phase 6)
@@ -232,6 +258,8 @@ registry (DOCR/ECR), secret store (GH secrets+DO / SSM), and the PostGIS bootstr
 5. deploy.sh <env>            → copy compose+Caddyfile+db/+n8n/+.env to the box; compose pull && up -d
       → db-migrate (sqitch, 12 pkgs) → n8n-import → zitadel-seed (first boot) → apps start.
 6. health-verify.sh <env>     → TLS 200s on /, /auth, id., n8n.; graphql + zitadel ready.
+7. bootstrap-identities (Phase 8; folded into do-env-build) → site admin via
+   /auth/api/setup/initialize + n8n owner via /rest/owner/setup — both idempotent no-ops on re-run.
 ```
 
 `ZITADEL_MASTERKEY` and `N8N_ENCRYPTION_KEY` are generated **once per environment** and never
@@ -336,6 +364,82 @@ rotated without a data re-init (spec §3) — the runbook flags this in bold.
   managed-PG TLS (`sslmode=require` — confirm the app pg client honors it), `S3_PUBLIC_BASE_URL`
   virtual-hosted URL construction, DO Spaces state-lock reliability, image-build runner RAM (OOM
   finding).
+
+**2026-07-24 — Post-authoring drift true-up (notifications/polls/agentic-decommission landed after
+Phases 0–6) + domain wiring (`function-bucket.net`):**
+- **`.env.prod.tpl`**: `DEPLOY_PACKAGES` → the current 13-package list (`fnb-agent` out,
+  `fnb-notify`/`fnb-poll` in); all `AGENT_*` vars removed (`ANTHROPIC_API_KEY` kept — n8n
+  `anthropic-api-key` credential); new Notifications block — prod email = **Resend over its SMTP
+  interface** (spec D4; `NOTIFY_SMTP_HOST=smtp.resend.com:465`, user `resend`, password
+  `${RESEND_API_KEY}`) so the `fnb-smtp` credential + Send Email node work unchanged. SMS stays
+  log-sink (dispatch is Phase 5+ per notifications spec).
+- **Credential templates parameterized** (`n8n/credentials/`): `fnb-n8n-worker.json.tpl` host/port/
+  ssl/allowUnauthorizedCerts from env (dev `db:5432:disable`; prod managed PG `require` +
+  allow-unauthorized for the managed CA — same posture as `DB_POSTGRESDB_SSL_REJECT_UNAUTHORIZED`);
+  `fnb-smtp.json.tpl` user/password/secure/disableStartTls from env. Dev compose passes the dev
+  literals (rendered output verified **byte-identical** to the previous hardcoded dev values).
+- **Prod compose**: `n8n-import` now passes the smtp + S3 credential-render inputs
+  (`MINIO_ROOT_USER/PASSWORD` ← `S3_ACCESS_KEY/SECRET_KEY`) + worker-PG connection; `n8n` service
+  now runs the **hardened image** `${REGISTRY}/fnb-n8n:${IMAGE_TAG}` (ffmpeg + clamdscan) and
+  mirrors the dev env block (NODES_EXCLUDE `[]`, S3/CLAMAV/ASSET_SCAN vars,
+  `NODE_FUNCTION_ALLOW_BUILTIN=fs,http,https`, webhook/zitadel/auth URLs) + the `zitadel-seed`
+  PAT volume + a soft `clamav` dep — invite-user/forgot-password/asset-scan now function in prod.
+- **`build-images.sh`** builds + pushes `fnb-n8n` from `docker/n8n/Dockerfile` (TODO resolved);
+  README/workflow counts trued up (7 apps + fnb-n8n; 13 sqitch packages; 16 prod services).
+- **`www` wiring**: apex `function-bucket.net` is canonical — new `www` A record
+  (`modules/digitalocean`) + Caddy `www.{$DOMAIN}` → 301 apex; `do-prod.tfvars` domain filled.
+- **`deploy.yml`** render step gained `RESEND_API_KEY` (new secret — added to the README checklist;
+  requires domain verification + SPF/DKIM in Resend before email delivers).
+- **Verified**: dev + prod `docker compose config` clean (prod via a dummy-value
+  `render-env.mjs` render — 30 keys); credential renders for dev + prod values parse + escape
+  correctly; `terraform fmt -check` clean; `bash -n` clean; `caddy validate` passes.
+- **Still open before first deploy**: Resend HTTP branch + webhook signature verification
+  (notifications spec TODOs — SMTP path ships without them), Twilio SMS dispatch (Phase 5+),
+  and everything in Phase 7.
+
+**2026-07-24 — Image-pipeline smoke re-verified against the current tree (post-drift-true-up):**
+- **In-Docker build still OOMs locally** (exit 137, twice — incl. with `--concurrency=1`; the four
+  dependency packages build fine serialized, the tenant-app `nuxt build` alone breaches the
+  ~7.7 GiB Docker VM sharing memory with the running dev stack). Confirms the 2026-07-20 finding:
+  build images where ≥8 GB is actually free — GH runners (16 GB) or the box; or raise Docker
+  Desktop's memory for laptop builds.
+- **Host-side proof PASSES end-to-end**: `NUXT_APP_BASE_URL=/tenant turbo run build
+  --filter=fnb-tenant-app` (32 GB host, ~61s) → nitro.mjs has `"baseURL": "/tenant"` + base
+  `"/tenant/"`; booted `.output/server/index.mjs` → listens on `/tenant`, `GET /tenant` 200 with
+  assets emitted as `/tenant/_nuxt/*`, off-base `/` 302s into the base. The §3.1 highest-risk
+  property holds on the current tree.
+- **Cache-poisoning bug found + fixed**: `turbo.json`'s build task didn't key on
+  `NUXT_APP_BASE_URL` (no `env` entry) — two builds of the same app with different base URLs were
+  cache-identical, so any shared/warm turbo cache (host, CI remote cache) could restore a
+  wrong-base-URL `.output`. Docker layer builds were immune (ENV change invalidates the RUN
+  layer). Fixed: `"env": ["NUXT_APP_BASE_URL"]` on the build task.
+
+**2026-07-24 — Phase 8 (first-run identity bootstrap, spec D12/D13) authored + locally verified:**
+- **`infra/env/.env.prod.tpl`** + **prod compose auth-app** — `SETUP_TOKEN` wired (`${SETUP_TOKEN:?}`,
+  mirrors dev); the seeder PAT was already reachable (volume mounted, `ZITADEL_PAT_FILE` defaults to
+  `/zitadel-seed/admin.pat`, `FIRSTINSTANCE_PATPATH` writes it) — prod `/auth/setup` becomes functional.
+- **`do-env-build.sh` step 6 `bootstrap-identities`** — requires `SITE_ADMIN_*` +
+  `SITE_ADMIN_PASSWORD`/`SITE_TENANT_NAME`/`SETUP_TOKEN`/`N8N_ADMIN_PASSWORD` from the secrets file;
+  POSTs setup/initialize (200 create / 409 no-op / else fail-loud with body) then n8n
+  `/rest/owner/setup` (2xx create / 4xx+"already" no-op / else fail); prints post-deploy access URLs.
+- **`deploy.yml`** render step + **`infra/README.md`** — `SETUP_TOKEN` secret added; secrets
+  checklist gained the 4 new operator vars (identity vars stay laptop-side, never rendered onto the
+  box); runbook step 5 documents the calls; CI path explicitly stops at health-verify.
+- **n8n endpoint VERIFIED against the pinned 2.30.7 image** (read-only in-image grep):
+  `OwnerController` at `('/owner')` + `Post('/setup', { skipAuth: true })` → `POST /rest/owner/setup`;
+  payload `{email,firstName,lastName,password}`; owner-exists → `BadRequestError('Instance owner
+  already setup')` (400) — matches the script's no-op detection.
+- **Gates:** `bash -n` clean; dummy-value render = 31 keys incl. `SETUP_TOKEN`; prod
+  `docker compose config` clean against the render; `deploy.yml` YAML-valid.
+- **CRITICAL follow-up fix (readiness check):** prod `db-migrate` never set `SEED_DATA`, and
+  `docker/migrate-entrypoint.sh` defaults it to `full` → a prod deploy would have run the DEV
+  `db/seed.sql` (example.com anchor + Large Tenants) against the managed DB, and
+  bootstrap-identities would 409 against that dev-owned anchor. Fixed: `SEED_DATA: "empty"` hard-set
+  on the prod `db-migrate` service (compose config re-validated; value lands). The real anchor comes
+  solely from bootstrap-identities.
+- **Remaining (user-run, folds into Phase 7):** add the 4 new vars to
+  `~/.config/fnb/prod-secrets.env`; add `SETUP_TOKEN` to GH secrets (CI path only — not needed for
+  `do-env-build`); live first-run + re-run idempotency check at next deploy.
 
 ## Out of scope / linked
 - **agent-app + ClamAV removal** — explicitly a **later separate effort** (spec D9/§10); prod keeps

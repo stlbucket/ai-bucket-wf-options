@@ -45,6 +45,8 @@ top-level **`infra/`** directory.
 | D9 | **`agent-app` (and ClamAV) are KEPT for now** | User: agent-app removal is a **separate later effort**; until then prod runs the full agentic engine + its ClamAV dependency |
 | D10 | **Artifacts land in a new top-level `infra/`** | User's requested landing spot; stands apart from the pnpm workspace like `db/` |
 | D11 | **Managed-PG multi-DB + role bootstrap replaces the dev init scripts** | Managed PG has no `/docker-entrypoint-initdb.d` hook and no superuser; `zitadel`/`n8n_engine` DBs + roles + PostGIS must be created explicitly (native DO resources / a psql one-shot on AWS) |
+| D12 | **Site admin is bootstrapped by `do-env-build`**, not a manual `/auth/setup` visit — the script POSTs the first-run-setup endpoint with `SITE_ADMIN_*` + `SETUP_TOKEN` + `SITE_TENANT_NAME` from `~/.config/fnb/prod-secrets.env` (2026-07-24; resolves old Open Question 3) | One-command deploy includes the first identity; the endpoint is already idempotent (409 = no-op), and `/auth/setup` stays as the human fallback. See `production-runtime.md` §9.1 |
+| D13 | **n8n instance owner is bootstrapped the same way** — `POST https://n8n.<domain>/rest/owner/setup` with the same `SITE_ADMIN_*` identity + its own `N8N_ADMIN_PASSWORD` (2026-07-24) | Same one-command posture; the call is a no-op once an owner exists. Separate password var because n8n and ZITADEL have different complexity policies |
 
 ---
 
@@ -113,14 +115,32 @@ top-level **`infra/`** directory.
       Caddy serves TLS on `<domain>`/`id.<domain>`/`n8n.<domain>`, login ceremony works end-to-end,
       an upload scans+promotes (agent-app + ClamAV path), a game plays (n8n referee path)
 
+### Phase 8 — First-run identity bootstrap (D12/D13; `production-runtime.md` §9.1)
+- [x] Wire `SETUP_TOKEN` into prod: `infra/compose/docker-compose.prod.yml` auth-app env
+      (`${SETUP_TOKEN:?}`) + `infra/env/.env.prod.tpl` (+ `deploy.yml` render secret) — 2026-07-24
+- [ ] Operator adds to `~/.config/fnb/prod-secrets.env`: `SITE_ADMIN_PASSWORD`,
+      `SITE_TENANT_NAME`, `SETUP_TOKEN`, `N8N_ADMIN_PASSWORD` (the `SITE_ADMIN_EMAIL` /
+      `_FIRST_NAME` / `_LAST_NAME` / `_PHONE` block already exists; `SETUP_TOKEN` also → GH secrets)
+- [x] `do-env-build.sh` step 6 `bootstrap-identities`: POST `/auth/api/setup/initialize`
+      (200 ok / 409 SETUP_ALREADY_COMPLETE = no-op) then POST `https://n8n.<domain>/rest/owner/setup`
+      ("already set up" 4xx = no-op); fails loudly on anything else — 2026-07-24
+- [x] Verify the n8n owner-setup endpoint shape against the pinned image (2.30.7) — confirmed
+      `POST /rest/owner/setup`, `skipAuth`, `{email,firstName,lastName,password}`, owner-exists →
+      400 `Instance owner already setup` — 2026-07-24
+- [ ] Verify live (next deploy; Phase 7 scope): fresh env → site admin logs in via ZITADEL with
+      `p:app-admin-super`; n8n editor at `n8n.<domain>` accepts the owner login; re-run
+      `do-env-build` → both no-ops
+
 ---
 
 ## Remaining Open Questions (implementation-time; not blockers)
 1. **Domain(s).** The real domain + subdomain scheme (`<domain>`, `id.<domain>`, `n8n.<domain>`).
    Needed before TLS/DNS/ZITADEL issuer are concrete.
 2. **Regions** — DO region (Spaces endpoint + droplet) and AWS region.
-3. **ZITADEL prod seed** — the concrete prod admin identity + whether seeding is scripted or a
-   manual first-run console step (dev seed's users/complexity relaxation must not carry over).
+3. ~~**ZITADEL prod seed**~~ — **resolved 2026-07-24 (D12/D13)**: scripted via `do-env-build`'s
+   bootstrap-identities step (`SITE_ADMIN_*` from `~/.config/fnb/prod-secrets.env` → the
+   first-run-setup endpoint; n8n owner via `/rest/owner/setup`). Dev users/complexity relaxation
+   still never carry over (`ZITADEL_SEED_MODE=prod` seeds no roster).
 4. **`S3_ENDPOINT` on AWS** — set the regional endpoint vs. allow "unset = SDK default" (one-line
    code allowance).
 5. **PostGIS/bootstrap mechanism on AWS** — Terraform `postgresql` provider (needs VPC network

@@ -14,6 +14,11 @@
 	email {$ACME_EMAIL}
 }
 
+# ── www → apex: the apex is canonical (issuer, cookies, CORS all live on {$DOMAIN}). ──
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
+
 # ── Main site: the 7 routed apps + home catch-all (mirrors docker/nginx.conf) ──
 {$DOMAIN} {
 	encode zstd gzip

@@ -171,6 +171,15 @@ resource "digitalocean_record" "root" {
   ttl    = 300
 }
 
+# www → same box; Caddy 301s it to the canonical apex.
+resource "digitalocean_record" "www" {
+  domain = digitalocean_domain.main.id
+  type   = "A"
+  name   = "www"
+  value  = digitalocean_reserved_ip.web.ip_address
+  ttl    = 300
+}
+
 resource "digitalocean_record" "id" {
   domain = digitalocean_domain.main.id
   type   = "A"

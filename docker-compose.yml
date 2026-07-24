@@ -679,10 +679,20 @@ services:
       # ${…} refs inside the credential templates (scripts/render-credentials.mjs)
       POSTGRES_DB: "${POSTGRES_DB:?}"
       N8N_WORKER_PG_PASSWORD: "${N8N_WORKER_PG_PASSWORD:?}"
+      # fnb-n8n-worker credential connection (dev: in-stack pg; prod: managed PG over TLS)
+      N8N_WORKER_PG_HOST: db
+      N8N_WORKER_PG_PORT: "5432"
+      N8N_WORKER_PG_SSL: disable
+      N8N_WORKER_PG_ALLOW_UNAUTHORIZED_CERTS: "false"
       N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"
-      # rendered into the fnb-smtp credential template (send-notification email node → Mailpit dev)
+      # rendered into the fnb-smtp credential template (send-notification email node → Mailpit dev;
+      # prod points the same credential at Resend's SMTP interface — see infra/env/.env.prod.tpl)
       NOTIFY_SMTP_HOST: "${NOTIFY_SMTP_HOST:?}"
       NOTIFY_SMTP_PORT: "${NOTIFY_SMTP_PORT:?}"
+      NOTIFY_SMTP_USER: ""
+      NOTIFY_SMTP_PASSWORD: ""
+      NOTIFY_SMTP_SECURE: "false"
+      NOTIFY_SMTP_DISABLE_STARTTLS: "true"
       # rendered into the anthropic-api-key credential template (game-event AI + any HTTP
       # x-api-key node); the server stores credentials encrypted in n8n_engine
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:?}"

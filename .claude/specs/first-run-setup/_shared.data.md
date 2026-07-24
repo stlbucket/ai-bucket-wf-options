@@ -50,7 +50,7 @@ A **pre-claims root-of-trust** function, modeled exactly on `app_fn.provision_id
 (**NOT `''`** — that breaks citext operator resolution), **no `app_api` exposure**, granted only
 to `authenticator` and called solely via `db-access` raw pg.
 
-It is the setup-time analog of what `db/seed.sql` does by hand for `bucket@function-bucket.net`:
+It is the setup-time analog of what `db/seed.sql` does by hand for `site-admin@example.com`:
 `create_anchor_tenant` → insert profile → link resident → `assume_residency`.
 
 ```sql

@@ -275,12 +275,48 @@ GitHub Actions (on tag)
   4. on the box: docker compose pull && docker compose up -d
         → db-migrate runs (sqitch), n8n-import runs, zitadel seeds (first boot), apps start
   5. health verify (Caddy 200s on /, /auth; graphql-api ready; zitadel ready)
+  6. bootstrap identities (idempotent; effective on first boot only) — §9.1
 ```
 
 Terraform owns **infrastructure**; the Compose `up` owns **service lifecycle** on the box. The two
 seams are the rendered `.env` (secrets → box) and the image tag (registry → Compose). This keeps
 the DO and AWS targets near-identical above the infrastructure layer — the whole point of the
 EC2-lift-and-shift choice.
+
+### 9.1 First-run identity bootstrap (site admin + n8n owner)
+
+Prod seeds **no users** (`ZITADEL_SEED_MODE=prod`, §6) — the anchor tenant + site admin and the
+n8n instance owner are created by a scripted, idempotent **bootstrap-identities** step that
+`do-env-build` (and the future AWS sibling) runs after health-verify, driven entirely by values
+in the operator's secrets file (`~/.config/fnb/prod-secrets.env`):
+
+| Var | Feeds | Notes |
+|---|---|---|
+| `SITE_ADMIN_EMAIL` | site admin + n8n owner email | |
+| `SITE_ADMIN_FIRST_NAME` / `SITE_ADMIN_LAST_NAME` | both identities | |
+| `SITE_ADMIN_PHONE` | `app.profile.phone` only | ZITADEL user is created without a phone; n8n has no phone field |
+| `SITE_ADMIN_PASSWORD` | ZITADEL login password | must meet ZITADEL **prod** complexity (≥ 8 chars, upper + lower + number + symbol — prod does NOT relax the policy) |
+| `SITE_TENANT_NAME` | anchor tenant name | e.g. `Anchor Tenant` |
+| `SETUP_TOKEN` | gates the setup endpoint | must ALSO be wired into the prod auth-app service (compose `${SETUP_TOKEN:?}` + `.env.prod.tpl`) — today it is dev-compose-only, so `/auth/setup` 500s in prod |
+| `N8N_ADMIN_PASSWORD` | n8n owner password | n8n policy: ≥ 8 chars, ≥ 1 number, ≥ 1 capital |
+
+1. **Site admin** — `POST https://<domain>/auth/api/setup/initialize` with
+   `{ setupToken, tenantName, email, password, firstName, lastName, phone }`. This is the
+   first-run-setup endpoint (`.claude/specs/first-run-setup/`): ZITADEL human user first
+   (idempotent), then `app_fn.initialize_anchor` (anchor tenant + `app-admin-super` license +
+   residency). `200 {ok:true}` on first run; **`409 SETUP_ALREADY_COMPLETE` on re-runs is the
+   idempotent no-op** (treat as success). No manual `/auth/setup` visit needed — the page remains
+   the human fallback.
+2. **n8n owner** — `POST https://n8n.<domain>/rest/owner/setup` with
+   `{ email, firstName, lastName, password }` (the same call the n8n first-visit setup screen
+   makes). Succeeds only while the instance has no owner; any "already set up" 4xx is the
+   idempotent no-op. *Verified against the pinned 2.30.7 image (2026-07-24):* `OwnerController`
+   `Post('/setup', { skipAuth: true })`; owner-exists → 400 `Instance owner already setup`.
+
+Access afterwards: the app at `https://<domain>` (site admin logs in through ZITADEL with
+`SITE_ADMIN_EMAIL` / `SITE_ADMIN_PASSWORD`); the n8n editor at `https://n8n.<domain>` (owner
+login `SITE_ADMIN_EMAIL` / `N8N_ADMIN_PASSWORD`). In dev, the n8n editor is
+`http://localhost:${N8N_HOST_PORT}` (no Caddy route).
 
 ---
 

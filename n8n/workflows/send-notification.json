@@ -72,7 +72,7 @@
       "position": [860, 280],
       "onError": "continueErrorOutput",
       "parameters": {
-        "fromEmail": "no-reply@function-bucket.net",
+        "fromEmail": "no-reply@function-bucket.com",
         "toEmail": "={{ $('Webhook').item.json.body.to }}",
         "subject": "={{ $('Render').item.json.subject }}",
         "emailFormat": "html",

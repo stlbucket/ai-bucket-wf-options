@@ -143,6 +143,12 @@ function alreadyExists(res) {
   )
 }
 
+// ZITADEL policy endpoints 400 with "... has not been changed" when an update is a no-op —
+// on idempotent re-runs that is success, not failure.
+function isUnchanged(res) {
+  return res.status === 400 && /not (been )?changed/i.test(JSON.stringify(res.json ?? ''))
+}
+
 async function waitForPat() {
   for (let i = 0; i < 24; i++) {
     if (existsSync(PAT_FILE)) return readFileSync(PAT_FILE, 'utf8').trim()
@@ -335,8 +341,13 @@ async function ensureBranding() {
     themeMode: merged.themeMode,
   }
   const put = await instanceRequest('PUT', '/admin/v1/policies/label', jsonBody(update))
-  if (put.status < 200 || put.status >= 300) fail('update label policy', put)
-  console.log('zitadel-seed: label policy colors updated')
+  if (isUnchanged(put)) {
+    console.log('zitadel-seed: label policy colors already current')
+  } else if (put.status < 200 || put.status >= 300) {
+    fail('update label policy', put)
+  } else {
+    console.log('zitadel-seed: label policy colors updated')
+  }
 
   // Per-theme logo (login card) + icon (console/compact). Handoff mapping.
   await uploadAsset('/assets/v1/instance/policy/label/logo', 'logo-light.png', 'image/png')
@@ -346,8 +357,13 @@ async function ensureBranding() {
 
   // Promote the edited preview policy to active (colors + freshly uploaded assets).
   const activate = await instanceRequest('POST', '/admin/v1/policies/label/_activate', jsonBody({}))
-  if (activate.status < 200 || activate.status >= 300) fail('activate label policy', activate)
-  console.log('zitadel-seed: label policy activated')
+  if (isUnchanged(activate)) {
+    console.log('zitadel-seed: label policy already active')
+  } else if (activate.status < 200 || activate.status >= 300) {
+    fail('activate label policy', activate)
+  } else {
+    console.log('zitadel-seed: label policy activated')
+  }
 }
 
 async function ensureLoginPolicy() {
@@ -380,8 +396,13 @@ async function ensureLoginPolicy() {
     multiFactorCheckLifetime: p.multiFactorCheckLifetime ?? '43200s',
   }
   const put = await instanceRequest('PUT', '/admin/v1/policies/login', jsonBody(update))
-  if (put.status < 200 || put.status >= 300) fail('update login policy', put)
-  console.log('zitadel-seed: login policy — hidePasswordReset enabled')
+  if (isUnchanged(put)) {
+    console.log('zitadel-seed: login policy already current')
+  } else if (put.status < 200 || put.status >= 300) {
+    fail('update login policy', put)
+  } else {
+    console.log('zitadel-seed: login policy — hidePasswordReset enabled')
+  }
 }
 
 pat = await waitForPat()

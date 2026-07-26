@@ -3,18 +3,18 @@ grant usage on schema msg_api to anon, authenticated, service_role;
 grant all on all tables in schema msg_api to anon, authenticated, service_role;
 grant all on all routines in schema msg_api to anon, authenticated, service_role;
 grant all on all sequences in schema msg_api to anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg_api grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg_api grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg_api grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema msg_api grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema msg_api grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema msg_api grant all on sequences to anon, authenticated, service_role;
 
 --- msg_fn policies
 grant usage on schema msg_fn to anon, authenticated, service_role;
 grant all on all tables in schema msg_fn to anon, authenticated, service_role;
 grant all on all routines in schema msg_fn to anon, authenticated, service_role;
 grant all on all sequences in schema msg_fn to anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg_fn grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg_fn grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg_fn grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema msg_fn grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema msg_fn grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema msg_fn grant all on sequences to anon, authenticated, service_role;
 
 
 --- msg policies
@@ -22,9 +22,9 @@ grant usage on schema msg to anon, authenticated, service_role;
 grant all on all tables in schema msg to anon, authenticated, service_role;
 grant all on all routines in schema msg to anon, authenticated, service_role;
 grant all on all sequences in schema msg to anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema msg grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema msg grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema msg grant all on sequences to anon, authenticated, service_role;
 
 
 ------------------------------------------------------------------------ msg

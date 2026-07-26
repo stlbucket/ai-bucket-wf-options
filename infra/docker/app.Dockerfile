@@ -28,13 +28,23 @@ RUN pnpm install --frozen-lockfile
 ARG APP
 ARG BASE_URL=""
 ENV NUXT_APP_BASE_URL=${BASE_URL}
+# The nitro/rollup server build is heap-hungry and V8's default cap (~2 GB in a container) OOMs it
+# (exit 137 — plan 0010 finding). Give node an explicit heap; the Docker VM must have RAM to back
+# it (Docker Desktop ≥ 10 GB for local builds; CI runners are fine).
+ENV NODE_OPTIONS=--max-old-space-size=6144
 RUN pnpm exec turbo run build --filter=@function-bucket/fnb-${APP}
 
-# ---- runtime: ship ONLY the selected app's .output ----
+# Runtime files read from cwd at request time, NOT bundled into .output — today only
+# graphql-api-app's postgraphile.tags.json5 (makePgSmartTagsPlugin reads it per request; missing
+# file = every GraphQL request 500s). Staged via cp||true so apps without extras build clean.
+RUN mkdir -p /runtime-extras && cp "apps/${APP}/postgraphile.tags.json5" /runtime-extras/ 2>/dev/null || true
+
+# ---- runtime: ship ONLY the selected app's .output (+ cwd runtime extras) ----
 FROM node:22-alpine AS runtime
 ARG APP
 WORKDIR /app
 ENV NODE_ENV=production NUXT_HOST=0.0.0.0 NUXT_PORT=3000
 COPY --from=builder /app/apps/${APP}/.output ./.output
+COPY --from=builder /runtime-extras/ ./
 EXPOSE 3000
 CMD ["node", ".output/server/index.mjs"]

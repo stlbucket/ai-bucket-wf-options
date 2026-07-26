@@ -7,12 +7,12 @@
 --- storage_api: authenticated calls the insert gate
 grant usage on schema storage_api to authenticated, service_role;
 grant execute on all routines in schema storage_api to authenticated, service_role;
-alter default privileges for role postgres in schema storage_api grant execute on routines to authenticated, service_role;
+alter default privileges in schema storage_api grant execute on routines to authenticated, service_role;
 
 --- storage_fn: the INVOKER gate (storage_api.insert_asset) must reach storage_fn.insert_asset
 grant usage on schema storage_fn to authenticated, service_role;
 grant execute on all routines in schema storage_fn to authenticated, service_role;
-alter default privileges for role postgres in schema storage_fn grant execute on routines to authenticated, service_role;
+alter default privileges in schema storage_fn grant execute on routines to authenticated, service_role;
 
 --- storage: authenticated reads the tables (RLS-scoped); anon needs usage only to call the public fns
 grant usage on schema storage to anon, authenticated, service_role;

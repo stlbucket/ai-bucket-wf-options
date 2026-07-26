@@ -3,9 +3,9 @@ grant usage on schema auth to anon, authenticated, service_role;
 grant all on all tables in schema auth to anon, authenticated, service_role;
 grant all on all routines in schema auth to anon, authenticated, service_role;
 grant all on all sequences in schema auth to anon, authenticated, service_role;
-alter default privileges for role postgres in schema auth grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema auth grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema auth grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema auth grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema auth grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema auth grant all on sequences to anon, authenticated, service_role;
 
 alter table auth.user enable row level security;
     CREATE POLICY view_self ON auth.user

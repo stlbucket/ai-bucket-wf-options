@@ -39,6 +39,7 @@ for app in auth-app home-app tenant-app msg-app game-app graphql-api-app storage
   image="${REGISTRY}/fnb-${app}:${IMAGE_TAG}"
   echo "  --> ${app}  (BASE_URL='${base}')  ${image}"
   docker build \
+    --platform linux/amd64 \
     -f "$APP_DOCKERFILE" \
     --build-arg APP="$app" \
     --build-arg BASE_URL="$base" \
@@ -52,7 +53,7 @@ done
 # agentic-decommission; n8n is the sole workflow engine.)
 n8n_image="${REGISTRY}/fnb-n8n:${IMAGE_TAG}"
 echo "  --> n8n (hardened)  ${n8n_image}"
-docker build -t "$n8n_image" "$ROOT/docker/n8n"
+docker build --platform linux/amd64 -t "$n8n_image" "$ROOT/docker/n8n"
 docker push "$n8n_image"
 
 echo "==> All 7 app images + fnb-n8n built + pushed @ ${IMAGE_TAG}"

@@ -5,27 +5,27 @@ grant usage on schema airports_api to anon, authenticated, service_role;
 grant all on all tables in schema airports_api to anon, authenticated, service_role;
 grant all on all routines in schema airports_api to anon, authenticated, service_role;
 grant all on all sequences in schema airports_api to anon, authenticated, service_role;
-alter default privileges for role postgres in schema airports_api grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema airports_api grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema airports_api grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema airports_api grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema airports_api grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema airports_api grant all on sequences to anon, authenticated, service_role;
 
 --- airports_fn policies
 grant usage on schema airports_fn to anon, authenticated, service_role;
 grant all on all tables in schema airports_fn to anon, authenticated, service_role;
 grant all on all routines in schema airports_fn to anon, authenticated, service_role;
 grant all on all sequences in schema airports_fn to anon, authenticated, service_role;
-alter default privileges for role postgres in schema airports_fn grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema airports_fn grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema airports_fn grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema airports_fn grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema airports_fn grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema airports_fn grant all on sequences to anon, authenticated, service_role;
 
 --- airports policies
 grant usage on schema airports to anon, authenticated, service_role;
 grant all on all tables in schema airports to anon, authenticated, service_role;
 grant all on all routines in schema airports to anon, authenticated, service_role;
 grant all on all sequences in schema airports to anon, authenticated, service_role;
-alter default privileges for role postgres in schema airports grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema airports grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema airports grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema airports grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema airports grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema airports grant all on sequences to anon, authenticated, service_role;
 
 
 ------------------------------------------------------------------------ airports

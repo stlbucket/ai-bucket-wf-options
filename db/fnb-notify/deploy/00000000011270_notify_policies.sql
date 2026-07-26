@@ -3,12 +3,12 @@
 --- notify_api policies
 grant usage on schema notify_api to anon, authenticated, service_role;
 grant all on all routines in schema notify_api to anon, authenticated, service_role;
-alter default privileges for role postgres in schema notify_api grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema notify_api grant all on routines to anon, authenticated, service_role;
 
 --- notify policies (reads are RLS-scoped; writes happen only via notify_fn SECURITY DEFINER)
 grant usage on schema notify to anon, authenticated, service_role;
 grant select on all tables in schema notify to anon, authenticated, service_role;
-alter default privileges for role postgres in schema notify grant select on tables to anon, authenticated, service_role;
+alter default privileges in schema notify grant select on tables to anon, authenticated, service_role;
 
 ------------------------------------------------------------------------ RLS
 alter table notify.notification enable row level security;
@@ -32,4 +32,4 @@ CREATE POLICY view_notifications_super_admin ON notify.notification
 grant usage on schema notify to n8n_worker;
 grant usage on schema notify_fn to n8n_worker;
 grant execute on all functions in schema notify_fn to n8n_worker;
-alter default privileges for role postgres in schema notify_fn grant execute on functions to n8n_worker;
+alter default privileges in schema notify_fn grant execute on functions to n8n_worker;

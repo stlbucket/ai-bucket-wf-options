@@ -3,27 +3,27 @@ grant usage on schema poll_api to anon, authenticated, service_role;
 grant all on all tables in schema poll_api to anon, authenticated, service_role;
 grant all on all routines in schema poll_api to anon, authenticated, service_role;
 grant all on all sequences in schema poll_api to anon, authenticated, service_role;
-alter default privileges for role postgres in schema poll_api grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema poll_api grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema poll_api grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema poll_api grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema poll_api grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema poll_api grant all on sequences to anon, authenticated, service_role;
 
 --- poll_fn policies
 grant usage on schema poll_fn to anon, authenticated, service_role;
 grant all on all tables in schema poll_fn to anon, authenticated, service_role;
 grant all on all routines in schema poll_fn to anon, authenticated, service_role;
 grant all on all sequences in schema poll_fn to anon, authenticated, service_role;
-alter default privileges for role postgres in schema poll_fn grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema poll_fn grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema poll_fn grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema poll_fn grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema poll_fn grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema poll_fn grant all on sequences to anon, authenticated, service_role;
 
 --- poll policies
 grant usage on schema poll to anon, authenticated, service_role;
 grant all on all tables in schema poll to anon, authenticated, service_role;
 grant all on all routines in schema poll to anon, authenticated, service_role;
 grant all on all sequences in schema poll to anon, authenticated, service_role;
-alter default privileges for role postgres in schema poll grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema poll grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema poll grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema poll grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema poll grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema poll grant all on sequences to anon, authenticated, service_role;
 
 ------------------------------------------------------------------------ poll.poll
 -- Readable by tenant members, but a member sees another member's DRAFT only if they own it or

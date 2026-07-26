@@ -34,17 +34,31 @@ TARGET="${BOX_USER}@${BOX_HOST}"
 ssh_box() { ssh $SSH_OPTS "$TARGET" "$@"; }
 
 echo "==> [$ENVIRONMENT] preparing $REMOTE_DIR on $TARGET"
-ssh_box "sudo mkdir -p $REMOTE_DIR && sudo chown \$(id -u):\$(id -g) $REMOTE_DIR"
+# The rm -rf clears the flat-layout dirs a pre-fix deploy left behind (compose/ at the root —
+# the -R rsync below now lands everything under its repo-relative path). Idempotent.
+ssh_box "sudo mkdir -p $REMOTE_DIR && sudo chown \$(id -u):\$(id -g) $REMOTE_DIR && rm -rf $REMOTE_DIR/compose"
 
 echo "==> copying artifacts (compose + Caddyfile + db/ + n8n/ + .env)"
 # The prod compose expects, relative to itself: ../docker/{Caddyfile,pg-bootstrap.sh}, ../../db,
 # ../../n8n, ../../docker/{migrate.Dockerfile,migrate-entrypoint.sh,zitadel/seed.mjs}. Ship the
-# repo subtrees it reads so paths resolve on the box under $REMOTE_DIR.
+# repo subtrees it reads so paths resolve on the box under $REMOTE_DIR, preserving the repo
+# layout: infra/{compose,docker} nest under infra/, repo docker/ stays distinct at the root.
+# Two explicit-dest transfers (not rsync -R + /./ — macOS openrsync ignores the dot-dir marker).
+ssh_box "mkdir -p $REMOTE_DIR/infra"
 # shellcheck disable=SC2086
 rsync -az --delete $SSH_OPTS \
   "$ROOT/infra/compose" "$ROOT/infra/docker" \
+  "$TARGET:$REMOTE_DIR/infra/"
+# shellcheck disable=SC2086
+rsync -az --delete $SSH_OPTS \
   "$ROOT/docker" "$ROOT/db" "$ROOT/n8n" \
   "$TARGET:$REMOTE_DIR/"
+# Brand assets for the zitadel-seed label-policy uploads (mounted at /brand-assets in prod
+# compose; the repo source lives under .claude/, which is deliberately not shipped wholesale).
+# shellcheck disable=SC2086
+rsync -az --delete $SSH_OPTS \
+  "$ROOT/.claude/design-implementations/design_handoff_fn_bucket_brand/assets/" \
+  "$TARGET:$REMOTE_DIR/brand-assets/"
 # shellcheck disable=SC2086
 scp $SSH_OPTS "$ENV_FILE" "$TARGET:$REMOTE_DIR/infra/compose/.env"
 ssh_box "chmod 600 $REMOTE_DIR/infra/compose/.env"

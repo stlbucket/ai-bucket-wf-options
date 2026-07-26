@@ -3,27 +3,27 @@ grant usage on schema app_api to anon, authenticated, service_role;
 grant all on all tables in schema app_api to anon, authenticated, service_role;
 grant all on all routines in schema app_api to anon, authenticated, service_role;
 grant all on all sequences in schema app_api to anon, authenticated, service_role;
-alter default privileges for role postgres in schema app_api grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema app_api grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema app_api grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema app_api grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema app_api grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema app_api grant all on sequences to anon, authenticated, service_role;
 
 --- app_fn policies
 grant usage on schema app_fn to anon, authenticated, service_role;
 grant all on all tables in schema app_fn to anon, authenticated, service_role;
 grant all on all routines in schema app_fn to anon, authenticated, service_role;
 grant all on all sequences in schema app_fn to anon, authenticated, service_role;
-alter default privileges for role postgres in schema app_fn grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema app_fn grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema app_fn grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema app_fn grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema app_fn grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema app_fn grant all on sequences to anon, authenticated, service_role;
 
 --- app policies
 grant usage on schema app to anon, authenticated, service_role;
 grant all on all tables in schema app to anon, authenticated, service_role;
 grant all on all routines in schema app to anon, authenticated, service_role;
 grant all on all sequences in schema app to anon, authenticated, service_role;
-alter default privileges for role postgres in schema app grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema app grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema app grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema app grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema app grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema app grant all on sequences to anon, authenticated, service_role;
 
 ------------------------------------------------------------------------ profile
 alter table app.profile enable row level security;

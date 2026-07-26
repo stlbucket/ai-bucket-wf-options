@@ -127,9 +127,9 @@ top-level **`infra/`** directory.
 - [x] Verify the n8n owner-setup endpoint shape against the pinned image (2.30.7) — confirmed
       `POST /rest/owner/setup`, `skipAuth`, `{email,firstName,lastName,password}`, owner-exists →
       400 `Instance owner already setup` — 2026-07-24
-- [ ] Verify live (next deploy; Phase 7 scope): fresh env → site admin logs in via ZITADEL with
-      `p:app-admin-super`; n8n editor at `n8n.<domain>` accepts the owner login; re-run
-      `do-env-build` → both no-ops
+- [x] Verify live (2026-07-26): site admin logs in via ZITADEL end-to-end; n8n editor at
+      `n8n.<domain>` accepts the owner login; re-run `do-env-build` → both no-ops (site admin
+      409; n8n owner 404-route-deregistered, handled). First-boot findings recorded in plan 0010
 
 ---
 

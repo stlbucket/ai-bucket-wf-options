@@ -19,7 +19,10 @@ RUN mkdir -p /out/bin /out/lib \
       done; \
     done
 
-FROM docker.n8n.io/n8nio/n8n:2.30.7
+# Docker Hub mirror of the same release — docker.n8n.io (n8n's vanity registry) aggressively
+# rate-limits manifest lookups (429s broke the image build). Same version, same content; the
+# compose services keep pulling their runtime image from docker.n8n.io unchanged.
+FROM docker.io/n8nio/n8n:2.30.7
 USER root
 COPY --from=bins /out/bin/ /usr/local/bin/
 COPY --from=bins /out/lib/ /usr/local/lib/

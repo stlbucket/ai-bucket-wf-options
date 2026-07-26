@@ -11,6 +11,6 @@ GRANT authenticated TO authenticator;
 -- authenticated and anon need to call auth.* functions referenced in RLS policies
 GRANT USAGE ON SCHEMA auth TO authenticated, anon;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA auth TO authenticated, anon;
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA auth GRANT EXECUTE ON FUNCTIONS TO authenticated, anon;
+ALTER DEFAULT PRIVILEGES IN SCHEMA auth GRANT EXECUTE ON FUNCTIONS TO authenticated, anon;
 
 commit;

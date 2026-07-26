@@ -5,27 +5,27 @@ grant usage on schema location_datasets_api to anon, authenticated, service_role
 grant all on all tables in schema location_datasets_api to anon, authenticated, service_role;
 grant all on all routines in schema location_datasets_api to anon, authenticated, service_role;
 grant all on all sequences in schema location_datasets_api to anon, authenticated, service_role;
-alter default privileges for role postgres in schema location_datasets_api grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema location_datasets_api grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema location_datasets_api grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema location_datasets_api grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema location_datasets_api grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema location_datasets_api grant all on sequences to anon, authenticated, service_role;
 
 --- location_datasets_fn policies
 grant usage on schema location_datasets_fn to anon, authenticated, service_role;
 grant all on all tables in schema location_datasets_fn to anon, authenticated, service_role;
 grant all on all routines in schema location_datasets_fn to anon, authenticated, service_role;
 grant all on all sequences in schema location_datasets_fn to anon, authenticated, service_role;
-alter default privileges for role postgres in schema location_datasets_fn grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema location_datasets_fn grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema location_datasets_fn grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema location_datasets_fn grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema location_datasets_fn grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema location_datasets_fn grant all on sequences to anon, authenticated, service_role;
 
 --- location_datasets policies
 grant usage on schema location_datasets to anon, authenticated, service_role;
 grant all on all tables in schema location_datasets to anon, authenticated, service_role;
 grant all on all routines in schema location_datasets to anon, authenticated, service_role;
 grant all on all sequences in schema location_datasets to anon, authenticated, service_role;
-alter default privileges for role postgres in schema location_datasets grant all on tables to anon, authenticated, service_role;
-alter default privileges for role postgres in schema location_datasets grant all on routines to anon, authenticated, service_role;
-alter default privileges for role postgres in schema location_datasets grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema location_datasets grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema location_datasets grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema location_datasets grant all on sequences to anon, authenticated, service_role;
 
 
 ------------------------------------------------------------------------ location_datasets

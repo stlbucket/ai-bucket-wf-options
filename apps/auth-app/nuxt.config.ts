@@ -24,6 +24,14 @@ export default defineNuxtConfig({
     }
   },
 
+  // The urql client is a client-only plugin (urql.client.ts), so urql-backed pages must not SSR —
+  // the tenant-app house pattern. /profile renders <NotificationPreferences> (urql): SSR'd it
+  // crashes with "Cannot read properties of undefined (reading 'value')" (prod strips urql's
+  // descriptive no-client dev error).
+  routeRules: {
+    '/profile': { ssr: false }
+  },
+
   compatibilityDate: '2025-01-15',
 
   vite: {

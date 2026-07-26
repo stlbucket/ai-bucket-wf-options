@@ -366,7 +366,7 @@ rotated without a data re-init (spec §3) — the runbook flags this in bold.
   finding).
 
 **2026-07-24 — Post-authoring drift true-up (notifications/polls/agentic-decommission landed after
-Phases 0–6) + domain wiring (`function-bucket.net`):**
+Phases 0–6) + domain wiring (`function-bucket.com`):**
 - **`.env.prod.tpl`**: `DEPLOY_PACKAGES` → the current 13-package list (`fnb-agent` out,
   `fnb-notify`/`fnb-poll` in); all `AGENT_*` vars removed (`ANTHROPIC_API_KEY` kept — n8n
   `anthropic-api-key` credential); new Notifications block — prod email = **Resend over its SMTP
@@ -386,7 +386,7 @@ Phases 0–6) + domain wiring (`function-bucket.net`):**
   PAT volume + a soft `clamav` dep — invite-user/forgot-password/asset-scan now function in prod.
 - **`build-images.sh`** builds + pushes `fnb-n8n` from `docker/n8n/Dockerfile` (TODO resolved);
   README/workflow counts trued up (7 apps + fnb-n8n; 13 sqitch packages; 16 prod services).
-- **`www` wiring**: apex `function-bucket.net` is canonical — new `www` A record
+- **`www` wiring**: apex `function-bucket.com` is canonical — new `www` A record
   (`modules/digitalocean`) + Caddy `www.{$DOMAIN}` → 301 apex; `do-prod.tfvars` domain filled.
 - **`deploy.yml`** render step gained `RESEND_API_KEY` (new secret — added to the README checklist;
   requires domain verification + SPF/DKIM in Resend before email delivers).
@@ -440,6 +440,70 @@ Phases 0–6) + domain wiring (`function-bucket.net`):**
 - **Remaining (user-run, folds into Phase 7):** add the 4 new vars to
   `~/.config/fnb/prod-secrets.env`; add `SETUP_TOKEN` to GH secrets (CI path only — not needed for
   `do-env-build`); live first-run + re-run idempotency check at next deploy.
+
+**2026-07-26 — FIRST LIVE DEPLOY (do-prod @ function-bucket.com) — site-admin login VERIFIED
+end-to-end.** Phase 7 first-boot shook out 11 real defects, all fixed in-repo (each verified live):
+- **`deploy.sh` rsync layout** — sources copied flat (`/opt/fnb/compose` not `…/infra/compose`);
+  macOS ships openrsync which ignores GNU `-R`/`/./` — fixed with two explicit-dest transfers.
+- **DOCR tier** — `basic` caps at 5 repos; 8 images → `subscription_tier_slug = "professional"`.
+- **arm64 images** — Apple Silicon built arm64; droplet is amd64 → `--platform linux/amd64` in
+  `build-images.sh` (+ `NODE_OPTIONS=--max-old-space-size=6144` in app.Dockerfile — V8's ~2 GB
+  container default OOMed the nitro build; Docker Desktop needs ≥ 10 GB + Rosetta for local builds).
+- **`for role postgres` default privileges** — 89 statements (87 lowercase + 2 UPPERCASE) across
+  15 db/ files; illegal for non-superuser `doadmin` → rewritten to `alter default privileges in
+  schema …` (current-role semantics; dev-identical since dev migrates as `postgres`).
+- **ZITADEL maintenance DB** — init connects to `postgres` DB which DO lacks →
+  `ZITADEL_DATABASE_POSTGRES_ADMIN_EXISTINGDATABASE=${MANAGED_PG_ADMIN_DB}` (defaultdb).
+- **ZITADEL FirstInstance password policy** — `ZITADEL_ADMIN_PASSWORD` must meet prod complexity
+  (≥8, upper+lower+digit+symbol) or `03_default_instance` fails `HasUpper`; documented in README.
+- **n8n base-image registry** — `docker.n8n.io` 429s manifest lookups → `docker/n8n/Dockerfile`
+  FROM switched to the Docker Hub mirror (`docker.io/n8nio/n8n:2.30.7`); compose runtime pulls
+  unchanged.
+- **zitadel-seed prod branding** — `/brand-assets` unmounted in prod → compose mount + deploy.sh
+  ships `.claude/design-implementations/design_handoff_fn_bucket_brand/assets/` →
+  `/opt/fnb/brand-assets`; seed.mjs policy PUTs now treat ZITADEL's "has not been changed" 400 as
+  the idempotent no-op (label update/activate + login policy).
+- **node-postgres TLS** — pg verifies certs under `sslmode=require` (libpq does not) →
+  `SELF_SIGNED_CERT_IN_CHAIN` on the managed CA; `DATABASE_URL` now
+  `?uselibpqcompat=true&sslmode=require` (n8n-parity posture; verify-full hardening deferred).
+- **split-horizon issuer scheme** — ZITADEL derives token `iss` from the request; the internal
+  http hop minted `http://id.<domain>` and openid-client rejected it → `oidc.ts` internal fetch
+  asserts `x-forwarded-proto: https` when the external issuer is https (dev http unaffected).
+- **`postgraphile.tags.json5` missing from the runtime image** — makePgSmartTagsPlugin reads it
+  from cwd per request; every GraphQL request 500'd (login loop after a successful ceremony) →
+  app.Dockerfile stages per-app cwd runtime extras into the runtime image.
+- **Also:** prod `db-migrate` hard-sets `SEED_DATA=empty` (entrypoint defaults to the dev seed);
+  DO domains are account-globally unique (`.net` was parked elsewhere → switched to
+  `function-bucket.com`, DNSSEC off at the registrar — DO DNS doesn't support it); teardown's VPC
+  delete always 403s (region-default VPC — cosmetic, fires last).
+- **VERIFIED LIVE:** health-verify green (apex + id. + n8n. TLS), bootstrap-identities created the
+  site admin (200) — 13 sqitch packages deployed, zitadel-seed complete, n8n-import complete,
+  **site-admin OIDC login works end-to-end**. Same-tag image overwrites (auth-app,
+  graphql-api-app) were bootstrap pragmatism — CI `build-images.yml` (amd64 runners) is the
+  correct ongoing build path.
+- **Remaining:** Resend domain verification (function-bucket.com) before notification email
+  delivers; deeper smoke (upload scan+promote, game play) on real usage.
+
+**2026-07-26 (later) — post-login shakedown: 3 more fixes, all VERIFIED live:**
+- **n8n owner login ✓**; sync-breweries schedule run ✓ (2m59s, 11.7k rows); error-handler ✓.
+- **asset-scan-reaper failed every tick** — `ExpressionError: access to env vars denied` on the
+  Find Stuck `$env.ASSET_SCAN_*` query: n8n 2.x denies expression env access unless explicit →
+  `N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"` set in BOTH composes (safe: workflows are repo-authored,
+  R22). Reaper now green.
+- **ZITADEL console hung ("Failed to fetch")** — `--tlsMode disabled` made `environment.json`
+  advertise an `http://` api origin → mixed-content block. Prod flag is `--tlsMode external`
+  (TLS terminated by Caddy, connections treated secure). Console loads; login + password-change
+  ceremony work. Dev keeps `disabled` (its issuer really is http).
+- **owner-setup idempotency** — n8n DE-REGISTERS `/rest/owner/setup` once an owner exists (bare
+  404 "Cannot POST", not a 400 "already") → do-env-build treats 404 as the no-op. Re-run of the
+  full pipeline is now a clean end-to-end no-op (site admin 409-no-op verified live).
+- **`/auth/profile` 500 on SSR** — the page's urql-backed `<NotificationPreferences>` card
+  (notifications spec) SSR'd without a urql client (client-only plugin; prod build strips urql's
+  descriptive no-client error → bare "Cannot read properties of undefined (reading 'value')").
+  Not prod-specific: any hard navigation to the page breaks in dev too — in-app client-side nav
+  had always masked it. Fixed per the tenant-app house pattern: auth-app `routeRules`
+  `'/profile': { ssr: false }`. VERIFIED live. (Latent gap: auth-app pages that later gain urql
+  cards must add the same opt-out — candidate for a UC rule.)
 
 ## Out of scope / linked
 - **agent-app + ClamAV removal** — explicitly a **later separate effort** (spec D9/§10); prod keeps

@@ -115,8 +115,10 @@ resource "digitalocean_cdn" "assets" {
 
 # ── Container registry (the droplet pulls app images from here) ───────────────
 resource "digitalocean_container_registry" "registry" {
-  name                   = local.registry_name
-  subscription_tier_slug = "basic"
+  name = local.registry_name
+  # "basic" caps at 5 repositories — the stack pushes 8 (7 apps + fnb-n8n), which 403s the
+  # 6th push ("registry contains 5 repositories, limit is 5"). "professional" is unlimited.
+  subscription_tier_slug = "professional"
   region                 = var.region
 }
 

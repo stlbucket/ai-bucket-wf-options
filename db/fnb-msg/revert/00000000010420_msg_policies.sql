@@ -12,17 +12,17 @@ drop policy if exists view_all_for_tenant on msg.topic;
 alter table msg.topic disable row level security;
 
 -- Revoke default privileges
-alter default privileges for role postgres in schema msg revoke all on tables from anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg revoke all on routines from anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg revoke all on sequences from anon, authenticated, service_role;
+alter default privileges in schema msg revoke all on tables from anon, authenticated, service_role;
+alter default privileges in schema msg revoke all on routines from anon, authenticated, service_role;
+alter default privileges in schema msg revoke all on sequences from anon, authenticated, service_role;
 
-alter default privileges for role postgres in schema msg_fn revoke all on tables from anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg_fn revoke all on routines from anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg_fn revoke all on sequences from anon, authenticated, service_role;
+alter default privileges in schema msg_fn revoke all on tables from anon, authenticated, service_role;
+alter default privileges in schema msg_fn revoke all on routines from anon, authenticated, service_role;
+alter default privileges in schema msg_fn revoke all on sequences from anon, authenticated, service_role;
 
-alter default privileges for role postgres in schema msg_api revoke all on tables from anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg_api revoke all on routines from anon, authenticated, service_role;
-alter default privileges for role postgres in schema msg_api revoke all on sequences from anon, authenticated, service_role;
+alter default privileges in schema msg_api revoke all on tables from anon, authenticated, service_role;
+alter default privileges in schema msg_api revoke all on routines from anon, authenticated, service_role;
+alter default privileges in schema msg_api revoke all on sequences from anon, authenticated, service_role;
 
 -- Revoke grants
 revoke all on all routines in schema msg from anon, authenticated, service_role;

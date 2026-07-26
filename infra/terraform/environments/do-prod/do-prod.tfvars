@@ -4,7 +4,7 @@
 
 environment  = "prod"
 region       = "nyc3"                # OQ2 — pick your DO region (drives Spaces endpoint + droplet locality)
-domain       = "function-bucket.net" # OQ1 — apex is canonical; www 301s to it (Caddyfile)
+domain       = "function-bucket.com" # OQ1 — apex is canonical; www 301s to it (Caddyfile)
 droplet_size = "s-4vcpu-8gb"         # OQ8 — memory pressure: 8 apps + ZITADEL + n8n + ClamAV
 db_size      = "db-s-1vcpu-2gb"
 enable_cdn   = true # OQ6

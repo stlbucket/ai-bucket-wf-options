@@ -6,12 +6,12 @@ begin;
 --- game_api: the PostGraphile surface (standard broad grants; gates are in the functions)
 grant usage on schema game_api to anon, authenticated, service_role;
 grant all on all routines in schema game_api to anon, authenticated, service_role;
-alter default privileges for role postgres in schema game_api grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema game_api grant all on routines to anon, authenticated, service_role;
 
 --- game: reads are RLS-scoped; writes happen ONLY via game_fn SECURITY DEFINER
 grant usage on schema game to anon, authenticated, service_role;
 grant select on all tables in schema game to anon, authenticated, service_role;
-alter default privileges for role postgres in schema game grant select on tables to anon, authenticated, service_role;
+alter default privileges in schema game grant select on tables to anon, authenticated, service_role;
 
 -- game_event_state is DENY-ALL (auth.session pattern): the broad select above is revoked
 -- again explicitly — snapshots hold ship positions; only game_fn definers may touch them.
@@ -23,7 +23,7 @@ revoke all on game.game_event_state from anon, authenticated, service_role;
 --- executable solely so the game_api invokers can delegate.
 grant usage on schema game_fn to authenticated, service_role;
 revoke all on all functions in schema game_fn from public, anon, authenticated, service_role;
-alter default privileges for role postgres in schema game_fn revoke execute on functions from public;
+alter default privileges in schema game_fn revoke execute on functions from public;
 
 grant execute on function
   game_fn.create_game(uuid, text, citext, jsonb),

@@ -242,4 +242,4 @@ CREATE OR REPLACE FUNCTION jwt.has_all_permissions(_permission_keys citext[], _t
  --- jwt policies
  grant usage on schema jwt to anon, authenticated, service_role;
  grant all on all routines in schema jwt to anon, authenticated, service_role;
- alter default privileges for role postgres in schema jwt grant all on routines to anon, authenticated, service_role;
+ alter default privileges in schema jwt grant all on routines to anon, authenticated, service_role;

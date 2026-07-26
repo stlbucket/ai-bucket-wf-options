@@ -3,12 +3,12 @@
 --- n8n_api policies
 grant usage on schema n8n_api to anon, authenticated, service_role;
 grant all on all routines in schema n8n_api to anon, authenticated, service_role;
-alter default privileges for role postgres in schema n8n_api grant all on routines to anon, authenticated, service_role;
+alter default privileges in schema n8n_api grant all on routines to anon, authenticated, service_role;
 
 --- n8n policies (reads are RLS-scoped; writes happen only via n8n_fn SECURITY DEFINER)
 grant usage on schema n8n to anon, authenticated, service_role;
 grant select on all tables in schema n8n to anon, authenticated, service_role;
-alter default privileges for role postgres in schema n8n grant select on tables to anon, authenticated, service_role;
+alter default privileges in schema n8n grant select on tables to anon, authenticated, service_role;
 
 ------------------------------------------------------------------------ RLS
 alter table n8n.workflow_run enable row level security;
@@ -41,7 +41,7 @@ ALTER ROLE n8n_worker WITH LOGIN NOINHERIT PASSWORD :'n8n_worker_password';
 grant usage on schema n8n to n8n_worker;
 grant usage on schema n8n_fn to n8n_worker;
 grant execute on all functions in schema n8n_fn to n8n_worker;
-alter default privileges for role postgres in schema n8n_fn grant execute on functions to n8n_worker;
+alter default privileges in schema n8n_fn grant execute on functions to n8n_worker;
 
 -- exerciser demo: the DB-raised-exception path (app_api.raise_exception — SECURITY
 -- INVOKER, no permission gate, just raises). This grant lives HERE, not in fnb-app: fnb-app

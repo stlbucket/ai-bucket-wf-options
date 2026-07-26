@@ -258,7 +258,7 @@ services:
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: zitadel-admin
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_FIRSTNAME: fnb
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_LASTNAME: Admin
-      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_ADDRESS: zitadel-admin@function-bucket.net
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_ADDRESS: zitadel-admin@function-bucket.com
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_VERIFIED: "true"
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: "${ZITADEL_ADMIN_PASSWORD:?}"
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED: "false"
@@ -763,6 +763,10 @@ services:
       # fixed workflow JSON and assetId is uuid-cast by Get Asset before Clamdscan runs (no shell
       # injection surface). (agentic-decommission spec)
       NODES_EXCLUDE: "[]"
+      # $env.* in workflow expressions (asset-scan S3 nodes, the reaper's Find Stuck query, smtp
+      # nodes). n8n 2.x denies expression env access unless explicitly allowed — set it, don't
+      # rely on the default (which broke the reaper in prod). Safe: all workflows are repo-authored (R22).
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
       # asset-scan workflow: $env.* in the S3 nodes, the clamdscan/ffmpeg Execute Command nodes,
       # and the asset-scan-reaper Schedule Trigger. (agentic-decommission spec)
       S3_ENDPOINT: "${S3_ENDPOINT:?}"

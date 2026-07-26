@@ -142,7 +142,9 @@ n8n_res="$(curl -sS -o /tmp/fnb-n8n-owner-res.json -w '%{http_code}' \
   -H 'content-type: application/json' -d "$n8n_payload")"
 if [ "${n8n_res#2}" != "$n8n_res" ]; then   # 2xx
   echo "    n8n owner created"
-elif [ "${n8n_res#4}" != "$n8n_res" ] && grep -qi "already" /tmp/fnb-n8n-owner-res.json; then
+elif [ "$n8n_res" = "404" ] || { [ "${n8n_res#4}" != "$n8n_res" ] && grep -qi "already" /tmp/fnb-n8n-owner-res.json; }; then
+  # Once an owner exists n8n DE-REGISTERS /rest/owner/setup — the re-run sees a bare 404
+  # ("Cannot POST"), not a 400 "already setup". Both mean the same no-op.
   echo "    n8n owner already set up — no-op"
 else
   echo "n8n owner bootstrap failed (HTTP $n8n_res): $(cat /tmp/fnb-n8n-owner-res.json)" >&2; exit 1

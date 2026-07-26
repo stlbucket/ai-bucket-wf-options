@@ -83,6 +83,10 @@ function makeInternalFetch(external: URL, internal: URL): typeof fetch {
       headers[k] = v
     })
     headers.host = external.host
+    // ZITADEL derives the issuer (`iss`) of minted tokens from the incoming request's scheme.
+    // This internal hop is plain http, so without asserting the external scheme a prod instance
+    // (https issuer) stamps tokens with http://<issuer> and claim validation rejects them.
+    if (external.protocol === 'https:') headers['x-forwarded-proto'] = 'https'
 
     const body =
       init?.body instanceof URLSearchParams ? init.body.toString() : (init?.body as string | undefined)

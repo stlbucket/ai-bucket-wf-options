@@ -11,4 +11,7 @@ coverage
 _cruft
 .pnpm-store
 packages/db-types/src/generated
-packages/graphql-client-api/src/generated
+# generated hooks/types ARE committed (CI image builds can't run codegen — it needs a live
+# PostGraphile); only the raw introspection dumps stay ignored
+packages/graphql-client-api/src/generated/schema.json
+packages/graphql-client-api/src/generated/schema.min.json

@@ -82,7 +82,14 @@ resource "digitalocean_spaces_bucket" "assets" {
     }
   }
 
-  # Browser uploads (mirrors the storage-app upload flow).
+}
+
+# Browser uploads (mirrors the storage-app upload flow). Standalone resource — the inline
+# cors_rule block on digitalocean_spaces_bucket is deprecated.
+resource "digitalocean_spaces_bucket_cors_configuration" "assets" {
+  region = var.region
+  bucket = digitalocean_spaces_bucket.assets.name
+
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["GET", "PUT", "POST", "HEAD"]

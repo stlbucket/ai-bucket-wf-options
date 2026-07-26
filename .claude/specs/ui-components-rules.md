@@ -108,6 +108,36 @@ Import the type from the shared packages — a generated GraphQL type or composa
 
 ---
 
+## Rendering
+
+### UC14 — Pages rendering urql-backed components must disable SSR
+The urql client is provided by a **client-only** plugin (`app/plugins/urql.client.ts`); it does
+not exist during server-side rendering. Any page that renders a urql-backed component (directly
+or through a child) under SSR **500s at request time** — this is a runtime failure the build
+cannot catch (live precedent: auth-app `/profile` 500, fixed 2026-07-26).
+
+Disable SSR via `routeRules` in the app's `nuxt.config.ts`:
+
+```ts
+// wholesale (tenant-app pattern — preferred once most routes are urql-backed)
+routeRules: {
+  '/admin/**': { ssr: false },
+  '/tools/**': { ssr: false },
+  // …every routed section
+}
+
+// piecemeal (auth-app pattern — apps that are mostly SSR with a few urql pages)
+routeRules: {
+  '/profile': { ssr: false },
+}
+```
+
+When adding a urql-backed component to a page (or a new page to an app), check that the route is
+covered by an `ssr: false` rule **in the same change** — tenant-app covers its sections
+wholesale; auth-app is piecemeal, so each new urql page there needs its own rule.
+
+---
+
 ## Feedback
 
 ### UC7 — Use useToast for transient feedback, not inline messages

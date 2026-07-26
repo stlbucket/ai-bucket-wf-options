@@ -24,7 +24,7 @@ the patterns and rules that govern all implementation in this project.
 ├── global-rules.md                  ← implementation rules (R1–R24) derived from the codebase
 ├── graphql-api-pattern.md           ← canonical data stack (DB → PostGraphile → urql/graphql-client-api → composable re-export → page)
 ├── sockets-pattern.md               ← WebSocket / real-time pattern (based on msg module)
-├── ui-components-rules.md           ← UC1–UC12 UI rules
+├── ui-components-rules.md           ← UC1–UC14 UI rules
 ├── package-layers-pattern.md        ← all ten packages: compiled libs, Nuxt layers, file inventories
 ├── graphql-client-api-package.md    ← codegen details for the client package
 ├── monorepo-bootstrap-pattern.md    ← Docker Compose, Caddy, pnpm workspace, adding a new app
@@ -233,13 +233,15 @@ Always enforce these. If a spec or implementation violates them, call it out.
 **R21** — Architecture changes update `global-rules.md` + the affected pattern file + both skills in the same change.
 **R23** — Issue/plan artifacts under `.claude/issues/` follow the 4-dir lifecycle (`identified` → `in-flight` → `addressed`, plus `recurring`) and the fixed-width naming convention `[####]__[category]__[title-slug]__[SEV]__.plan.md` (widths 4/8/30/3, `_`-padded so columns align; SEV ∈ `CRT · HI · MED · LOW`; recurring is `[####]_recur__[title-slug].plan.md` — the `####` prefix is execution order for a housekeeping pass, gapped by 10) with a self-referential Execution Directive. See global-rules R23.
 
-See `.claude/specs/ui-components-rules.md` for the full UI rules (UC1–UC12):
+See `.claude/specs/ui-components-rules.md` for the full UI rules (UC1–UC14):
 **UC3** — Always use Nuxt UI components before raw HTML or custom CSS.
 **UC4** — UCard is the default page content container.
 **UC5** — All UIs must be responsive (mobile-first, flex-wrap, overflow-x-auto on tables).
 **UC6** — Use Nuxt UI color tokens (`primary`, `success`, etc.), not raw Tailwind color classes.
 **UC7** — Use `useToast` for transient feedback; `UAlert` only for persistent warnings.
 **UC11** — Icons are `i-lucide-*` only. Verify names before using.
+**UC14** — Pages rendering urql-backed components must have `ssr: false` (routeRules; the urql
+plugin is client-only — an SSR'd urql page 500s at request time).
 
 ---
 

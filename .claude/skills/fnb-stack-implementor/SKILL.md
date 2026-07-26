@@ -42,7 +42,7 @@ Do not rely on training data or documentation that predates v4; it will be wrong
 - `.claude/specs/graphql-api-pattern.md` — the canonical data stack (DB → PostGraphile → urql/
   graphql-client-api → composable re-export → Vue) plus the two REST/H3 carve-outs
 - `.claude/specs/package-layers-pattern.md` — the ten packages + codegen workflow
-- `.claude/specs/ui-components-rules.md` — UC1–UC12, enforced across all UI
+- `.claude/specs/ui-components-rules.md` — UC1–UC14, enforced across all UI
 
 Do not re-describe the stack from memory — cite these. Architecture deep-reference docs live in
 `.claude/specs/architecture-considerations/read-these/`. Inline `→ [XX]` pointers indicate which
@@ -401,6 +401,11 @@ service, Caddy handle block). The bullets below are for touching an **existing**
   // <template #name-cell="{ row }">{{ row.name }}</template>
   ```
 
+- **UC14** — Pages rendering urql-backed components must have `ssr: false` (via `routeRules` in
+  the app's `nuxt.config.ts`). The urql plugin is client-only; an SSR'd urql page **500s at
+  request time**, not at build. tenant-app covers its sections wholesale; auth-app is piecemeal —
+  a new urql page there needs its own rule **in the same change**.
+
 ---
 
 ## Converting an Existing Page from REST to GraphQL
@@ -661,7 +666,7 @@ Core specs in `.claude/specs/` (the single source — do not restate them inline
 - `package-layers-pattern.md` — the ten packages: compiled libs, Nuxt layers, file inventories, codegen workflow
 - `graphql-client-api-package.md` — codegen details for the client package
 - `sockets-pattern.md` — WebSocket / real-time pattern (GraphQL initial load + WS incremental read)
-- `ui-components-rules.md` — UC1–UC12
+- `ui-components-rules.md` — UC1–UC14
 - `monorepo-bootstrap-pattern.md` — Docker Compose topology, Caddy routing, pnpm workspace config
 - `workspace-dependency-integrity-pattern.md` — R24: every package declares every bare specifier
   its own source/config resolves (the `@nuxt/ui` direct-dep rule is a special case); layers are

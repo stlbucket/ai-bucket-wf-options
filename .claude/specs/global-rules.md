@@ -183,7 +183,8 @@ See `monorepo-bootstrap-pattern.md` → the n8n engine.
 
 ## UI / Components
 
-See `.claude/specs/ui-components-rules.md` for the full UI rules (UC1–UC12).
+See `.claude/specs/ui-components-rules.md` for the full UI rules (UC1–UC12, UC14; UC13 is
+reserved for form validation — see that file's Known Gaps).
 
 ---
 

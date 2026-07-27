@@ -217,6 +217,10 @@ services:
       NOTIFY_SMTP_PASSWORD: "${NOTIFY_SMTP_PASSWORD:?}"
       NOTIFY_SMTP_SECURE: "${NOTIFY_SMTP_SECURE:?}"
       NOTIFY_SMTP_DISABLE_STARTTLS: "${NOTIFY_SMTP_DISABLE_STARTTLS:?}"
+      # rendered into the fnb-twilio credential template (send-notification sms branch —
+      # twilio-production-sms spec, PARKED: blank-tolerant until the cutover un-parks)
+      TWILIO_ACCOUNT_SID: "${TWILIO_ACCOUNT_SID:-}"
+      TWILIO_AUTH_TOKEN: "${TWILIO_AUTH_TOKEN:-}"
       # fnb-minio S3 credential (asset-scan S3 nodes) — Spaces/S3 scoped key, NOT a MinIO root;
       # the template's MINIO_ROOT_* names are the dev-era credential inputs.
       S3_ENDPOINT: "${S3_ENDPOINT:?}"
@@ -296,7 +300,15 @@ services:
       # invite-user/forgot-password workflows: Code nodes read the fnb-seeder PAT off the
       # zitadel-seed volume + call ZITADEL over the split-horizon transport, then POST
       # send-notification internally. Repo-authored workflow code (R22), so fs+http is safe.
-      NODE_FUNCTION_ALLOW_BUILTIN: "fs,http,https"
+      # + crypto: the notification-webhook Verify Twilio Signature Code node (HMAC-SHA1,
+      # twilio-production-sms spec status-callbacks.md). Mirrors the dev n8n service.
+      NODE_FUNCTION_ALLOW_BUILTIN: "fs,http,https,crypto"
+      # send-notification sms branch (twilio-production-sms spec, PARKED — prod stays
+      # log-sink): provider selector + Twilio sender identity + the auth token for callback
+      # signature verification. Twilio vars are blank-tolerant until the cutover un-parks.
+      NOTIFY_SMS_PROVIDER: "${NOTIFY_SMS_PROVIDER:?}"
+      TWILIO_FROM_NUMBER: "${TWILIO_FROM_NUMBER:-}"
+      TWILIO_AUTH_TOKEN: "${TWILIO_AUTH_TOKEN:-}"
       N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"        # to POST send-notification internally
       N8N_INTERNAL_URL: "${N8N_INTERNAL_URL:?}"            # http://n8n:5678 (self)
       NUXT_ZITADEL_INTERNAL_URL: "${NUXT_ZITADEL_INTERNAL_URL:?}"  # http://zitadel:8080

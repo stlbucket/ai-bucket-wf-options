@@ -75,6 +75,8 @@ them.** `render-env.mjs` fails loudly if any is missing.
 | `ANTHROPIC_API_KEY` | n8n `anthropic-api-key` credential (game-event AI) |
 | `N8N_WEBHOOK_SECRET` | n8n webhook shared secret |
 | `RESEND_API_KEY` | prod email (n8n `fnb-smtp` credential → Resend SMTP; verify the domain + SPF/DKIM in Resend first) |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` | **PARKED — not required while prod SMS stays log-sink.** Prod SMS (n8n `fnb-twilio` credential; token also verifies status-callback signatures) — upgraded account + A2P 10DLC/toll-free registration first (twilio-production-sms spec, plan 0580) |
+| `TWILIO_FROM_NUMBER` | **PARKED** — prod SMS sender, E.164 (`+1…`), the registered Twilio number |
 | `ZITADEL_DB_PASSWORD`, `N8N_ENGINE_DB_PASSWORD` | owner-role passwords (pg-bootstrap) |
 | `N8N_WORKER_PG_PASSWORD` | sqitch-created worker role |
 | `S3_ACCESS_KEY`, `S3_SECRET_KEY` | Spaces key / scoped IAM key (NOT MinIO root) |

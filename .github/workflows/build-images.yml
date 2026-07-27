@@ -9,7 +9,9 @@ on:
       environment:
         description: Target environment (selects the registry)
         type: choice
-        options: [do-prod, aws-prod]
+        # aws-prod is PARKED (terraform authored, never provisioned) — re-add here AND to the
+        # build matrix below when the AWS env stands up (plan 0560 item 7).
+        options: [do-prod]
         required: true
   push:
     tags: ['v*']
@@ -26,7 +28,8 @@ jobs:
       contents: read
     strategy:
       matrix:
-        environment: [do-prod, aws-prod]
+        # aws-prod parked — its steps below stay wired but unreachable until re-added here.
+        environment: [do-prod]
     # On manual dispatch, only build the chosen environment; on tag push, build both.
     steps:
       - name: Skip unselected environment (dispatch)

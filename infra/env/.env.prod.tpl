@@ -84,8 +84,7 @@ ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
 TZ=UTC
 
 # ─── Notifications (spec D4: prod email = Resend, via its SMTP interface) ─────
-# The fnb-smtp n8n credential renders from these. SMS stays log-sink (dispatch is
-# Phase 5+ — Twilio vars land here when the send-notification sms branch does).
+# The fnb-smtp n8n credential renders from these.
 # Port 2465 (Resend's implicit-TLS fallback), NOT 465: DO blocks outbound 25/465/587 at the
 # account level (verified from the box 2026-07-26); 2465/2587 are open. Same TLS mode as 465.
 NOTIFY_SMTP_HOST=smtp.resend.com
@@ -94,6 +93,17 @@ NOTIFY_SMTP_USER=resend
 NOTIFY_SMTP_PASSWORD=${RESEND_API_KEY}
 NOTIFY_SMTP_SECURE=true
 NOTIFY_SMTP_DISABLE_STARTTLS=false
+
+# ─── SMS (spec .claude/specs/twilio-production-sms/ — PARKED 2026-07-27) ──────
+# The Twilio cutover is built + dev-verified but parked: prod stays on the
+# log-sink (records rows, dispatches nothing) so deploys need no Twilio secrets.
+# To un-park (plan 0580 Phase 3): set NOTIFY_SMS_PROVIDER=twilio and swap the
+# three blanks for ${TWILIO_ACCOUNT_SID}/${TWILIO_AUTH_TOKEN}/${TWILIO_FROM_NUMBER}
+# (render-env then requires the three GH secrets; A2P registration first).
+NOTIFY_SMS_PROVIDER=log-sink
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_FROM_NUMBER=
 
 # ─── Session sealing ──────────────────────────────────────────────────────────
 NUXT_SESSION_SECRET=${NUXT_SESSION_SECRET}

@@ -18,10 +18,21 @@
       "webhookId": "c1a00000-0000-4000-8000-0000000000a1"
     },
     {
+      "name": "Verify Twilio Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 400],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const item=$('Webhook').first().json;const b=item.body||{};if(!b.MessageSid){return [{json:item}];}const crypto=require('crypto');const token=$env.TWILIO_AUTH_TOKEN||'';if(!token){throw new Error('TWILIO_AUTH_TOKEN missing - cannot verify twilio callback signature');}const h=item.headers||{};const url=(h['x-forwarded-proto']||'https')+'://'+h.host+'/webhook/notification-webhook';let data=url;for(const k of Object.keys(b).sort()){data+=k+b[k];}const expected=crypto.createHmac('sha1',token).update(Buffer.from(data,'utf-8')).digest();const given=Buffer.from(String(h['x-twilio-signature']||''),'base64');if(given.length!==expected.length||!crypto.timingSafeEqual(expected,given)){throw new Error('twilio signature verification failed');}return [{json:item}];"
+      },
+      "id": "c1a00000-0000-4000-8000-000000000004"
+    },
+    {
       "name": "Map Status",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [440, 400],
+      "position": [680, 400],
       "parameters": {
         "assignments": {
           "assignments": [
@@ -35,13 +46,13 @@
               "id": "m2",
               "name": "status",
               "type": "string",
-              "value": "={{ ({ 'email.delivered': 'delivered', 'email.opened': 'opened', 'email.bounced': 'bounced', 'email.complained': 'failed' })[$json.body?.type] || 'sent' }}"
+              "value": "={{ $json.body?.MessageSid ? (({ 'delivered': 'delivered', 'undelivered': 'failed', 'failed': 'failed' })[$json.body?.MessageStatus] || 'sent') : (({ 'email.delivered': 'delivered', 'email.opened': 'opened', 'email.bounced': 'bounced', 'email.complained': 'failed' })[$json.body?.type] || 'sent') }}"
             },
             {
               "id": "m3",
               "name": "error",
               "type": "string",
-              "value": "={{ JSON.stringify($json.body?.data?.reason ? { reason: $json.body.data.reason } : {}) }}"
+              "value": "={{ JSON.stringify($json.body?.MessageSid ? ($json.body?.ErrorCode ? { errorCode: $json.body.ErrorCode } : {}) : ($json.body?.data?.reason ? { reason: $json.body.data.reason } : {})) }}"
             }
           ]
         },
@@ -53,7 +64,7 @@
       "name": "Update Delivery",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
-      "position": [680, 400],
+      "position": [920, 400],
       "parameters": {
         "operation": "executeQuery",
         "query": "select notify_fn.update_delivery($1, $2::notify.notification_status, $3::jsonb)",
@@ -72,6 +83,9 @@
   ],
   "connections": {
     "Webhook": {
+      "main": [[{ "node": "Verify Twilio Signature", "type": "main", "index": 0 }]]
+    },
+    "Verify Twilio Signature": {
       "main": [[{ "node": "Map Status", "type": "main", "index": 0 }]]
     },
     "Map Status": {

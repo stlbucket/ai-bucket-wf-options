@@ -8,9 +8,12 @@ metadata:
 Hard-won while building the `invite-user` workflow (user-invitation spec, 2026-07-22). These cost
 several failed runs + restarts; check them before writing any n8n Code node or self-calling webhook.
 
-**`$env` is blocked instance-wide** — `{{ $env.FOO }}` in a node expression OR `$env.FOO` in a Code
-node throws `NodeOperationError: access to env vars denied` (even a plain Set node). asset-scan uses
-**zero** `$env` (its S3/clamav config comes from credentials). To get config into a workflow:
+**`$env` access** — UPDATE 2026-07-27: `$env` now **works** in expressions AND Code nodes because
+`N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"` is set on the `n8n` service in BOTH compose files (added
+after the original block broke the asset-scan-reaper in prod; verified live by the
+send-notification `If Twilio` branch + the notification-webhook signature Code node,
+twilio-production-sms plan). The var must still be passed into the `n8n` service env block. The
+original guidance below remains valid where a workflow predates the flag or for defense in depth:
 - **Code node:** read raw **`process.env.FOO`** (works — it is not n8n's gated `$env`) with a dev
   fallback. Env vars must still be on the `n8n` compose service.
 - **Secrets:** don't put them in code/JSON — carry them on a **credential**. e.g. the internal
@@ -20,9 +23,12 @@ node throws `NodeOperationError: access to env vars denied` (even a plain Set no
 
 **Code-node task-runner sandbox** (`N8N_RUNNERS_ENABLED=true`): **no global `URL`** (parse origins
 with string ops), and `require()` of builtins needs `NODE_FUNCTION_ALLOW_BUILTIN` set on the n8n
-service (we set `fs,http,https`). Outbound `http.request` from a Code node **does** work — the
-sandbox restricts globals/require, not network. `process.env` and `require` are available; `$env`
-and `URL` are not.
+service (now `fs,http,https,crypto`). **`require()` must use the BARE builtin name** — the
+runner's require-resolver checks the *literal* request string against the allowlist Set, so
+`require('node:crypto')` throws `Module 'node:crypto' is disallowed` even with `crypto`
+allowlisted; `require('crypto')` works (cost one restart cycle, twilio-production-sms plan
+2026-07-27). Outbound `http.request` from a Code node **does** work — the sandbox restricts
+globals/require, not network.
 
 **`localhost` inside containers → `::1` (IPv6), but n8n listens IPv4-only** → `ECONNREFUSED ::1:5678`.
 For an n8n self-call (workflow → its own webhook) use the **service name** `http://n8n:5678` (or

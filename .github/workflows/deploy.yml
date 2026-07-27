@@ -9,7 +9,9 @@ on:
       environment:
         description: Environment to deploy
         type: choice
-        options: [do-prod, aws-prod]
+        # aws-prod is PARKED (terraform authored, never provisioned) — its branches in this
+        # workflow stay wired; re-add the option when the AWS env stands up (plan 0560 item 7).
+        options: [do-prod]
         required: true
       image_tag:
         description: Image tag (git SHA) built by build-images
@@ -117,6 +119,11 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           N8N_WEBHOOK_SECRET: ${{ secrets.N8N_WEBHOOK_SECRET }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}     # fnb-smtp credential (Resend SMTP)
+          # twilio-production-sms spec (PARKED): the tpl doesn't reference these tokens while
+          # parked, so missing GH secrets are harmless. Required again when the cutover un-parks.
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_FROM_NUMBER: ${{ secrets.TWILIO_FROM_NUMBER }}
           SETUP_TOKEN: ${{ secrets.SETUP_TOKEN }}           # first-run /auth/setup gate (§9.1)
           ZITADEL_ADMIN_USERNAME: ${{ secrets.ZITADEL_ADMIN_USERNAME }}
           ZITADEL_ADMIN_EMAIL: ${{ secrets.ZITADEL_ADMIN_EMAIL }}

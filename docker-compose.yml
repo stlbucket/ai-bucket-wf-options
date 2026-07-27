@@ -693,6 +693,11 @@ services:
       NOTIFY_SMTP_PASSWORD: ""
       NOTIFY_SMTP_SECURE: "false"
       NOTIFY_SMTP_DISABLE_STARTTLS: "true"
+      # rendered into the fnb-twilio credential template (send-notification sms branch —
+      # twilio-production-sms spec). Blank in dev: the sms branch is log-sink and the Twilio
+      # node never runs; render-credentials.mjs only requires the vars to be DEFINED.
+      TWILIO_ACCOUNT_SID: "${TWILIO_ACCOUNT_SID:-}"
+      TWILIO_AUTH_TOKEN: "${TWILIO_AUTH_TOKEN:-}"
       # rendered into the anthropic-api-key credential template (game-event AI + any HTTP
       # x-api-key node); the server stores credentials encrypted in n8n_engine
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:?}"
@@ -779,7 +784,15 @@ services:
       # zitadel-seed volume and calls ZITADEL management/v2 over the split-horizon transport, then
       # POSTs send-notification internally + builds the /auth/verify-email link. All workflow code is
       # repo-authored (R22) so allowing fs+http in Code nodes is safe here.
-      NODE_FUNCTION_ALLOW_BUILTIN: "fs,http,https"
+      # + crypto: the notification-webhook Verify Twilio Signature Code node (HMAC-SHA1,
+      # twilio-production-sms spec status-callbacks.md)
+      NODE_FUNCTION_ALLOW_BUILTIN: "fs,http,https,crypto"
+      # send-notification sms branch (twilio-production-sms spec): provider selector + Twilio
+      # sender identity + the auth token for callback signature verification. Dev = log-sink,
+      # so the Twilio vars may be blank.
+      NOTIFY_SMS_PROVIDER: "${NOTIFY_SMS_PROVIDER:?}"
+      TWILIO_FROM_NUMBER: "${TWILIO_FROM_NUMBER:-}"
+      TWILIO_AUTH_TOKEN: "${TWILIO_AUTH_TOKEN:-}"
       N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"        # to POST send-notification internally
       N8N_INTERNAL_URL: "${N8N_INTERNAL_URL:?}"            # http://n8n:5678 (self, for the internal POST)
       NUXT_ZITADEL_INTERNAL_URL: "${NUXT_ZITADEL_INTERNAL_URL:?}"  # http://zitadel:8080

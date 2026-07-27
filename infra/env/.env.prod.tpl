@@ -86,8 +86,10 @@ TZ=UTC
 # ─── Notifications (spec D4: prod email = Resend, via its SMTP interface) ─────
 # The fnb-smtp n8n credential renders from these. SMS stays log-sink (dispatch is
 # Phase 5+ — Twilio vars land here when the send-notification sms branch does).
+# Port 2465 (Resend's implicit-TLS fallback), NOT 465: DO blocks outbound 25/465/587 at the
+# account level (verified from the box 2026-07-26); 2465/2587 are open. Same TLS mode as 465.
 NOTIFY_SMTP_HOST=smtp.resend.com
-NOTIFY_SMTP_PORT=465
+NOTIFY_SMTP_PORT=2465
 NOTIFY_SMTP_USER=resend
 NOTIFY_SMTP_PASSWORD=${RESEND_API_KEY}
 NOTIFY_SMTP_SECURE=true

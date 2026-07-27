@@ -42,21 +42,26 @@ tree** — that is the standing risk this plan starts with.
       **Plus:** CI ssh access = temporary firewall window (new tf output `firewall_id`;
       deploy.yml opens port 22 to the runner IP pre-deploy, `always()`-closes it after).
 
-### 3. Rebuild dev + verify the seed combine (the session's original task)
-- [ ] `pnpm env-rebuild` (USER-RUN) — verifies: combined `db/seed.sql` (anchor
-      `site-admin@example.com` + `anchor-admin@`/`anchor-user@example.com` + 2 Large Tenants),
-      matching ZITADEL roster (dev password unchanged), and the dev-side fixes that rode along
-      (`N8N_BLOCK_ENV_ACCESS_IN_NODE=false`, zitadel-seed "unchanged policy = no-op" hardening,
-      the 89 rewritten default-privilege statements deploy clean on the dev container too).
-- [ ] Assistant verifies read-only after: login as `site-admin@example.com`, anchor residents,
-      large-tenant tree, reaper/workflows green in dev n8n.
-- [ ] NOTE: dev super-admin login changed `bucket@function-bucket.net` → `site-admin@example.com`
+### 3. Rebuild dev + verify the seed combine (the session's original task) — DONE 2026-07-26
+- [x] `pnpm env-rebuild` ran clean (USER-RUN): all one-shots exited 0 (db-migrate incl. the 89
+      default-privilege statements, zitadel-seed, n8n-import), 24 containers healthy.
+- [x] Assistant verified read-only: anchor identities (`site-admin@`/`anchor-admin@`/
+      `anchor-user@example.com` — home/active; site-admin `idp_user_id` pre-linked, anchor
+      users adopt-by-email at first login), 2 Large Tenants (7+8 residents) + full CLI/ORG/WS
+      tree, site-admin claims = 10 perms incl. `p:app-admin-super` + 6 modules, all 13 n8n
+      workflows imported + active (error-handler active), `n8n.workflow_run` 0 errors.
+      Browser login as `site-admin@example.com` confirmed by user (curl can't carry the
+      Secure-flagged dev cookies over plain http — scripted-ceremony 404/exchange-failed log
+      lines from this verification are artifacts, ignore).
+- [x] NOTE: dev super-admin login changed `bucket@function-bucket.net` → `site-admin@example.com`
       (memory `project_super_admin_lacks_app_user` already updated).
 
 ### 4. Resend (prod notification email — blocks invite-user / forgot-password delivery)
-- [ ] USER: verify `function-bucket.com` in Resend; DKIM/SPF records go into **DO's DNS panel**
-      (DO hosts the zone now; manual records survive `terraform apply`, die with teardown).
-- [ ] Verify: send-notification workflow delivers (profile → notification prefs, or an invite).
+- [x] `function-bucket.com` VERIFIED in Resend (2026-07-26): user placed MX/SPF (`send.`),
+      DKIM (`resend._domainkey`), DMARC in DO's DNS panel; assistant triggered the Resend
+      verify via API (status had been `not_started` — the records alone don't start it).
+- [ ] Verify: send-notification workflow delivers (profile → notification prefs, or an invite)
+      — folded into item 5's usage smoke.
 
 ### 5. Usage-driven prod smoke (plan 0010 Phase 7 tail)
 - [ ] Upload an asset → quarantine scan → promote (asset-scan + ClamAV + Spaces).

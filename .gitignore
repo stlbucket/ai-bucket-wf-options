@@ -8,6 +8,8 @@ coverage
 .env
 .env.*
 !.env.example
+# the prod template is placeholders only (no secrets) — CI's render step needs it
+!.env.prod.tpl
 _cruft
 .pnpm-store
 packages/db-types/src/generated

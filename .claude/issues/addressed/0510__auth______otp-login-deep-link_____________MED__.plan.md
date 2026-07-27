@@ -64,7 +64,7 @@ on it (+ plan line). `send-deep-link` registered in `WORKFLOW_REGISTRY` (`p:app-
 - **Builds GREEN:** db-access, graphql-client-api, auth-app, tenant-app; codegen regenerated.
 
 **BUG FOUND in UI testing + FIXED — permission gate too narrow.** "Copy quick-login link" 30000'd
-(`NOT AUTHORIZED`) for the default super-admin login (`bucket@function-bucket.net`): it holds
+(`NOT AUTHORIZED`) for the default super-admin login (`bucket@function-bucket.com`): it holds
 `p:app-admin`/`-super`/`-support` but **not** the base `p:app-user`, so `enforce_permission('p:app-user')`
 rejected it. Fixed to the **any-of gate `{p:app-user, p:app-admin}`** (the game-event trigger
 precedent) in both places:

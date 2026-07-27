@@ -269,6 +269,10 @@ services:
       # registration) + keep the built-in hosted login v1 on the v4 line, both per
       # the spec's Decisions section (2026-07-08).
       ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_ALLOWREGISTER: "false"
+      # 0 disables the skippable "2-Factor Setup" prompt entirely (single-landing
+      # extension, zitadel-login-pattern.md §Extension). seed.mjs ensureLoginPolicy()
+      # pins the same value for volumes created before this line existed.
+      ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_MFAINITSKIPLIFETIME: "0s"
       ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_REQUIRED: "false"
       # Relax password complexity so the dev seed password matches db/seed.sql
       # ('poiuytre' — lowercase-only). DEV ONLY.

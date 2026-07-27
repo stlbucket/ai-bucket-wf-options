@@ -2,7 +2,12 @@
 
 ## Status
 Implemented (ZITADEL cutover 2026-07-08 — password login removed; see
-`.claude/specs/future-auth/zitadel-login-pattern.md` for the full OIDC contract)
+`.claude/specs/future-auth/zitadel-login-pattern.md` for the full OIDC contract).
+**Extension implemented 2026-07-27 (user-verified)**: `/auth/login` auto-starts the ceremony
+(single landing page) and the ZITADEL MFA-init prompt is disabled at the policy level
+(`MfaInitSkipLifetime: 0s` — infra change, lives in the pattern file §Extension, not here).
+No GraphQL/API contract changes; the only data-adjacent change is the `returnTo` threading
+note in §Return-to step 1.
 
 ## Route
 `/auth/login` — see `login.ui.md` for UI details
@@ -44,7 +49,10 @@ A **`returnTo` root-relative path** is threaded through the round-trip:
    string it appends `?returnTo=<encodeURIComponent(path)>` to the `/api/auth/oidc/login` URL.
    `LoginForm.vue` (`packages/auth-layer`) gains an optional `returnTo` prop and forwards it to
    `loginWithRedirect(props.returnTo)`. Bare `loginWithRedirect()` / `<LoginForm />` is unchanged
-   (→ home).
+   (→ home). Under the 2026-07-27 auto-redirect extension, `login.vue`'s dispatcher passes
+   `route.query.returnTo` into `loginWithRedirect()` when `isSafeReturnTo` — so
+   `/auth/login?returnTo=/x` deep links survive the buttonless flow (fail-closed as everywhere
+   else in this section).
 2. **`GET /api/auth/oidc/login`.** Reads `returnTo` from the query; when `isSafeReturnTo(returnTo)`,
    parks it in a short-lived httpOnly cookie `oidc_return_to` (same flags + `maxAge` as the existing
    `oidc_verifier` / `oidc_state` transaction cookies). Invalid/absent → no cookie parked.

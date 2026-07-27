@@ -367,12 +367,19 @@ async function ensureBranding() {
 }
 
 async function ensureLoginPolicy() {
-  // Hide ZITADEL's built-in "Forgot password?" link on the hosted login. The fnb forgot-password
-  // flow is a custom home-page page + n8n workflow (password-self-service spec), and ZITADEL runs
-  // in return-code mode with NO SMTP (n8n is the sole email sender), so ZITADEL's built-in reset is
-  // a dead end — leaving it visible offers a broken, competing path. Merge onto the current default
-  // policy so we never blank scalar/duration fields we don't set; the second/multi-factor arrays are
-  // managed via separate endpoints and are untouched by this update.
+  // Two managed fields on the default login policy:
+  //   hidePasswordReset — hide ZITADEL's built-in "Forgot password?" link. The fnb forgot-password
+  //     flow is a custom home-page page + n8n workflow (password-self-service spec), and ZITADEL
+  //     runs in return-code mode with NO SMTP (n8n is the sole email sender), so ZITADEL's built-in
+  //     reset is a dead end — leaving it visible offers a broken, competing path.
+  //   mfaInitSkipLifetime: 0s — disables the skippable "2-Factor Setup" prompt entirely
+  //     (single-landing extension, zitadel-login-pattern.md §Extension). Users then never enroll
+  //     a factor, so no 2FA challenge can appear. Mirrors the compose
+  //     ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_MFAINITSKIPLIFETIME (fresh volumes); this update
+  //     covers volumes created before that env existed.
+  // Merge onto the current default policy so we never blank scalar/duration fields we don't set;
+  // the second/multi-factor arrays are managed via separate endpoints and are untouched by this
+  // update.
   const current = await instanceRequest('GET', '/admin/v1/policies/login')
   if (current.status < 200 || current.status >= 300) fail('get login policy', current)
   const p = current.json?.policy ?? {}
@@ -383,7 +390,7 @@ async function ensureLoginPolicy() {
     forceMfa: p.forceMfa ?? false,
     forceMfaLocalOnly: p.forceMfaLocalOnly ?? false,
     passwordlessType: p.passwordlessType ?? 'PASSWORDLESS_TYPE_ALLOWED',
-    hidePasswordReset: true, // ← the change
+    hidePasswordReset: true, // ← managed field
     ignoreUnknownUsernames: p.ignoreUnknownUsernames ?? false,
     allowDomainDiscovery: p.allowDomainDiscovery ?? true,
     disableLoginWithEmail: p.disableLoginWithEmail ?? false,
@@ -391,7 +398,7 @@ async function ensureLoginPolicy() {
     defaultRedirectUri: p.defaultRedirectUri ?? '',
     passwordCheckLifetime: p.passwordCheckLifetime ?? '864000s',
     externalLoginCheckLifetime: p.externalLoginCheckLifetime ?? '864000s',
-    mfaInitSkipLifetime: p.mfaInitSkipLifetime ?? '2592000s',
+    mfaInitSkipLifetime: '0s', // ← managed field (0 = never show the 2FA-setup prompt)
     secondFactorCheckLifetime: p.secondFactorCheckLifetime ?? '64800s',
     multiFactorCheckLifetime: p.multiFactorCheckLifetime ?? '43200s',
   }
@@ -401,7 +408,7 @@ async function ensureLoginPolicy() {
   } else if (put.status < 200 || put.status >= 300) {
     fail('update login policy', put)
   } else {
-    console.log('zitadel-seed: login policy — hidePasswordReset enabled')
+    console.log('zitadel-seed: login policy updated (hidePasswordReset, mfaInitSkipLifetime=0s)')
   }
 }
 
@@ -423,7 +430,8 @@ if (!SEED_USERS_ENABLED) {
 // Instance branding (plan 0500) — runs in dev AND prod (not a dev-only seed step).
 await ensureBranding()
 
-// Hide ZITADEL's built-in password-reset link (password-self-service spec) — dev AND prod.
+// Default login policy: hide the built-in password-reset link (password-self-service spec)
+// + disable the 2FA-setup prompt (single-landing extension) — dev AND prod.
 await ensureLoginPolicy()
 
 writeFileSync(SEED_FILE, JSON.stringify({ issuer: ISSUER, clientId }, null, 2))

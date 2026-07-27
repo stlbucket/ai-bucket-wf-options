@@ -6,6 +6,10 @@
 Companion analysis: `zitadel-replacement-analysis.md` (scenario 1 is what this implements).
 Plan (closed): `.claude/issues/addressed/0350__auth______zitadel-login-provider__________HI___.plan.md`
 Decisions record: see **Decisions** at the bottom.
+**Extension Implemented (2026-07-27, user-verified on a rebuilt env)** — single-landing login
++ MFA-prompt removal: see the **Extension** section at the bottom (plan
+`0590__auth______single-landing-login-no-mfa`, addressed; Phase 3 second-factor purge
+deferred).
 
 ## Scope contract (what this change is and is not)
 
@@ -58,7 +62,8 @@ ${ZITADEL_ISSUER}/oauth/v2/authorize?client_id&redirect_uri&response_type=code
     &scope=openid email profile&code_challenge(S256)&state
   ZITADEL hosted login v1 (passkeys/MFA/social become config, not code; NOTE: first login
     per user shows a skippable "2-Factor Setup" prompt — default policy, re-shown per the
-    720h MfaInitSkipLifetime)
+    720h MfaInitSkipLifetime — slated for removal: the 2026-07-27 Extension sets
+    MfaInitSkipLifetime to 0, which disables the prompt entirely)
     302 → GET /auth/api/auth/oidc/callback?code&state
   auth-app callback (server/api/auth/oidc/callback.get.ts):
     1. state check against the txn cookie; delete both txn cookies
@@ -194,3 +199,75 @@ auth-table content).
 - [x] **Session-cookie signing** (`0010`) landed **with** the stage-3 callback work — the
       callback never shipped the unsigned-cookie weakness. (0010 is closed/addressed.)
 - [x] **Image pin: `ghcr.io/zitadel/zitadel:v4.15.3`** (current stable, released 2026-06-22).
+
+## Extension (Implemented 2026-07-27): single landing page + no MFA prompt
+
+User ask: one login landing page (kill the intermediate "Sign in with ZITADEL" button card) and
+no 2FA options anywhere in the ceremony. Neither requires restructuring ZITADEL's hosted page —
+v1 is brandable but not restructurable (deep customization would mean login v2 / Session API,
+both rejected — see `README.md` Considered & rejected).
+
+### A. Single landing page — auto-redirect from `/auth/login`
+
+The button is fnb's own (`packages/auth-layer/LoginForm.vue`). `/auth/login` becomes a
+**dispatcher**: instead of rendering the button card, it immediately starts the ceremony, so the
+fnb-branded ZITADEL hosted login is the only page a signing-in user sees. Gates, in order
+(all pre-existing responsibilities of `login.vue` — the page keeps owning the return leg):
+
+1. `isLoggedIn` → `goHome()` (unchanged).
+2. First-run gate: `needsSetup` → `/setup` (unchanged; must stay ahead of the auto-redirect —
+   a virgin env must never land on an empty ZITADEL login).
+3. `?oidc=success` → the **return leg**: hydrate claims + residency flow (unchanged; never
+   auto-redirect here — that would loop the ceremony).
+4. `?welcome=1` (invitation set-password ceremony) → **no auto-redirect**: keep the success
+   alert + the explicit `LoginForm` button, so the confirmation is readable before the user
+   continues into ZITADEL.
+5. Otherwise → `loginWithRedirect(returnTo?)`, passing `route.query.returnTo` through when
+   `isSafeReturnTo` (so `/auth/login?returnTo=/x` deep links keep working under auto-redirect;
+   validation stays fail-closed per `auth-app/login.data.md` §Return-to).
+
+While redirecting, the page renders a minimal "Redirecting to sign-in…" state **with the
+`LoginForm` button as a manual fallback** (redirect blocked/failed → the user can still click).
+`LoginForm.vue` itself is unchanged — it stays the explicit-button rendering for the deep-link
+landing page `/auth/go/<id>` (which shows item context first and keeps its button), the
+`welcome=1` pause, and the fallback state. Logout is loop-safe: `end_session` terminates the
+ZITADEL session, so bouncing back through `/auth/login` re-presents the hosted login form —
+it does not silently re-authenticate.
+
+### B. No 2FA — disable the MFA-init prompt at the policy level
+
+The skippable "2-Factor Setup" prompt exists because the default login policy carries second
+factors and `MfaInitSkipLifetime: 720h`. **`MfaInitSkipLifetime: 0` disables the prompt
+entirely** (documented ZITADEL behavior). Users then never enroll a factor, so no 2FA challenge
+can ever appear at login. `ForceMFA` is already false. Two application points (both, not either):
+
+1. **Compose env** (fresh volumes — the normal rebuild flow; sits next to the existing
+   `ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_ALLOWREGISTER` key in `docker-compose.yml`):
+   `ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_MFAINITSKIPLIFETIME: "0s"`.
+   `DEFAULTINSTANCE_*` is consumed only at FirstInstance creation → env alone fixes nothing on
+   an existing volume.
+2. **`docker/zitadel/seed.mjs` — extend the existing `ensureLoginPolicy()`** (it already exists
+   — added by the password-self-service spec for `hidePasswordReset: true`, and already does
+   the required fetch-modify-write against `GET/PUT /admin/v1/policies/login`): change the
+   `mfaInitSkipLifetime` line from pass-through (`p.mfaInitSkipLifetime ?? '2592000s'`) to the
+   pinned `'0s'`, and update the function comment + success log to name both managed fields.
+   Runs dev AND prod, self-heals every seed run.
+
+Optional hardening (Phase 3, can be deferred): empty the second-factor list on the default
+login policy via seed.mjs (admin v1 `ListLoginPolicySecondFactors` /
+`RemoveSecondFactorFromLoginPolicy` — verify exact paths at implementation time) so factor
+enrollment is impossible even via ZITADEL self-service surfaces end users are never sent to.
+
+### Spec/file impact
+
+| Layer | File | Change |
+|---|---|---|
+| auth-app | `app/pages/login.vue` | auto-redirect dispatcher (gates above); "Redirecting…" state |
+| auth-layer | `LoginForm.vue` | **unchanged** |
+| compose | `docker-compose.yml` | + `ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_MFAINITSKIPLIFETIME: "0s"` |
+| seed job | `docker/zitadel/seed.mjs` | existing `ensureLoginPolicy()`: pin `mfaInitSkipLifetime: '0s'` |
+| specs | `auth-app/login.ui.md`, `auth-app/login.data.md` | updated alongside this section |
+
+Verification is a user-run env rebuild (never agent-run): fresh login shows exactly one page
+(ZITADEL hosted login, fnb-branded), no 2FA-setup prompt on first login, `?welcome=1` and
+`/auth/go/<id>` flows unchanged, `returnTo` round-trip intact.

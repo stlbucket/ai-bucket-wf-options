@@ -142,6 +142,9 @@ services:
       ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: fnb seed automation
       ZITADEL_FIRSTINSTANCE_ORG_MACHINE_PAT_EXPIRATIONDATE: "2030-01-01T00:00:00Z"
       ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_ALLOWREGISTER: "false"
+      # 0 disables the skippable "2-Factor Setup" prompt (single-landing extension);
+      # seed.mjs ensureLoginPolicy() pins the same value for pre-existing volumes.
+      ZITADEL_DEFAULTINSTANCE_LOGINPOLICY_MFAINITSKIPLIFETIME: "0s"
       ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_REQUIRED: "false"
       # NOTE: the three dev PASSWORDCOMPLEXITYPOLICY_*=false lines are DELIBERATELY OMITTED — prod
       # keeps ZITADEL's default password complexity.

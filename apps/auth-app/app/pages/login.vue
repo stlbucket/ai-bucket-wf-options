@@ -3,7 +3,7 @@ import type { ProfileClaims, ResidencyTreeNode } from '@function-bucket/fnb-type
 import { isSafeReturnTo } from '@function-bucket/fnb-types'
 import { assumeResidency } from '~/composables/useLoginFlow'
 
-const { goHome, isLoggedIn, refreshClaims, user } = useAuth()
+const { goHome, isLoggedIn, loginWithRedirect, refreshClaims, user } = useAuth()
 const authAppUrl = useRuntimeConfig().public.authAppUrl as string
 const { $urqlClient } = useNuxtApp() as unknown as {
   $urqlClient: Parameters<typeof assumeResidency>[0]
@@ -17,13 +17,20 @@ const residencyOptions = ref<ResidencyTreeNode[]>([])
 const modalOpen = ref(false)
 const selecting = ref(false)
 
-// Landing from the ZITADEL callback (?oidc=success): the sealed session cookie is set but
-// localStorage claims are not — hydrate them, then run the same post-login flow as the
-// password path (residency check / selection).
+// Auto-redirect dispatcher (zitadel-login-pattern.md §Extension): the fnb-branded ZITADEL
+// hosted login is the single landing page — this page only dispatches, except on the
+// ?oidc=success return leg and the ?welcome=1 pause.
 const route = useRoute()
+
+// True on the paths that immediately leave for ZITADEL — drives the subheading; LoginForm
+// stays rendered underneath as the manual fallback if the redirect is blocked.
+const redirecting = computed(
+  () => route.query.oidc !== 'success' && route.query.welcome !== '1',
+)
+
 onMounted(async () => {
   // First-run gate: a virgin env (no anchor tenant) steers "sign in" to /auth/setup instead of
-  // an empty ZITADEL login (first-run-setup spec).
+  // an empty ZITADEL login (first-run-setup spec). Must stay ahead of the auto-redirect.
   try {
     const { needsSetup } = await $fetch<{ needsSetup: boolean }>(
       `${authAppUrl}/api/setup/status`,
@@ -36,9 +43,22 @@ onMounted(async () => {
     // status unreachable — fall through to the normal login page
   }
 
-  if (route.query.oidc !== 'success') return
-  await refreshClaims()
-  if (user.value) await onLoginSuccess(user.value)
+  // Return leg from the ZITADEL callback: the sealed session cookie is set but localStorage
+  // claims are not — hydrate them, then run the residency flow. Never auto-redirect here.
+  if (route.query.oidc === 'success') {
+    await refreshClaims()
+    if (user.value) await onLoginSuccess(user.value)
+    return
+  }
+
+  // ?welcome=1 pause (invitation set-password ceremony): keep the confirmation readable —
+  // the explicit button below continues into ZITADEL.
+  if (route.query.welcome === '1') return
+
+  // Single landing page: start the ceremony immediately, threading a valid deep-link
+  // returnTo through the round-trip (login.data.md §Return-to; fail-closed).
+  const returnTo = route.query.returnTo
+  await loginWithRedirect(isSafeReturnTo(returnTo) ? returnTo : undefined)
 })
 
 // End the ceremony at the requested return-to (auth-app/login.data.md §Return-to) when a valid one
@@ -88,7 +108,9 @@ async function onSelectResidency(residentId: string) {
   <div class="flex min-h-[calc(100vh-10rem)] flex-col items-center justify-center gap-8 p-6">
     <div class="text-center">
       <h1 class="text-3xl font-bold tracking-tight">Sign in</h1>
-      <p class="mt-2 text-muted">Enter your credentials to continue.</p>
+      <p class="mt-2 text-muted">
+        {{ redirecting ? 'Redirecting to sign-in…' : 'Enter your credentials to continue.' }}
+      </p>
     </div>
     <!-- One-time notice after the invitation set-password ceremony (user-invitation spec). -->
     <UAlert

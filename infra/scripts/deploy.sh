@@ -79,4 +79,10 @@ COMPOSE="docker compose -f $REMOTE_DIR/infra/compose/docker-compose.prod.yml --e
 ssh_box "$COMPOSE pull"
 ssh_box "$COMPOSE up -d --remove-orphans"
 
+# n8n registers webhook routes in memory at boot, but n8n-import writes workflows/credentials
+# straight to the n8n_engine DB — if `up -d` re-ran the import against an already-running n8n,
+# the live instance serves stale routes (webhook 404s → triggerWorkflow failures; first-deploy
+# defect). A restart is cheap and safe: the state of record is the DB.
+ssh_box "$COMPOSE restart n8n"
+
 echo "==> deployed $ENVIRONMENT @ $IMAGE_TAG. Run health-verify.sh next."

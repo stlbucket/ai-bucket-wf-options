@@ -60,8 +60,15 @@ tree** — that is the standing risk this plan starts with.
 - [x] `function-bucket.com` VERIFIED in Resend (2026-07-26): user placed MX/SPF (`send.`),
       DKIM (`resend._domainkey`), DMARC in DO's DNS panel; assistant triggered the Resend
       verify via API (status had been `not_started` — the records alone don't start it).
-- [ ] Verify: send-notification workflow delivers (profile → notification prefs, or an invite)
-      — folded into item 5's usage smoke.
+- [x] send-notification DELIVERS on prod (2026-07-26, Resend `last_event: delivered`).
+      **Two defects found + fixed en route:**
+      1. DO blocks outbound SMTP 25/465/587 at the account level (verified from the box) —
+         `NOTIFY_SMTP_PORT` 465 → **2465** (Resend's implicit-TLS fallback port; `.env.prod.tpl`).
+      2. A redeploy that re-runs `n8n-import` against a live n8n leaves stale in-memory webhook
+         routes (import/publish write straight to the DB) → webhook 404 → `triggerWorkflow`
+         masked GraphQL error. Fix: `deploy.sh` now runs `compose restart n8n` after `up -d`.
+      Also noted: the `firstEvent.getTime` stats-rollup stack traces in n8n logs are 2.30.7
+      noise (dev shows the identical error; harmless).
 
 ### 5. Usage-driven prod smoke (plan 0010 Phase 7 tail)
 - [ ] Upload an asset → quarantine scan → promote (asset-scan + ClamAV + Spaces).

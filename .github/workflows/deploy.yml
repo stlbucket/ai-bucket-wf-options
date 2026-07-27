@@ -93,10 +93,12 @@ jobs:
         if: inputs.run_apply
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
-          MANAGED_PG_ADMIN_DB: ${{ inputs.environment == 'aws-prod' && 'fnb' || '' }}
-          # aws-prod PG passwords come from the secret (DO set them above from tf outputs)
-          MANAGED_PG_ADMIN_PASSWORD: ${{ inputs.environment == 'aws-prod' && secrets.DB_PASSWORD || '' }}
-          APP_PG_PASSWORD: ${{ inputs.environment == 'aws-prod' && secrets.DB_PASSWORD || '' }}
+          # aws-prod PG values come from the DB_PASSWORD secret / a fixed maintenance DB; on
+          # do-prod fall back to the tf outputs exported to GITHUB_ENV above (step env overrides
+          # GITHUB_ENV, so an empty-string fallback would clobber them — first-deploy defect).
+          MANAGED_PG_ADMIN_DB: ${{ inputs.environment == 'aws-prod' && 'fnb' || env.MANAGED_PG_ADMIN_DB }}
+          MANAGED_PG_ADMIN_PASSWORD: ${{ inputs.environment == 'aws-prod' && secrets.DB_PASSWORD || env.MANAGED_PG_ADMIN_PASSWORD }}
+          APP_PG_PASSWORD: ${{ inputs.environment == 'aws-prod' && secrets.DB_PASSWORD || env.APP_PG_PASSWORD }}
           ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
           ZITADEL_DB_PASSWORD: ${{ secrets.ZITADEL_DB_PASSWORD }}
           N8N_ENGINE_DB_PASSWORD: ${{ secrets.N8N_ENGINE_DB_PASSWORD }}

@@ -71,8 +71,20 @@ tree** — that is the standing risk this plan starts with.
       noise (dev shows the identical error; harmless).
 
 ### 5. Usage-driven prod smoke (plan 0010 Phase 7 tail)
-- [ ] Upload an asset → quarantine scan → promote (asset-scan + ClamAV + Spaces).
-- [ ] Play a battleship/checkers game (game-event referee + anthropic credential).
+- [x] Upload → quarantine scan → promote → **render** verified (2026-07-26). One defect found +
+      fixed: `graphql-api-app/server/lib/s3.ts` derived the presign host from
+      `S3_PUBLIC_BASE_URL`, which is virtual-hosted on prod (CDN host embeds the bucket) — the
+      SDK prepended the bucket again → NXDOMAIN → every asset a placeholder. Fix: explicit
+      `S3_PRESIGN_ENDPOINT` (= regional `S3_ENDPOINT`) in prod compose, path-style derivation
+      stays the dev fallback. Spec + tf-output "CONFIRM" note updated
+      (asset-storage/graphql.data.md correction #2 rewritten).
+- [x] Games verified on prod (2026-07-26): battleship COMPLETE with 80 applied events (AI
+      opponent moved → anthropic credential works), checkers in_progress with 9 applied, zero
+      rejected. Note: game-event sets `saveDataSuccessExecution: none`, so zero saved n8n
+      executions is the EXPECTED signature of success — the `game.game_event` log is the
+      evidence, not the executions list.
+- [ ] (noted, non-blocking) Scripted/non-browser OIDC login 404s at the callback on BOTH dev and
+      prod while real browsers work — quirk worth its own LOW item if e2e/CLI login ever matters.
 
 ### 6. Tracked hardening / cosmetics (do opportunistically)
 - [x] Managed-PG TLS `verify-full` with the mounted DO CA — **spun out to plan

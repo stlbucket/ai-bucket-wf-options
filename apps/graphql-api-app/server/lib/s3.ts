@@ -7,13 +7,19 @@ import { requiredEnv } from './required-env.js'
 // local HMAC operation (no S3 round-trip), so per-row generation in a list query is cheap.
 // Deliberate ~15-line duplication of packages/storage-layer/server/lib/s3.ts (infrastructure.md §1e).
 //
-// IMPORTANT: presign against the BROWSER-reachable endpoint, not the internal Docker one. The
-// signed URL is handed to the user's browser, and a SigV4 signature is Host-bound, so it must be
-// signed for the host the browser actually hits — dev: localhost:9000; prod: the public S3/CDN
-// origin. We derive that origin from S3_PUBLIC_BASE_URL (…/<bucket>), falling back to S3_ENDPOINT.
-// (S3_ENDPOINT = http://minio:9000 only resolves inside the compose network — a presigned URL to
-// it 404s/ENOTFOUND in the browser.)
-const presignEndpoint = new URL(requiredEnv('S3_PUBLIC_BASE_URL')).origin
+// IMPORTANT: presign against a BROWSER-reachable **S3 API** endpoint, not the internal Docker
+// one and not the CDN. The signed URL is handed to the user's browser, and a SigV4 signature is
+// Host-bound, so it must be signed for the host the browser actually hits.
+//   dev:  no S3_PRESIGN_ENDPOINT — derive from S3_PUBLIC_BASE_URL, whose dev value is PATH-style
+//         (http://localhost:9000/<bucket>), so its origin is a valid S3 API host. (S3_ENDPOINT =
+//         http://minio:9000 only resolves inside the compose network.)
+//   prod: S3_PRESIGN_ENDPOINT = the regional Spaces/S3 endpoint (browser-reachable). The prod
+//         S3_PUBLIC_BASE_URL is VIRTUAL-HOSTED (the CDN host embeds the bucket) — deriving from
+//         it made the SDK prepend the bucket again (fnb-assets-prod.fnb-assets-prod.….cdn.…,
+//         NXDOMAIN → every asset a placeholder; first-deploy defect). Presigned URLs bypass the
+//         CDN by design — query-string auth is origin-only.
+const presignEndpoint =
+  process.env.S3_PRESIGN_ENDPOINT || new URL(requiredEnv('S3_PUBLIC_BASE_URL')).origin
 
 export const s3 = new S3Client({
   endpoint: presignEndpoint,

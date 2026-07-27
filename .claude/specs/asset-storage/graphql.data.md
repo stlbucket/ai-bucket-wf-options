@@ -163,19 +163,21 @@ export const AssetDownloadUrlPlugin = makeExtendSchemaPlugin(() => ({
 > **Verified 2026-07-06 (live run) — two corrections baked in above:**
 > 1. **`$asset.get()` takes raw snake_case column names** (`scan_status`, `is_public`, `storage_key`,
 >    `original_name`, `content_type`) — camelCase throws at query time for every row.
-> 2. **The signing S3 client (`server/lib/s3.ts`) must presign against the BROWSER-reachable
->    endpoint**, not the internal `S3_ENDPOINT=http://minio:9000` (a SigV4 URL is Host-bound, so a
->    URL signed for `minio:9000` is unreachable from the browser and can't be rewritten client-side).
->    Derive it from `S3_PUBLIC_BASE_URL`'s origin (dev: `http://localhost:9000`; prod: the public
->    S3/CDN origin), falling back to `S3_ENDPOINT`:
+> 2. **The signing S3 client (`server/lib/s3.ts`) must presign against a BROWSER-reachable
+>    S3 API endpoint**, not the internal `S3_ENDPOINT=http://minio:9000` (a SigV4 URL is Host-bound,
+>    so a URL signed for `minio:9000` is unreachable from the browser) — **and not the CDN**.
+>    `S3_PRESIGN_ENDPOINT` wins when set; otherwise derive from `S3_PUBLIC_BASE_URL`'s origin:
 >    ```ts
->    const presignEndpoint = process.env.S3_PUBLIC_BASE_URL
->      ? new URL(process.env.S3_PUBLIC_BASE_URL).origin
->      : process.env.S3_ENDPOINT
->    export const s3 = new S3Client({ endpoint: presignEndpoint, region: process.env.S3_REGION,
->      forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
->      credentials: { accessKeyId: process.env.S3_ACCESS_KEY!, secretAccessKey: process.env.S3_SECRET_KEY! } })
+>    const presignEndpoint =
+>      process.env.S3_PRESIGN_ENDPOINT || new URL(requiredEnv('S3_PUBLIC_BASE_URL')).origin
 >    ```
+>    - **dev**: no override — the dev base is PATH-style (`http://localhost:9000/<bucket>`), so its
+>      origin is a valid S3 API host.
+>    - **prod**: `S3_PRESIGN_ENDPOINT` = the regional Spaces/S3 endpoint (`S3_ENDPOINT`, which is
+>      browser-reachable on managed storage). The prod base is VIRTUAL-HOSTED (CDN host embeds the
+>      bucket), so deriving from it makes the SDK prepend the bucket again —
+>      `fnb-assets-prod.fnb-assets-prod.….cdn.…` NXDOMAIN, every asset a placeholder (verified live
+>      2026-07-26, plan 0560 item 5). Presigned URLs bypass the CDN by design.
 >    (The public branch already used `S3_PUBLIC_BASE_URL` directly, so only private/presigned
 >    downloads were affected.)
 

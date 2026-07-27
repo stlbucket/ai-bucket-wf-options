@@ -69,8 +69,10 @@ output "s3_bucket" {
 }
 
 # Browser-reachable base for public/ objects. Virtual-hosted style (S3_FORCE_PATH_STYLE=false), so
-# the app appends the object KEY directly (no bucket path segment). CONFIRM the app's public-URL
-# construction at first deploy (graphql-api-app/server/lib/s3.ts derives origin from this).
+# the app appends the object KEY directly (no bucket path segment). NOTE: presigned downloadUrl
+# generation must NOT derive its host from this (virtual-hosted → double-bucket NXDOMAIN) — the
+# graphql-api-app presigns against S3_PRESIGN_ENDPOINT (= s3_endpoint) instead; confirmed at
+# first deploy 2026-07-26 (plan 0560 item 5).
 output "s3_public_base_url" {
   description = "S3_PUBLIC_BASE_URL — CDN endpoint when enabled, else the bucket origin."
   value       = var.enable_cdn ? "https://${digitalocean_cdn.assets[0].endpoint}" : "https://${digitalocean_spaces_bucket.assets.bucket_domain_name}"

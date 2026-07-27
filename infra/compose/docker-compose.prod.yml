@@ -462,6 +462,10 @@ services:
       # S3 presign only (downloadUrl — local HMAC, no S3 round-trip). Managed object store creds.
       S3_ENDPOINT: "${S3_ENDPOINT:?}"
       S3_PUBLIC_BASE_URL: "${S3_PUBLIC_BASE_URL:?}"
+      # Presign against the regional S3 API endpoint (browser-reachable on managed object
+      # storage), NOT the CDN base — the prod S3_PUBLIC_BASE_URL is virtual-hosted, and deriving
+      # the presign host from it doubles the bucket in the hostname (NXDOMAIN placeholders).
+      S3_PRESIGN_ENDPOINT: "${S3_ENDPOINT:?}"
       S3_REGION: "${S3_REGION:?}"
       S3_BUCKET: "${S3_BUCKET:?}"
       S3_ACCESS_KEY: "${S3_ACCESS_KEY:?}"

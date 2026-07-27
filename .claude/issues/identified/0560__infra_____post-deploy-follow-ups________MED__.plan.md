@@ -18,20 +18,29 @@ tree** — that is the standing risk this plan starts with.
 ## Task list (ordered)
 
 ### 1. Commit the working tree — USER-RUN, do first
-- [ ] The tree holds: the dev-seed combine (`db/seed.sql` = anchor identities + large fixture,
-      `seed-large.sql` deleted, `docker/zitadel/seed.mjs` roster), deployment spec Phase 8
-      (D12/D13), and all 15 first-deploy fixes (see plan 0010 log). Until committed, prod's
-      source of truth exists only on one laptop.
-- [ ] Same-tag overwrites happened during bootstrap (auth-app ×2, graphql-api-app ×1 under
-      `0a8fc0940713`) — after committing, the next CI/full build under the new SHA restores
-      clean tag provenance.
+- [x] Committed to `lets-deploy` + pushed (2026-07-26; not yet merged to main).
+- [x] Tag provenance restored: CI `build-images.yml` built + pushed all 8 images under
+      `f1e26197…` (2026-07-26), and `deploy.yml` recreated the prod stack on those tags.
 
-### 2. CI image pipeline — USER wires secrets; assistant verifies workflow runs
-- [ ] Add GH Actions secrets (`infra/README.md` §Secrets checklist — now includes `SETUP_TOKEN`,
-      `SITE_ADMIN_*`, `SITE_TENANT_NAME`, `N8N_ADMIN_PASSWORD` rows; CI needs the render-step
-      set used by `deploy.yml`, incl. `SETUP_TOKEN`).
-- [ ] Run `build-images.yml` (amd64 runners — retires laptop Rosetta cross-builds and the Docker
-      Desktop crashes) then `deploy.yml`, or keep using `pnpm do-env-build` laptop-side.
+### 2. CI image pipeline — USER wires secrets; assistant verifies workflow runs — DONE 2026-07-26
+- [x] 22 GH Actions repo-level secrets added (gh CLI; `SITE_ADMIN_*`/`SITE_TENANT_NAME`/
+      `N8N_ADMIN_PASSWORD` stay laptop-side — bootstrap-identities is operator-run, not CI).
+- [x] `build-images.yml` green (11m36s, amd64 runners) → `deploy.yml` green end-to-end
+      (apply → render → ssh deploy → health-verify 200s on apex/id./n8n.).
+      **Four CI-vs-laptop defects found + fixed en route:**
+      1. `packages/graphql-client-api/src/generated/fnb-graphql-api.ts` was gitignored — CI
+         checkout can't build (codegen needs live PostGraphile). Now committed; only the
+         schema.json dumps stay ignored.
+      2. `infra/env/.env.prod.tpl` matched the `.env.*` gitignore — never committed. Negated.
+      3. `deploy.yml` step-env clobbered `MANAGED_PG_ADMIN_{DB,PASSWORD}`/`APP_PG_PASSWORD`
+         to `''` on do-prod (aws-conditional with empty fallback beats GITHUB_ENV). Fixed with
+         `env.` fallbacks. Also: sensitive tf outputs now `::add-mask::`ed (the PG admin
+         password printed clear in run 30232842244's predecessor logs — user to delete logs
+         of run 30232128096 + optionally rotate the cluster password).
+      4. `deploy.sh` passed `$SSH_OPTS` bare to rsync (parsed as rsync's own `-i`/`-o` flags;
+         inner ssh keyless). Fixed with `-e "ssh $SSH_OPTS"` on all three rsyncs.
+      **Plus:** CI ssh access = temporary firewall window (new tf output `firewall_id`;
+      deploy.yml opens port 22 to the runner IP pre-deploy, `always()`-closes it after).
 
 ### 3. Rebuild dev + verify the seed combine (the session's original task)
 - [ ] `pnpm env-rebuild` (USER-RUN) — verifies: combined `db/seed.sql` (anchor

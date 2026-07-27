@@ -72,6 +72,11 @@ jobs:
         if: inputs.run_apply
         run: |
           terraform -chdir="$TF_DIR" output -json > tf.json
+          # tf outputs are NOT GitHub secrets — mask the sensitive ones or they print in clear
+          # in step-env dumps (first-deploy defect: the PG admin password leaked into run logs).
+          for k in pg_admin_password app_pg_password; do
+            v=$(jq -r --arg k "$k" '.[$k].value // empty' tf.json); [ -n "$v" ] && echo "::add-mask::$v" || true
+          done
           to_env() { v=$(jq -r --arg k "$1" '.[$k].value // empty' tf.json); [ -n "$v" ] && echo "$2=$v" >> "$GITHUB_ENV" || true; }
           to_env registry_endpoint  REGISTRY
           to_env domain             DOMAIN
@@ -87,6 +92,7 @@ jobs:
           # DO exposes the PG password as a TF output; AWS uses the DB_PASSWORD secret (below).
           to_env pg_admin_password  MANAGED_PG_ADMIN_PASSWORD
           to_env app_pg_password    APP_PG_PASSWORD
+          to_env firewall_id        FIREWALL_ID
 
       # ── Render the box .env (secrets + tf outputs) and deploy ──
       - name: render .env
@@ -118,6 +124,22 @@ jobs:
           MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
         run: node infra/env/render-env.mjs infra/env/.env.prod.tpl "$RUNNER_TEMP/.env"
 
+      # ── Temporary ssh window: the cloud firewall opens 22 to admin CIDRs only, which the
+      # runner is not in. Add the runner's IP for the deploy; the close step below removes it
+      # (always). A doctl-added rule sits outside terraform state, so even a failed cleanup
+      # self-heals at the next apply (the firewall resource's rule set is authoritative).
+      - if: inputs.run_apply && inputs.environment == 'do-prod'
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - name: open ssh window for the runner
+        if: inputs.run_apply && inputs.environment == 'do-prod'
+        run: |
+          RUNNER_IP="$(curl -fsS https://api.ipify.org)/32"
+          echo "RUNNER_IP=$RUNNER_IP" >> "$GITHUB_ENV"
+          doctl compute firewall add-rules "$FIREWALL_ID" \
+            --inbound-rules "protocol:tcp,ports:22,address:$RUNNER_IP"
+
       - name: deploy to the box
         if: inputs.run_apply
         env:
@@ -136,3 +158,9 @@ jobs:
       - name: health verify
         if: inputs.run_apply
         run: DOMAIN="$DOMAIN" infra/scripts/health-verify.sh
+
+      - name: close ssh window
+        if: always() && env.RUNNER_IP != '' && env.FIREWALL_ID != ''
+        run: |
+          doctl compute firewall remove-rules "$FIREWALL_ID" \
+            --inbound-rules "protocol:tcp,ports:22,address:$RUNNER_IP" || true

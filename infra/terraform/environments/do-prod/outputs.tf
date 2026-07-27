@@ -22,3 +22,5 @@ output "s3_bucket" { value = module.digitalocean.s3_bucket }
 output "s3_public_base_url" { value = module.digitalocean.s3_public_base_url }
 
 output "registry_endpoint" { value = module.digitalocean.registry_endpoint }
+
+output "firewall_id" { value = module.digitalocean.firewall_id }

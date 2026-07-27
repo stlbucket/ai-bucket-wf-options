@@ -76,6 +76,12 @@ output "s3_public_base_url" {
   value       = var.enable_cdn ? "https://${digitalocean_cdn.assets[0].endpoint}" : "https://${digitalocean_spaces_bucket.assets.bucket_domain_name}"
 }
 
+# ── Cloud firewall ───────────────────────────────────────────────────────────
+output "firewall_id" {
+  description = "Web firewall id — deploy.yml opens a temporary port-22 rule for the CI runner."
+  value       = digitalocean_firewall.web.id
+}
+
 # ── Registry ─────────────────────────────────────────────────────────────────
 output "registry_endpoint" {
   description = "REGISTRY — DOCR endpoint (registry.digitalocean.com/<name>)."

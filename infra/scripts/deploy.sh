@@ -45,18 +45,17 @@ echo "==> copying artifacts (compose + Caddyfile + db/ + n8n/ + .env)"
 # layout: infra/{compose,docker} nest under infra/, repo docker/ stays distinct at the root.
 # Two explicit-dest transfers (not rsync -R + /./ — macOS openrsync ignores the dot-dir marker).
 ssh_box "mkdir -p $REMOTE_DIR/infra"
-# shellcheck disable=SC2086
-rsync -az --delete $SSH_OPTS \
+# SSH_OPTS must reach rsync's transport via -e — passed bare, rsync parses -i/-o as ITS OWN
+# flags (itemize-changes/owner) and its inner ssh runs keyless (CI first-deploy defect).
+rsync -az --delete -e "ssh $SSH_OPTS" \
   "$ROOT/infra/compose" "$ROOT/infra/docker" \
   "$TARGET:$REMOTE_DIR/infra/"
-# shellcheck disable=SC2086
-rsync -az --delete $SSH_OPTS \
+rsync -az --delete -e "ssh $SSH_OPTS" \
   "$ROOT/docker" "$ROOT/db" "$ROOT/n8n" \
   "$TARGET:$REMOTE_DIR/"
 # Brand assets for the zitadel-seed label-policy uploads (mounted at /brand-assets in prod
 # compose; the repo source lives under .claude/, which is deliberately not shipped wholesale).
-# shellcheck disable=SC2086
-rsync -az --delete $SSH_OPTS \
+rsync -az --delete -e "ssh $SSH_OPTS" \
   "$ROOT/.claude/design-implementations/design_handoff_fn_bucket_brand/assets/" \
   "$TARGET:$REMOTE_DIR/brand-assets/"
 # shellcheck disable=SC2086

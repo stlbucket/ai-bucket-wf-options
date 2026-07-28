@@ -2,6 +2,8 @@
 import { useAuth } from '@function-bucket/fnb-auth-layer/app/composables/useAuth'
 import { useRoute } from 'nuxt/app'
 import { computed, onMounted } from 'vue'
+// Same version source as AppNav.vue — trued up to the release tag by `pnpm do-pre-deploy`.
+import { version as appVersion } from '../../package.json'
 import { useAppNav } from '../composables/useAppNav'
 
 const route = useRoute()
@@ -79,11 +81,17 @@ function isActive(itemRoute: string) {
           <NuxtLink
             to="/"
             :external="true"
-            class="flex items-center gap-2.5"
+            class="flex flex-col"
             @click="closeNav"
           >
-            <FunctionBucketMark color="secondary" :monogram="false" class="size-[26px]" />
-            <span class="font-mono text-[15px] font-bold tracking-tight">function-bucket</span>
+            <span class="flex items-center gap-2.5">
+              <FunctionBucketMark color="secondary" :monogram="false" class="size-[26px]" />
+              <span class="font-mono text-[15px] font-bold tracking-tight">function-bucket</span>
+            </span>
+            <!-- pl-9 = the 26px mark + the 10px gap, so the version sits under the wordmark -->
+            <span class="mt-1 pl-9 font-mono text-[10px] leading-none text-white/40">
+              v{{ appVersion }}
+            </span>
           </NuxtLink>
           <UButton
             icon="i-lucide-x"

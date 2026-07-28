@@ -1,23 +1,26 @@
 # admin/user/index — User List Data
 
 ## Status
-Implemented — GraphQL (list + **Manage Residents**, workspace-only, 2026-07-22). Full DB/GraphQL/
-composable contract in `_shared.data.md`.
+Implemented — GraphQL (list + **Manage Residents**, 2026-07-22; **subtree roll-up 2026-07-27**).
+Full roll-up contract in `_shared.data.md` → "Subtree Roll-up".
 
 ## Route
 `/tenant/admin/user` — see `index.ui.md` for UI details
 
 ## GraphQL
 
-### Query on load
-- **Query name**: `TenantResidents`
-- **File**: `packages/graphql-client-api/src/graphql/app/query/appTenantResidents.graphql`
-- **Generated hook**: `useTenantResidentsQuery()` (no variables)
-- **Returns**: `residents[]` — array of `Resident` fragment objects (id, profileId, tenantId, tenantName, status, type, displayName, email)
-- **Auth**: RLS enforces tenant scoping; claims set via urql plugin headers
+### Query on load — CHANGED (roll-up)
+- **Query name**: `TenantSubtreeResidents` (replaces `TenantResidents` as the page's list source)
+- **File**: `packages/graphql-client-api/src/graphql/app/query/tenantSubtreeResidents.graphql`
+- **Generated hook**: `useTenantSubtreeResidentsQuery()` (no variables)
+- **Returns**: `tenantSubtreeResidentsList[]` — one row per residency across the current tenant +
+  all descendant tenants (`app_api.tenant_subtree_residents`, `p:app-admin`, DEFINER; no
+  `support`/`removed` rows)
+- The old `TenantResidents` op (`appTenantResidents.graphql`, RLS-scoped) is no longer used by
+  this page; keep it only if another consumer remains, else delete at implementation time.
 
 ### Mutations
-None on this page. Block/unblock actions are on the user detail page.
+None on this page. Block/unblock actions are on the user detail page (current-tenant residents only).
 
 ## Composable
 
@@ -26,16 +29,18 @@ None on this page. Block/unblock actions are on the user detail page.
 
 ```ts
 // re-export file (single line)
-export { useAdminResidents } from '@function-bucket/fnb-graphql-client-api'
+export { useAdminResidents, useSubtreeResidents } from '@function-bucket/fnb-graphql-client-api'
 ```
 
 | Export | Shape | Usage |
 |---|---|---|
-| `useAdminResidents()` | `{ data: ComputedRef<Resident[] \| null>, fetching: Ref<boolean>, error: Ref }` | called in index.vue on mount |
+| `useSubtreeResidents(currentTenantId)` | `{ users: ComputedRef<SubtreeUserView[]>, fetching, error, executeQuery }` | called in index.vue; `currentTenantId` from `useAuth()` claims |
 
-`data` is computed from `useTenantResidentsQuery().data.value?.residents`. Returns `null` until loaded.
-**Change:** also expose `executeQuery` (currently unreturned) so the page can refresh the list
-after `WorkspaceResidentsModal` emits `changed`.
+`users` groups the flat residency rows into **one row per person** (`SubtreeUserView`, see
+`_shared.data.md`): dedupe by `profileId`; pending profile-less invites stay individual rows;
+`tenancies` ordered current-tenant-first. The page refreshes via
+`executeQuery({ requestPolicy: 'network-only' })` after `WorkspaceResidentsModal` emits `changed`
+(replacing the old `useAdminResidents().executeQuery` wiring).
 
 ## NEW — Manage Residents (workspace tenants only)
 

@@ -5,6 +5,12 @@ Draft — see README (U2). Definition lands at `n8n/workflows/invite-user.json`,
 `n8n-import` service like every other workflow. Fired via the `triggerWorkflow` registry
 (`invite-user`, `p:app-admin`).
 
+> **Extended by `.claude/specs/tenant-app/site-admin/tenant/[id].data.md`** (2026-07-27): a
+> synchronous **link mode** (`responseMode: lastNode`, `mode: 'email' | 'link'` input, respond
+> payload `{ link, template, sent }`). That spec is authoritative for the delta. (Its
+> cross-tenant `targetTenantId` pass-through was built and removed the same day — reversal;
+> `tenantId` always comes from the caller's claims.)
+
 ## Trigger + payload
 
 Webhook Trigger (respond-immediately), header-auth `x-fnb-webhook-secret` = `N8N_WEBHOOK_SECRET`

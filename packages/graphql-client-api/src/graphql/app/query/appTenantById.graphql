@@ -3,11 +3,19 @@ query TenantById(
 ) {
   tenant(id: $tenantId) {
     ...Tenant
-    residents: residents {
-      totalCount
+    residents: residentsList(orderBy: [CREATED_AT_ASC]) {
+      ...Resident
+      licenses: licensesList {
+        id
+        licenseTypeKey
+        status
+      }
     }
     tenantSubscriptions: tenantSubscriptionsList {
       ...TenantSubscription
+      licensePack {
+        displayName
+      }
       licenses: licenses {
         totalCount
       }

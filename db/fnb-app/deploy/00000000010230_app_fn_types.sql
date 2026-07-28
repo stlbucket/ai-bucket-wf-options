@@ -46,6 +46,22 @@ create type app_fn.workspace_resident_candidate as (
   ,is_member boolean
 );
 ----------------------------------------------------------------------------------------------
+-- One residency row in the current tenant's child subtree (self + all descendants), for the
+-- admin/user roll-up list. profile_id null ⇒ pending, profile-less invite. Flat rows: the
+-- client groups them into one row per person.
+create type app_fn.subtree_resident_row as (
+  resident_id uuid
+  ,profile_id uuid
+  ,email citext
+  ,display_name citext
+  ,full_name citext
+  ,tenant_id uuid
+  ,tenant_name citext
+  ,tenant_type app.tenant_type
+  ,resident_type app.resident_type
+  ,resident_status app.resident_status
+);
+----------------------------------------------------------------------------------------------
 create type app_fn.license_type_info as (
   key citext
   ,display_name citext

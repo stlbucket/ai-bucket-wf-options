@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import type { TableColumn } from '@nuxt/ui'
 import type { Tenant } from '@function-bucket/fnb-types'
+import type { TenantUserView, TenantSubscriptionView } from '~/composables/useSiteAdminTenants'
 import { useSiteAdminTenant, useBecomeSupport } from '~/composables/useSiteAdminTenants'
 
 const route = useRoute()
@@ -13,8 +15,23 @@ const canSupport = computed(
     || user.value?.permissions?.includes('p:app-admin-super')
 )
 
-const { data: tenant, refresh, activate, deactivate, update } = await useSiteAdminTenant(String(route.params.id))
+const { data: tenant, users, subscriptions, activate, deactivate, update } = await useSiteAdminTenant(String(route.params.id))
 const { becomeSupportForTenant } = useBecomeSupport()
+
+// Users card (site-admin tenant detail spec): every non-support resident of the viewed tenant.
+// Read-only — inviting/re-inviting users happens from inside the tenant (support mode), never
+// cross-tenant from here (user directive 2026-07-27).
+const userColumns: TableColumn<TenantUserView>[] = [
+  { accessorKey: 'displayName', header: 'User' },
+  { accessorKey: 'status', header: 'Status' },
+  { accessorKey: 'licenseTypeKeys', header: 'Licenses' },
+]
+
+const subscriptionColumns: TableColumn<TenantSubscriptionView>[] = [
+  { accessorKey: 'displayName', header: 'Pack' },
+  { accessorKey: 'status', header: 'Status' },
+  { accessorKey: 'licenseCount', header: 'Licenses' },
+]
 
 const editing = ref(false)
 const saving = ref(false)
@@ -85,7 +102,7 @@ const typeOptions = computed(() =>
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl space-y-4 p-6 sm:p-9">
+  <div class="mx-auto max-w-4xl space-y-4 p-6 sm:p-9">
     <UButton
       variant="link"
       color="neutral"
@@ -218,5 +235,115 @@ const typeOptions = computed(() =>
         </template>
       </div>
     </UCard>
+
+    <UCard v-if="tenant">
+      <template #header>
+        <div class="flex items-center gap-2">
+          <h2 class="text-base font-semibold">
+            Users
+          </h2>
+          <UBadge
+            color="neutral"
+            variant="subtle"
+            size="sm"
+          >
+            {{ users.length }}
+          </UBadge>
+        </div>
+      </template>
+
+      <UEmpty
+        v-if="!users.length"
+        icon="i-lucide-users"
+        label="No users yet — enter support mode to invite one."
+      />
+      <div
+        v-else
+        class="overflow-x-auto"
+      >
+        <UTable
+          :data="users"
+          :columns="userColumns"
+          class="grow"
+        >
+          <template #displayName-cell="{ row }">
+            <div class="flex flex-col">
+              <span class="font-medium">
+                {{ row.original.displayName ?? row.original.email.split('@')[0] }}
+              </span>
+              <span class="text-xs text-muted">{{ row.original.email }}</span>
+            </div>
+          </template>
+          <template #status-cell="{ row }">
+            <UBadge
+              :color="statusColor('resident', row.original.status)"
+              variant="subtle"
+              size="sm"
+            >
+              {{ statusLabel(row.original.status) }}
+            </UBadge>
+          </template>
+          <template #licenseTypeKeys-cell="{ row }">
+            <div
+              v-if="row.original.licenseTypeKeys.length"
+              class="flex flex-wrap gap-1"
+            >
+              <UBadge
+                v-for="key in row.original.licenseTypeKeys"
+                :key="key"
+                color="neutral"
+                variant="subtle"
+                size="sm"
+              >
+                {{ key }}
+              </UBadge>
+            </div>
+            <span
+              v-else
+              class="text-muted"
+            >—</span>
+          </template>
+        </UTable>
+      </div>
+    </UCard>
+
+    <UCard v-if="tenant">
+      <template #header>
+        <h2 class="text-base font-semibold">
+          Subscriptions
+        </h2>
+      </template>
+
+      <p
+        v-if="!subscriptions.length"
+        class="text-sm text-muted"
+      >
+        No subscriptions.
+      </p>
+      <div
+        v-else
+        class="overflow-x-auto"
+      >
+        <UTable
+          :data="subscriptions"
+          :columns="subscriptionColumns"
+          class="grow"
+        >
+          <template #displayName-cell="{ row }">
+            {{ row.original.displayName ?? row.original.licensePackKey }}
+          </template>
+          <template #status-cell="{ row }">
+            <UBadge
+              :color="statusColor('subscription', row.original.status)"
+              variant="subtle"
+              size="sm"
+            >
+              {{ statusLabel(row.original.status) }}
+            </UBadge>
+          </template>
+        </UTable>
+      </div>
+    </UCard>
+
   </div>
 </template>

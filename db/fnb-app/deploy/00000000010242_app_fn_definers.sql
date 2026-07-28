@@ -626,3 +626,121 @@ CREATE OR REPLACE FUNCTION app_api.set_workspace_membership(_profile_id uuid, _m
   end;
   $function$
   ;
+
+----------------------------------------------------------------- tenant_subtree_residents
+-- The admin/user roll-up: every residency in the current tenant's child subtree (self + all
+-- descendants — NOT ancestors, NOT siblings), one row per residency; the client groups into one
+-- row per person. Excludes support residencies and soft-removed roster rows. DEFINER: descendant
+-- tenants beyond direct children are not visible to the caller under RLS.
+CREATE OR REPLACE FUNCTION app_fn.tenant_subtree_residents(_tenant_id uuid)
+  RETURNS setof app_fn.subtree_resident_row
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY DEFINER
+  AS $function$
+  BEGIN
+    return query
+    select
+      r.id
+      ,r.profile_id
+      ,coalesce(p.email, r.email::citext)
+      ,coalesce(p.display_name, r.display_name, split_part(coalesce(p.email, r.email::citext),'@',1))::citext
+      ,p.full_name
+      ,t.id
+      ,t.name
+      ,t.type
+      ,r.type
+      ,r.status
+    from app.resident r
+    join app.tenant t     on t.id = r.tenant_id
+    left join app.profile p on p.id = r.profile_id
+    where r.tenant_id in (select app_fn.tenant_tree_ids(_tenant_id))
+      and r.type <> 'support'          -- support staff hidden from tenant views
+      and r.status <> 'removed'        -- soft-removed roster rows are not members
+    order by 4, 7;                     -- display_name, tenant_name
+  end;
+  $function$
+  ;
+
+CREATE OR REPLACE FUNCTION app_api.tenant_subtree_residents()
+  RETURNS setof app_fn.subtree_resident_row
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY INVOKER
+  AS $function$
+  BEGIN
+    perform jwt.enforce_permission('p:app-admin');
+    return query select * from app_fn.tenant_subtree_residents(jwt.tenant_id());
+  end;
+  $function$
+  ;
+
+----------------------------------------------------------------- subtree_resident_detail
+-- Read-only cross-tenant detail for the roll-up: the target resident + the person's residencies
+-- (with licenses) within the caller's subtree, as jsonb (siteUserById precedent — raw pg values,
+-- lowercase enums). Raises 30000 if the target is absent or outside the caller's subtree.
+CREATE OR REPLACE FUNCTION app_fn.subtree_resident_detail(_tenant_id uuid, _resident_id uuid)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY DEFINER
+  AS $function$
+  DECLARE
+    _r app.resident;
+  BEGIN
+    select * into _r from app.resident where id = _resident_id;
+    if _r.id is null
+      or _r.tenant_id not in (select app_fn.tenant_tree_ids(_tenant_id))
+    then
+      raise exception '30000: NOT AUTHORIZED';
+    end if;
+
+    return jsonb_build_object(
+      'profile', (select to_jsonb(p) from app.profile p where p.id = _r.profile_id)
+      ,'resident', to_jsonb(_r)
+      ,'residencies', (
+        select coalesce(jsonb_agg(x order by x->>'tenantName'), '[]'::jsonb)
+        from (
+          select jsonb_build_object(
+            'residentId', r2.id
+            ,'tenantId', t2.id
+            ,'tenantName', t2.name
+            ,'tenantType', t2.type
+            ,'residentType', r2.type
+            ,'status', r2.status
+            ,'licenses', (
+              select coalesce(jsonb_agg(jsonb_build_object(
+                'id', l.id
+                ,'licenseTypeKey', l.license_type_key
+                ,'status', l.status
+              )), '[]'::jsonb)
+              from app.license l
+              where l.resident_id = r2.id
+            )
+          ) as x
+          from app.resident r2
+          join app.tenant t2 on t2.id = r2.tenant_id
+          where r2.profile_id = _r.profile_id
+            and _r.profile_id is not null
+            and r2.tenant_id in (select app_fn.tenant_tree_ids(_tenant_id))
+            and r2.type <> 'support'
+            and r2.status <> 'removed'
+        ) s
+      )
+    );
+  end;
+  $function$
+  ;
+
+CREATE OR REPLACE FUNCTION app_api.subtree_resident_detail(_resident_id uuid)
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY INVOKER
+  AS $function$
+  BEGIN
+    perform jwt.enforce_permission('p:app-admin');
+    return app_fn.subtree_resident_detail(jwt.tenant_id(), _resident_id);
+  end;
+  $function$
+  ;

@@ -1,1 +1,6 @@
-export { useAdminResidents, useAdminResident } from '@function-bucket/fnb-graphql-client-api'
+export {
+  useAdminResidents,
+  useAdminResident,
+  useSubtreeResidents,
+  useSubtreeResidentDetail
+} from '@function-bucket/fnb-graphql-client-api'

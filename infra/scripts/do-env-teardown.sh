@@ -37,6 +37,7 @@ echo "!!! registry + images, DNS zone. There is no undo."
 read -r -p "Type 'destroy do-prod' to continue: " confirm
 [ "$confirm" = "destroy do-prod" ] || { echo "aborted (no changes made)"; exit 1; }
 
+# Versioned-purge sequence kept in lockstep with do-db-rebuild.sh step 5 — change one, change both.
 if [ "${PURGE_BUCKET:-0}" = "1" ]; then
   bucket="$("$TERRAFORM_BIN" -chdir="$TF_DIR" output -json 2>/dev/null | jq -r '.s3_bucket.value // empty')"
   endpoint="$("$TERRAFORM_BIN" -chdir="$TF_DIR" output -json 2>/dev/null | jq -r '.s3_endpoint.value // empty')"

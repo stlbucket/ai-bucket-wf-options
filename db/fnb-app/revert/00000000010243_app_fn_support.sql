@@ -5,6 +5,8 @@ begin;
 drop function if exists app_api.site_user_by_id(uuid) cascade;
 drop function if exists app_fn.search_tenants(app_fn.search_tenants_options) cascade;
 drop function if exists app_api.search_tenants(app_fn.search_tenants_options) cascade;
+drop function if exists app_fn.search_profiles_count(app_fn.search_profiles_options) cascade;
+drop function if exists app_api.search_profiles_count(app_fn.search_profiles_options) cascade;
 drop function if exists app_fn.search_profiles(app_fn.search_profiles_options) cascade;
 drop function if exists app_api.search_profiles(app_fn.search_profiles_options) cascade;
 drop function if exists app_fn.search_residents(app_fn.search_residents_options) cascade;

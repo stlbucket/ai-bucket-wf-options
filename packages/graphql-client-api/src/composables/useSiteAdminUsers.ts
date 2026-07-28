@@ -1,7 +1,8 @@
 import { computed } from 'vue'
+import type { Ref } from 'vue'
 import { toProfile } from '../mappers/profile'
 import {
-  useAllAppProfilesQuery,
+  useSearchProfilesQuery,
   useSiteUserByIdQuery,
   useUpdateUserStatusMutation,
   useUpdateResidentStatusMutation,
@@ -10,14 +11,30 @@ import {
   ResidentStatus,
 } from '../generated/fnb-graphql-api'
 
-export function useSiteAdminUsers() {
-  const { data, fetching, error } = useAllAppProfilesQuery({ variables: {} })
+export interface SiteAdminUsersOptions {
+  searchTerm: Ref<string>
+  page: Ref<number>
+  pageSize?: number
+}
+
+export function useSiteAdminUsers({ searchTerm, page, pageSize = 25 }: SiteAdminUsersOptions) {
+  // reactive variables — urql re-executes when the term or page changes
+  const variables = computed(() => ({
+    searchTerm: searchTerm.value.trim() === '' ? null : searchTerm.value.trim(),
+    limit: pageSize,
+    offset: (page.value - 1) * pageSize,
+  }))
+  const { data, fetching, error } = useSearchProfilesQuery({ variables })
+
+  const totalCount = computed(() => data.value?.searchProfilesCount ?? 0)
   return {
-    data: computed(() => {
-      const nodes = data.value?.profiles?.nodes
-      if (!nodes) return null
-      return nodes.filter((p): p is NonNullable<typeof p> => p != null).map(toProfile)
-    }),
+    users: computed(() =>
+      (data.value?.searchProfilesList ?? [])
+        .filter((p): p is NonNullable<typeof p> => p != null)
+        .map(toProfile),
+    ),
+    totalCount,
+    pageCount: computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize))),
     fetching,
     error,
   }

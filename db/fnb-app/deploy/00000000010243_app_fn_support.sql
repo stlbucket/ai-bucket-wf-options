@@ -457,19 +457,63 @@ CREATE OR REPLACE FUNCTION app_fn.search_profiles(_options app_fn.search_profile
     SECURITY DEFINER
     AS $$
     DECLARE
-      _use_options app_fn.search_profiles_options;
     BEGIN
-      -- profile: add paging options
-
+      -- paging: item_limit/item_offset only (page_offset is unused — client computes item_offset)
       return query
-      select p.* 
+      select p.*
       from app.profile p
       where (
-        _options.search_term is null 
+        _options.search_term is null
         or p.email like '%'||_options.search_term||'%'
         or p.display_name like '%'||_options.search_term||'%'
+        or p.full_name like '%'||_options.search_term||'%'
+        or p.identifier like '%'||_options.search_term||'%'
       )
+      and (_options.status is null or p.status = _options.status)
+      order by p.display_name nulls last, p.email
+      limit coalesce((_options.paging_options).item_limit, 25)
+      offset coalesce((_options.paging_options).item_offset, 0)
       ;
+    end;
+    $$;
+
+CREATE OR REPLACE FUNCTION app_api.search_profiles_count(_options app_fn.search_profiles_options)
+    RETURNS integer
+    LANGUAGE plpgsql
+    stable
+    SECURITY DEFINER
+    AS $$
+    DECLARE
+    BEGIN
+      if jwt.has_permission('p:app-admin-support') != true then
+        raise exception '30000: NOT AUTHORIZED';
+      end if;
+
+      return app_fn.search_profiles_count(_options);
+    end;
+    $$;
+
+-- Total matching the search_profiles predicate, unpaged — drives the pager.
+CREATE OR REPLACE FUNCTION app_fn.search_profiles_count(_options app_fn.search_profiles_options)
+    RETURNS integer
+    LANGUAGE plpgsql
+    stable
+    SECURITY DEFINER
+    AS $$
+    DECLARE
+    BEGIN
+      return (
+        select count(*)
+        from app.profile p
+        where (
+          _options.search_term is null
+          or p.email like '%'||_options.search_term||'%'
+          or p.display_name like '%'||_options.search_term||'%'
+          or p.full_name like '%'||_options.search_term||'%'
+          or p.identifier like '%'||_options.search_term||'%'
+        )
+        and (_options.status is null or p.status = _options.status)
+      );
     end;
     $$;
 

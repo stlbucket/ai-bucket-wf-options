@@ -1,9 +1,11 @@
 import { computed } from 'vue'
+import type { Tenant } from '@function-bucket/fnb-types'
 import { toTenant } from '../mappers/tenant'
 import {
   useSearchTenantsQuery,
   useTenantByIdQuery,
   useActivateTenantMutation,
+  useCreateTenantMutation,
   useDeactivateTenantMutation,
   useBecomeSupportMutation,
   useUpdateTenantMutation,
@@ -24,6 +26,27 @@ export function useSiteAdminTenants() {
     fetching,
     error,
   }
+}
+
+// View types for the site-admin tenant detail page (R4 — declared with the composable).
+// Statuses/types keep the GraphQL enum casing ('INVITED', 'SUPPORT', …); the UI's statusColor
+// normalizes case.
+export interface TenantUserView {
+  residentId: string
+  profileId: string | null
+  displayName: string | null
+  email: string
+  status: string
+  type: string
+  licenseTypeKeys: string[]
+}
+
+export interface TenantSubscriptionView {
+  id: string
+  licensePackKey: string
+  displayName: string | null
+  status: string
+  licenseCount: number
 }
 
 export function useSiteAdminTenant(id: string) {
@@ -64,6 +87,31 @@ export function useSiteAdminTenant(id: string) {
       const t = data.value?.tenant
       return t ? toTenant(t) : null
     }),
+    // Support residencies are plumbing, not tenant users; license badges show active licenses only.
+    users: computed<TenantUserView[]>(() =>
+      (data.value?.tenant?.residents ?? [])
+        .filter((r) => r.type !== 'SUPPORT')
+        .map((r) => ({
+          residentId: String(r.id),
+          profileId: r.profileId ? String(r.profileId) : null,
+          displayName: r.displayName ?? null,
+          email: r.email,
+          status: String(r.status),
+          type: String(r.type),
+          licenseTypeKeys: (r.licenses ?? [])
+            .filter((l) => l.status === 'ACTIVE')
+            .map((l) => l.licenseTypeKey),
+        })),
+    ),
+    subscriptions: computed<TenantSubscriptionView[]>(() =>
+      (data.value?.tenant?.tenantSubscriptions ?? []).map((s) => ({
+        id: String(s.id),
+        licensePackKey: s.licensePackKey,
+        displayName: s.licensePack?.displayName ?? null,
+        status: String(s.status),
+        licenseCount: s.licenses?.totalCount ?? 0,
+      })),
+    ),
     fetching,
     error,
     refresh,
@@ -71,6 +119,20 @@ export function useSiteAdminTenant(id: string) {
     deactivate,
     update,
   }
+}
+
+export function useCreateTenant() {
+  const { executeMutation: execCreate } = useCreateTenantMutation()
+
+  async function createTenant(name: string, email: string): Promise<Tenant> {
+    const result = await execCreate({ name, email })
+    if (result.error) throw result.error
+    const created = result.data?.createTenant?.tenant
+    if (!created) throw new Error('createTenant returned no tenant')
+    return toTenant(created)
+  }
+
+  return { createTenant }
 }
 
 export function useBecomeSupport() {

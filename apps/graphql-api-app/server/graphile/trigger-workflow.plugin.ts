@@ -1,5 +1,5 @@
 import { makeExtendSchemaPlugin, gql } from 'postgraphile/utils'
-import { context, lambda } from 'postgraphile/grafast'
+import { context, lambda, SafeError } from 'postgraphile/grafast'
 import { requiredEnv } from '../lib/required-env.js'
 
 // The app-originated trigger surface (agentic-decommission/_shared.data.md → triggerWorkflow).
@@ -11,6 +11,11 @@ import { requiredEnv } from '../lib/required-env.js'
 // any-of (parity with the DB's `jwt.enforce_any_permission`). game-event uses the array form
 // because the game module gates every DB/RLS layer on `{p:app-user, p:app-admin}` — an admin
 // without p:app-user can still create and play a game, so must also be able to trigger the referee.
+//
+// There is deliberately NO cross-tenant dispatch: tenantId always comes from the caller's claims.
+// A super admin who needs to act inside another tenant enters support mode first (the
+// targetTenantId pass-through was built for the site-admin tenant detail and removed 2026-07-27
+// by user directive).
 const WORKFLOW_REGISTRY: Record<string, { permission: string | string[] | null }> = {
   'sync-breweries': { permission: null },
   'sync-airports': { permission: null },
@@ -25,10 +30,12 @@ const WORKFLOW_REGISTRY: Record<string, { permission: string | string[] | null }
   // to, subject?, vars?, tenantId?, profileId? }. v1's only caller is the site-admin send-test
   // page, so it is gated p:app-admin-super; loosen when invitation/other senders land.
   'send-notification': { permission: 'p:app-admin-super' },
-  // User invitation (user-invitation spec, R22): { displayName, email }. tenantId/profileId are
-  // injected from the inviting admin's claims by the plugin. Gated p:app-admin — tenant admins
-  // invite into their own tenant. The workflow creates the resident (app_fn.invite_user as
-  // n8n_worker) + the ZITADEL human user + email #1; fire-and-forget (accepted:true, runId:null).
+  // User invitation (user-invitation spec, R22): { displayName, email, mode? }. tenantId/profileId
+  // are injected from the inviting admin's claims by the plugin. Gated p:app-admin — admins invite
+  // into their own tenant only (a super admin enters support mode to invite elsewhere). The
+  // workflow creates the resident (app_fn.invite_user as n8n_worker) + the ZITADEL human user +
+  // email #1; synchronous (responseMode lastNode) — `result` carries { link, template, sent } so
+  // link mode can hand the ceremony URL back instead of emailing it.
   'invite-user': { permission: 'p:app-admin' },
   // Admin password reset (password-self-service spec, admin-reset.data.md): { email }. Gated
   // p:app-admin. The admin fires a set-password email for a user in their tenant — the same
@@ -64,6 +71,7 @@ export const TriggerWorkflowPlugin = makeExtendSchemaPlugin(() => ({
     type TriggerWorkflowResult {
       accepted: Boolean!
       runId: UUID
+      result: JSON
     }
     extend type Mutation {
       triggerWorkflow(workflowKey: String!, inputData: JSON): TriggerWorkflowResult
@@ -82,12 +90,15 @@ export const TriggerWorkflowPlugin = makeExtendSchemaPlugin(() => ({
             string,
             Record<string, unknown> | null | undefined
           ]) => {
+            // SafeError: these are intentional, user-facing messages — PostGraphile's default
+            // maskError hides plain Errors behind a logged hash, which broke the clients'
+            // error mapping (the 2026-07-27 send-invite debugging).
             if (!claims) {
-              throw new Error('401: not authenticated') // parity with the retired wf queue gate
+              throw new SafeError('401: not authenticated') // parity with the retired wf queue gate
             }
             const entry = WORKFLOW_REGISTRY[workflowKey]
             if (!entry) {
-              throw new Error(`unknown workflow: ${workflowKey}`)
+              throw new SafeError(`unknown workflow: ${workflowKey}`)
             }
             if (entry.permission) {
               const required = Array.isArray(entry.permission)
@@ -95,10 +106,12 @@ export const TriggerWorkflowPlugin = makeExtendSchemaPlugin(() => ({
                 : [entry.permission]
               const held = claims.permissions ?? []
               if (!required.some((p) => held.includes(p))) {
-                throw new Error('30000: NOT AUTHORIZED')
+                throw new SafeError('30000: NOT AUTHORIZED')
               }
             }
 
+            // tenantId/profileId always come from claims — the stamp overwrites anything the
+            // client put in the payload (no cross-tenant dispatch; support mode is the path).
             const body = JSON.stringify({
               ...(inputData ?? {}),
               tenantId: claims.tenantId,
@@ -116,10 +129,18 @@ export const TriggerWorkflowPlugin = makeExtendSchemaPlugin(() => ({
               }
             )
             if (!response.ok) {
-              throw new Error(`workflow trigger failed: ${response.status}`)
+              throw new SafeError(`workflow trigger failed: ${response.status}`)
             }
-            // respond-immediately webhook: 200 = accepted, no runId in the response
-            return { accepted: response.ok, runId: null }
+            // Best-effort response body: lastNode workflows respond with their final node's JSON
+            // (e.g. invite-user's { link, template, sent }); respond-immediately workflows return
+            // n8n's "Workflow was started" blob — callers ignore it. Parse failure → null.
+            let result: unknown = null
+            try {
+              result = await response.json()
+            } catch {
+              result = null
+            }
+            return { accepted: response.ok, runId: null, result }
           }
         )
       }

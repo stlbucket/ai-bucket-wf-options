@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Tenant } from '@function-bucket/fnb-types'
-import { useSiteAdminTenants, useBecomeSupport } from '~/composables/useSiteAdminTenants'
+import { useSiteAdminTenants, useBecomeSupport, useCreateTenant } from '~/composables/useSiteAdminTenants'
 
 const { user, refreshClaims } = useAuth()
 const router = useRouter()
@@ -8,6 +8,27 @@ const toast = useToast()
 
 const { data: tenants } = await useSiteAdminTenants()
 const { becomeSupportForTenant } = useBecomeSupport()
+const { createTenant } = useCreateTenant()
+
+const creating = ref(false)
+const createModal = ref<{ reset: () => void } | null>(null)
+
+async function onCreate(name: string, email: string) {
+  creating.value = true
+  try {
+    const created = await createTenant(name, email)
+    createModal.value?.reset()
+    toast.add({ title: `Tenant ${created.name} created`, color: 'success' })
+    navigateTo(`/site-admin/tenant/${created.id}`)
+  } catch (e) {
+    const message = e instanceof Error && e.message.includes('30002')
+      ? 'A tenant with this name already exists'
+      : 'Failed to create tenant'
+    toast.add({ title: message, color: 'error' })
+  } finally {
+    creating.value = false
+  }
+}
 
 const canSupport = computed(
   () =>
@@ -30,10 +51,17 @@ async function onSupport(tenant: Tenant) {
 
 <template>
   <div class="space-y-5 p-6 sm:p-9">
-    <PageHeader
-      title="Tenants"
-      :subtitle="`${(tenants ?? []).length} tenants across the platform`"
-    />
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <PageHeader
+        title="Tenants"
+        :subtitle="`${(tenants ?? []).length} tenants across the platform`"
+      />
+      <NewTenantModal
+        ref="createModal"
+        :creating="creating"
+        @create="onCreate"
+      />
+    </div>
     <div class="overflow-hidden rounded-[10px] border border-default bg-default">
       <TenantList
         :tenants="tenants ?? []"

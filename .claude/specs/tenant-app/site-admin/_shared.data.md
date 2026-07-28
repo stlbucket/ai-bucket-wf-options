@@ -40,7 +40,11 @@ Known gap: all three tools share the same icon `i-lucide-building-2`.
 | Access site-admin | `p:app-admin-super` |
 | Enter support mode | `p:app-admin-support` OR `p:app-admin-super` |
 | Activate/deactivate tenants | `p:app-admin-super` (DB enforced) |
+| Create tenant | `p:app-admin-super` (RLS `manage_tenant` policy only — `app_api.create_tenant` has no `jwt.enforce_permission` call; see `tenant/index.data.md` Known Gaps) |
 | Edit profiles/residents | `p:app-admin-super` (DB enforced via `updateProfileAdmin`) |
+| Read any tenant's residents / licenses / subscriptions | `p:app-admin-super` (existing RLS read policies — `00000000010250_app_policies.sql:58/106/90`) |
+| Search platform users (`app_api.search_profiles` + `_count`) | `p:app-admin-support` (fn guard — matches the sibling `search_tenants`/`search_residents`; page nav stays `p:app-admin-super`) |
+| Invite a user into **another** tenant | **Not possible directly** (reversal 2026-07-27) — enter support mode, then invite as that tenant's admin (`p:app-admin` via supporting claims). The `targetTenantId` pass-through was removed. |
 
 `canSupport` computed in pages:
 ```ts
@@ -91,7 +95,7 @@ GraphQL types generated from the PostGraphile schema; fragments in `src/graphql/
 |---|---|---|---|
 | `SearchTenants($searchTerm)` | `app/query/searchTenants.graphql` | `useSearchTenantsQuery()` | `useSiteAdminTenants()` |
 | `AppTenantById($tenantId)` | `app/query/appTenantById.graphql` | `useTenantByIdQuery()` | `useSiteAdminTenant(id)` |
-| `AllAppProfiles` | `app/query/allAppProfiles.graphql` | `useAllAppProfilesQuery()` | `useSiteAdminUsers()` |
+| `SearchProfiles($searchTerm, $limit, $offset)` | `app/query/searchProfiles.graphql` — list + `searchProfilesCount` (2026-07-27, replaced `AllAppProfiles` — see `user/README.md`) | `useSearchProfilesQuery()` | `useSiteAdminUsers(opts)` |
 | `SiteUserById($id)` | `app/query/siteUserById.graphql` | `useSiteUserByIdQuery()` | `useSiteAdminUser(id)` |
 | `AllApplications` | `app/query/allApplications.graphql` | `useAllApplicationsQuery()` | `useSiteAdminApplications()` |
 | `ApplicationByKey($key)` | `app/query/applicationByKey.graphql` | `useApplicationByKeyQuery()` | `useSiteAdminApplication(key)` |
@@ -100,6 +104,14 @@ GraphQL types generated from the PostGraphile schema; fragments in `src/graphql/
 | `UpdateUser` / `UpdateUserStatus` | `app/mutation/updateUser*.graphql` | `useUpdateUserMutation()` / `useUpdateUserStatusMutation()` | `useSiteAdminUser` |
 | `UpdateResidentStatus` | `app/mutation/updateResidentStatus.graphql` | `useUpdateResidentStatusMutation()` | `useSiteAdminUser` |
 | `BecomeSupport` | `app/mutation/becomeSupport.graphql` | `useBecomeSupportMutation()` | `useBecomeSupport()` |
+| `CreateTenant($name, $email)` | `app/mutation/createAppTenant.graphql` | `useCreateTenantMutation()` | `useCreateTenant()` (New Tenant modal — see `tenant/index.data.md`) |
+
+`AppTenantById` is extended (`tenant/[id].data.md`) to return the tenant's residents (with
+licenses) and subscriptions (with pack + license counts) — read-only. The tenant detail page
+does **not** dispatch invites (reversal 2026-07-27: the `targetTenantId` pass-through was
+removed; super admins enter support mode and invite from the tenant's own admin pages). The
+sync **link mode** on the `invite-user` workflow survives for the tenant-admin resend + U9
+checkbox (`tenant/[id].data.md` Delta 2, extends `.claude/specs/user-invitation/`).
 
 Composables shape the raw GraphQL response into view types (e.g. `TenantSummary` in
 `useSiteAdminTenants.ts`, `UserDetail`-like objects in `useSiteAdminUser`). View types are declared

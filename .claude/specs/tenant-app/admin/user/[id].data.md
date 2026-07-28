@@ -1,7 +1,8 @@
 # admin/user/[id] — User Detail Data
 
 ## Status
-Implemented — GraphQL
+Implemented — GraphQL (incl. the **read-only fallback for child-tenant residents**, subtree
+roll-up 2026-07-27 — contract in `_shared.data.md` → "Subtree Roll-up").
 
 ## Route
 `/tenant/admin/user/[id]` — see `[id].ui.md` for UI details
@@ -15,6 +16,17 @@ Implemented — GraphQL
 - **Variables**: `{ residentId: UUID! }`
 - **Returns**: `resident` — `Resident` fragment + `licenses: licensesList { ...License }`
 - **Auth**: RLS enforces tenant scoping; returns null if resident does not belong to calling tenant
+
+### Fallback query — NEW (roll-up): `SubtreeResidentDetail`
+When `ResidentById` resolves **null** (RLS miss — the id belongs to a child-tenant residency) and
+fetching has settled, the page runs the DEFINER read instead:
+- **File**: `packages/graphql-client-api/src/graphql/app/query/subtreeResidentDetail.graphql`
+- **Generated hook**: `useSubtreeResidentDetailQuery({ variables: { residentId: id } })` — wrapped
+  by `useSubtreeResidentDetail(id, pause)` with `pause` held true until the RLS miss is confirmed
+- **Returns**: `subtreeResidentDetail` — a JSON scalar (`{ profile, resident, residencies[] }`,
+  lowercase pg enum strings — same caveat as `siteUserById`); raises `30000` if the resident is
+  outside the caller's subtree
+- **Auth**: `p:app-admin` (`app_api.subtree_resident_detail` guard)
 
 Subscription pack context (needed to populate grant-license options) is sourced from a parallel `useTenantSubscriptionsQuery` call and joined client-side in the composable. See Known Gaps in `_shared.data.md`.
 
@@ -42,6 +54,10 @@ export { useAdminResidents, useAdminResident } from '@function-bucket/fnb-graphq
 | Export | Shape | Usage |
 |---|---|---|
 | `useAdminResident(id: string)` | `{ data, fetching, error, blockResident, unblockResident, grantResidentLicense, revokeResidentLicense }` | called in [id].vue on mount |
+| `useSubtreeResidentDetail(id, pause)` | `{ data, fetching, error }` — raw jsonb | NEW: unpaused only when `useAdminResident` settles with `data === null`; drives the read-only render |
+
+**Mutations are current-tenant only** — none of the mutation functions are available in the
+read-only (fallback) mode; child-tenant residents are managed from inside their own tenant.
 
 `data` is a `ComputedRef` that merges the `ResidentById` result with subscription pack data from `TenantSubscriptions`, producing a shape equivalent to the former `ResidentDetail`:
 ```ts

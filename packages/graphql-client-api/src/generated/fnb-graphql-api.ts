@@ -5821,6 +5821,7 @@ export type Query = Node & {
   searchPollsList?: Maybe<Array<Maybe<Poll>>>;
   /** Reads and enables pagination through a set of `Profile`. */
   searchProfiles?: Maybe<ProfilesConnection>;
+  searchProfilesCount?: Maybe<Scalars['Int']['output']>;
   searchProfilesList?: Maybe<Array<Maybe<Profile>>>;
   /** Reads and enables pagination through a set of `Resident`. */
   searchResidents?: Maybe<ResidentsConnection>;
@@ -5842,6 +5843,7 @@ export type Query = Node & {
   subscribers?: Maybe<SubscribersConnection>;
   /** Reads a set of `Subscriber`. */
   subscribersList?: Maybe<Array<Subscriber>>;
+  subtreeResidentDetail?: Maybe<Scalars['JSON']['output']>;
   /** Get a single `SupportTicket`. */
   supportTicket?: Maybe<SupportTicket>;
   /** Reads a single `SupportTicket` using its globally unique `ID`. */
@@ -5890,6 +5892,9 @@ export type Query = Node & {
   tenantSubscriptions?: Maybe<TenantSubscriptionsConnection>;
   /** Reads a set of `TenantSubscription`. */
   tenantSubscriptionsList?: Maybe<Array<TenantSubscription>>;
+  /** Reads and enables pagination through a set of `SubtreeResidentRow`. */
+  tenantSubtreeResidents?: Maybe<SubtreeResidentRowsConnection>;
+  tenantSubtreeResidentsList?: Maybe<Array<Maybe<SubtreeResidentRow>>>;
   /** Reads and enables pagination through a set of `Tenant`. */
   tenants?: Maybe<TenantsConnection>;
   /** Reads a set of `Tenant`. */
@@ -7302,6 +7307,12 @@ export type QuerySearchProfilesArgs = {
 
 
 /** The root query type which gives access points into the data universe. */
+export type QuerySearchProfilesCountArgs = {
+  _options?: InputMaybe<SearchProfilesOptionInput>;
+};
+
+
+/** The root query type which gives access points into the data universe. */
 export type QuerySearchProfilesListArgs = {
   _options?: InputMaybe<SearchProfilesOptionInput>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -7409,6 +7420,12 @@ export type QuerySubscribersListArgs = {
   first?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<Array<SubscribersOrderBy>>;
+};
+
+
+/** The root query type which gives access points into the data universe. */
+export type QuerySubtreeResidentDetailArgs = {
+  _residentId?: InputMaybe<Scalars['UUID']['input']>;
 };
 
 
@@ -7605,6 +7622,23 @@ export type QueryTenantSubscriptionsListArgs = {
   first?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<Array<TenantSubscriptionsOrderBy>>;
+};
+
+
+/** The root query type which gives access points into the data universe. */
+export type QueryTenantSubtreeResidentsArgs = {
+  after?: InputMaybe<Scalars['Cursor']['input']>;
+  before?: InputMaybe<Scalars['Cursor']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+/** The root query type which gives access points into the data universe. */
+export type QueryTenantSubtreeResidentsListArgs = {
+  first?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
 };
 
 
@@ -9659,6 +9693,42 @@ export enum SubscribersOrderBy {
   TopicIdDesc = 'TOPIC_ID_DESC'
 }
 
+export type SubtreeResidentRow = {
+  __typename: 'SubtreeResidentRow';
+  displayName?: Maybe<Scalars['String']['output']>;
+  email?: Maybe<Scalars['String']['output']>;
+  fullName?: Maybe<Scalars['String']['output']>;
+  profileId?: Maybe<Scalars['UUID']['output']>;
+  residentId?: Maybe<Scalars['UUID']['output']>;
+  residentStatus?: Maybe<ResidentStatus>;
+  residentType?: Maybe<ResidentType>;
+  tenantId?: Maybe<Scalars['UUID']['output']>;
+  tenantName?: Maybe<Scalars['String']['output']>;
+  tenantType?: Maybe<TenantType>;
+};
+
+/** A connection to a list of `SubtreeResidentRow` values. */
+export type SubtreeResidentRowsConnection = {
+  __typename: 'SubtreeResidentRowsConnection';
+  /** A list of edges which contains the `SubtreeResidentRow` and cursor to aid in pagination. */
+  edges: Array<Maybe<SubtreeResidentRowsEdge>>;
+  /** A list of `SubtreeResidentRow` objects. */
+  nodes: Array<Maybe<SubtreeResidentRow>>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+  /** The count of *all* `SubtreeResidentRow` you could get from the connection. */
+  totalCount: Scalars['Int']['output'];
+};
+
+/** A `SubtreeResidentRow` edge in the connection. */
+export type SubtreeResidentRowsEdge = {
+  __typename: 'SubtreeResidentRowsEdge';
+  /** A cursor for use in pagination. */
+  cursor?: Maybe<Scalars['Cursor']['output']>;
+  /** The `SubtreeResidentRow` at the end of the edge. */
+  node?: Maybe<SubtreeResidentRow>;
+};
+
 export type SupportTicket = Node & {
   __typename: 'SupportTicket';
   createdAt: Scalars['Datetime']['output'];
@@ -11094,6 +11164,7 @@ export enum TopicsOrderBy {
 export type TriggerWorkflowResult = {
   __typename: 'TriggerWorkflowResult';
   accepted: Scalars['Boolean']['output'];
+  result?: Maybe<Scalars['JSON']['output']>;
   runId?: Maybe<Scalars['UUID']['output']>;
 };
 
@@ -12118,11 +12189,6 @@ export type AdminSubscriptionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type AdminSubscriptionsQuery = { __typename: 'Query', adminSubscriptions?: Array<{ __typename: 'TenantSubscription', id: any, tenantId: any, licensePackKey: string, status: TenantSubscriptionStatus, createdAt: any, updatedAt: any, licensePack?: { __typename: 'LicensePack', key: string, displayName: string, description: string, autoSubscribe: boolean, createdAt: any, updatedAt: any, licensePackLicenseTypes: Array<{ __typename: 'LicensePackLicenseType', id: any, licensePackKey: string, licenseTypeKey: string, numberOfLicenses: number, expirationIntervalType: ExpirationIntervalType, expirationIntervalMultiplier: number, issuedCount?: number | null, licenseType?: { __typename: 'LicenseType', key: string, applicationKey: string, displayName: string, assignmentScope: LicenseTypeAssignmentScope, createdAt: any, updatedAt: any } | null }> } | null, licensesList: Array<{ __typename: 'License', id: any, tenantId: any, residentId: any, profileId?: any | null, tenantSubscriptionId: any, licenseTypeKey: string, status: LicenseStatus, createdAt: any, updatedAt: any, expiresAt?: any | null, resident?: { __typename: 'Resident', id: any, profileId?: any | null, invitedByProfileId?: any | null, invitedByDisplayName?: string | null, tenantId: any, tenantName: string, status: ResidentStatus, displayName?: string | null, email: string, type: ResidentType, createdAt: any, updatedAt: any, urn: string } | null }> }> | null };
 
-export type AllAppProfilesQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type AllAppProfilesQuery = { __typename: 'Query', profiles?: { __typename: 'ProfilesConnection', nodes: Array<{ __typename: 'Profile', id: any, email: string, identifier?: string | null, firstName?: string | null, lastName?: string | null, fullName?: string | null, phone?: string | null, isPublic: boolean, displayName?: string | null, avatarKey?: string | null, status: ProfileStatus, createdAt: any, updatedAt: any, residents: Array<{ __typename: 'Resident', id: any, profileId?: any | null, invitedByProfileId?: any | null, invitedByDisplayName?: string | null, tenantId: any, tenantName: string, status: ResidentStatus, displayName?: string | null, email: string, type: ResidentType, createdAt: any, updatedAt: any, urn: string, licenses: Array<{ __typename: 'License', id: any, tenantId: any, residentId: any, profileId?: any | null, tenantSubscriptionId: any, licenseTypeKey: string, status: LicenseStatus, createdAt: any, updatedAt: any, expiresAt?: any | null }> }> } | null> } | null };
-
 export type AllApplicationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -12143,7 +12209,7 @@ export type TenantByIdQueryVariables = Exact<{
 }>;
 
 
-export type TenantByIdQuery = { __typename: 'Query', tenant?: { __typename: 'Tenant', id: any, name: string, createdAt: any, updatedAt: any, identifier?: string | null, status: TenantStatus, type: TenantType, parentTenantId?: any | null, urn: string, residents: { __typename: 'ResidentsConnection', totalCount: number }, tenantSubscriptions: Array<{ __typename: 'TenantSubscription', id: any, tenantId: any, licensePackKey: string, status: TenantSubscriptionStatus, createdAt: any, updatedAt: any, licenses: { __typename: 'LicensesConnection', totalCount: number } }>, licenses: { __typename: 'LicensesConnection', totalCount: number } } | null };
+export type TenantByIdQuery = { __typename: 'Query', tenant?: { __typename: 'Tenant', id: any, name: string, createdAt: any, updatedAt: any, identifier?: string | null, status: TenantStatus, type: TenantType, parentTenantId?: any | null, urn: string, residents: Array<{ __typename: 'Resident', id: any, profileId?: any | null, invitedByProfileId?: any | null, invitedByDisplayName?: string | null, tenantId: any, tenantName: string, status: ResidentStatus, displayName?: string | null, email: string, type: ResidentType, createdAt: any, updatedAt: any, urn: string, licenses: Array<{ __typename: 'License', id: any, licenseTypeKey: string, status: LicenseStatus }> }>, tenantSubscriptions: Array<{ __typename: 'TenantSubscription', id: any, tenantId: any, licensePackKey: string, status: TenantSubscriptionStatus, createdAt: any, updatedAt: any, licensePack?: { __typename: 'LicensePack', displayName: string } | null, licenses: { __typename: 'LicensesConnection', totalCount: number } }>, licenses: { __typename: 'LicensesConnection', totalCount: number } } | null };
 
 export type TenantLicensesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -12215,10 +12281,12 @@ export type ActiveTenantResidentsQuery = { __typename: 'Query', residentsList?: 
 
 export type SearchProfilesQueryVariables = Exact<{
   searchTerm?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
-export type SearchProfilesQuery = { __typename: 'Query', searchProfiles?: { __typename: 'ProfilesConnection', nodes: Array<{ __typename: 'Profile', id: any, email: string, identifier?: string | null, firstName?: string | null, lastName?: string | null, fullName?: string | null, phone?: string | null, isPublic: boolean, displayName?: string | null, avatarKey?: string | null, status: ProfileStatus, createdAt: any, updatedAt: any } | null> } | null };
+export type SearchProfilesQuery = { __typename: 'Query', searchProfilesCount?: number | null, searchProfilesList?: Array<{ __typename: 'Profile', id: any, email: string, identifier?: string | null, firstName?: string | null, lastName?: string | null, fullName?: string | null, phone?: string | null, isPublic: boolean, displayName?: string | null, avatarKey?: string | null, status: ProfileStatus, createdAt: any, updatedAt: any } | null> | null };
 
 export type SearchResidentsQueryVariables = Exact<{
   searchTerm?: InputMaybe<Scalars['String']['input']>;
@@ -12240,6 +12308,18 @@ export type SiteUserByIdQueryVariables = Exact<{
 
 
 export type SiteUserByIdQuery = { __typename: 'Query', siteUserById?: any | null };
+
+export type SubtreeResidentDetailQueryVariables = Exact<{
+  residentId: Scalars['UUID']['input'];
+}>;
+
+
+export type SubtreeResidentDetailQuery = { __typename: 'Query', subtreeResidentDetail?: any | null };
+
+export type TenantSubtreeResidentsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type TenantSubtreeResidentsQuery = { __typename: 'Query', tenantSubtreeResidentsList?: Array<{ __typename: 'SubtreeResidentRow', residentId?: any | null, profileId?: any | null, email?: string | null, displayName?: string | null, fullName?: string | null, tenantId?: any | null, tenantName?: string | null, tenantType?: TenantType | null, residentType?: ResidentType | null, residentStatus?: ResidentStatus | null } | null> | null };
 
 export type WorkspaceByIdQueryVariables = Exact<{
   tenantId: Scalars['UUID']['input'];
@@ -12416,7 +12496,7 @@ export type TriggerWorkflowMutationVariables = Exact<{
 }>;
 
 
-export type TriggerWorkflowMutation = { __typename: 'Mutation', triggerWorkflow?: { __typename: 'TriggerWorkflowResult', accepted: boolean, runId?: any | null } | null };
+export type TriggerWorkflowMutation = { __typename: 'Mutation', triggerWorkflow?: { __typename: 'TriggerWorkflowResult', accepted: boolean, runId?: any | null, result?: any | null } | null };
 
 export type N8nWorkflowRunsQueryVariables = Exact<{
   workflowKey?: InputMaybe<Scalars['String']['input']>;
@@ -13762,27 +13842,6 @@ ${ResidentFragmentDoc}`;
 export function useAdminSubscriptionsQuery(options?: Omit<Urql.UseQueryArgs<never, AdminSubscriptionsQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<AdminSubscriptionsQuery, AdminSubscriptionsQueryVariables | undefined>({ query: AdminSubscriptionsDocument, variables: undefined, ...options });
 };
-export const AllAppProfilesDocument = gql`
-    query AllAppProfiles {
-  profiles {
-    nodes {
-      ...Profile
-      residents: residentsList {
-        ...Resident
-        licenses: licensesList {
-          ...License
-        }
-      }
-    }
-  }
-}
-    ${ProfileFragmentDoc}
-${ResidentFragmentDoc}
-${LicenseFragmentDoc}`;
-
-export function useAllAppProfilesQuery(options?: Omit<Urql.UseQueryArgs<never, AllAppProfilesQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<AllAppProfilesQuery, AllAppProfilesQueryVariables | undefined>({ query: AllAppProfilesDocument, variables: undefined, ...options });
-};
 export const AllApplicationsDocument = gql`
     query AllApplications {
   applications: applicationsList {
@@ -13857,11 +13916,19 @@ export const TenantByIdDocument = gql`
     query TenantById($tenantId: UUID!) {
   tenant(id: $tenantId) {
     ...Tenant
-    residents: residents {
-      totalCount
+    residents: residentsList(orderBy: [CREATED_AT_ASC]) {
+      ...Resident
+      licenses: licensesList {
+        id
+        licenseTypeKey
+        status
+      }
     }
     tenantSubscriptions: tenantSubscriptionsList {
       ...TenantSubscription
+      licensePack {
+        displayName
+      }
       licenses: licenses {
         totalCount
       }
@@ -13869,6 +13936,7 @@ export const TenantByIdDocument = gql`
   }
 }
     ${TenantFragmentDoc}
+${ResidentFragmentDoc}
 ${TenantSubscriptionFragmentDoc}`;
 
 export function useTenantByIdQuery(options?: Omit<Urql.UseQueryArgs<never, TenantByIdQueryVariables | undefined>, 'query'>) {
@@ -14111,12 +14179,13 @@ export function useActiveTenantResidentsQuery(options?: Omit<Urql.UseQueryArgs<n
   return Urql.useQuery<ActiveTenantResidentsQuery, ActiveTenantResidentsQueryVariables | undefined>({ query: ActiveTenantResidentsDocument, variables: undefined, ...options });
 };
 export const SearchProfilesDocument = gql`
-    query SearchProfiles($searchTerm: String) {
-  searchProfiles(_options: {searchTerm: $searchTerm}) {
-    nodes {
-      ...Profile
-    }
+    query SearchProfiles($searchTerm: String, $limit: Int, $offset: Int) {
+  searchProfilesList(
+    _options: {searchTerm: $searchTerm, pagingOptions: {itemLimit: $limit, itemOffset: $offset}}
+  ) {
+    ...Profile
   }
+  searchProfilesCount(_options: {searchTerm: $searchTerm})
 }
     ${ProfileFragmentDoc}`;
 
@@ -14171,6 +14240,35 @@ export const SiteUserByIdDocument = gql`
 
 export function useSiteUserByIdQuery(options?: Omit<Urql.UseQueryArgs<never, SiteUserByIdQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<SiteUserByIdQuery, SiteUserByIdQueryVariables | undefined>({ query: SiteUserByIdDocument, variables: undefined, ...options });
+};
+export const SubtreeResidentDetailDocument = gql`
+    query SubtreeResidentDetail($residentId: UUID!) {
+  subtreeResidentDetail(_residentId: $residentId)
+}
+    `;
+
+export function useSubtreeResidentDetailQuery(options?: Omit<Urql.UseQueryArgs<never, SubtreeResidentDetailQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<SubtreeResidentDetailQuery, SubtreeResidentDetailQueryVariables | undefined>({ query: SubtreeResidentDetailDocument, variables: undefined, ...options });
+};
+export const TenantSubtreeResidentsDocument = gql`
+    query TenantSubtreeResidents {
+  tenantSubtreeResidentsList {
+    residentId
+    profileId
+    email
+    displayName
+    fullName
+    tenantId
+    tenantName
+    tenantType
+    residentType
+    residentStatus
+  }
+}
+    `;
+
+export function useTenantSubtreeResidentsQuery(options?: Omit<Urql.UseQueryArgs<never, TenantSubtreeResidentsQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<TenantSubtreeResidentsQuery, TenantSubtreeResidentsQueryVariables | undefined>({ query: TenantSubtreeResidentsDocument, variables: undefined, ...options });
 };
 export const WorkspaceByIdDocument = gql`
     query WorkspaceById($tenantId: UUID!) {
@@ -14608,6 +14706,7 @@ export const TriggerWorkflowDocument = gql`
   triggerWorkflow(workflowKey: $workflowKey, inputData: $inputData) {
     accepted
     runId
+    result
   }
 }
     `;

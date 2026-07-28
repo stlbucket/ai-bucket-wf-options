@@ -39,8 +39,11 @@ infra/
 │   ├── build-images.sh               # 7 apps + hardened n8n image -> build+push, git-SHA tag
 │   ├── deploy.sh                     # ssh box: copy artifacts, registry login, compose pull && up -d
 │   ├── health-verify.sh              # post-deploy TLS/health probes
+│   ├── bootstrap-identities.sh       # idempotent site-admin + n8n-owner bootstrap (§9.1; called by the two below)
 │   ├── do-env-build.sh               # pnpm do-env-build — one-command DO deploy (chains the above; user-run)
-│   └── do-env-teardown.sh            # pnpm do-env-teardown — terraform destroy w/ typed confirm (user-run)
+│   ├── do-env-teardown.sh            # pnpm do-env-teardown — terraform destroy w/ typed confirm (user-run)
+│   ├── do-db-rebuild.sh              # pnpm do-db-rebuild — fnb-DB-only data reset w/ typed confirm (user-run)
+│   └── do-db-psql.sh                 # pnpm do-db-psql — interactive psql into prod fnb via the box (user-run)
 └── terraform/
     ├── modules/{digitalocean, aws, postgres-bootstrap}
     └── environments/{do-prod, aws-prod}       # backend + tfvars + module call (see each env's README)
@@ -136,6 +139,29 @@ DOMAIN=<domain> infra/scripts/health-verify.sh
 ```
 Details + notes: `infra/terraform/environments/do-prod/README.md`. The CI `deploy.yml` path stops
 at health-verify — bootstrap-identities is a `do-env-build` (operator) step.
+
+### DB rebuild — `pnpm do-db-rebuild` (user-run only)
+
+Resets the **fnb DB only** to a clean, bootstrapped state — the prod counterpart of dev
+`pnpm db-rebuild`; spec: `.claude/specs/deployment/prod-db-rebuild.md`. Typed confirmation
+(`rebuild do-prod fnb`); `BACKUP=1` takes a `pg_dump -Fc` to `/opt/fnb/backups/` on the box
+first (a failed dump aborts the run). **Destroys** all app data AND empties the assets bucket
+(orphan objects are never left behind). **Survives**: ZITADEL identities, the n8n engine DB
+(workflows/credentials/owner), cluster roles, and all infrastructure — terraform is read, never
+applied. Flow: rsync the repo's current `db/` tree to the box (a rebuild deploys *current*
+migrations; entrypoint/Dockerfile changes still need a deploy) → stop fnb-connected services →
+`DROP DATABASE fnb WITH (FORCE)` + recreate →
+pg-bootstrap + db-migrate one-shots (SEED_DATA=empty) → bucket purge → `up -d` + n8n restart →
+health-verify → bootstrap-identities (site admin re-created against the surviving ZITADEL user;
+n8n owner no-ops). Pre-rebuild invited users are orphaned in ZITADEL — re-invite them.
+
+### DB console — `pnpm do-db-psql` (user-run only)
+
+Interactive psql into the prod **fnb** DB, the prod sibling of dev `pnpm db-psql`. Runs on the
+box over `ssh -t` (`postgres:16-alpine` on `fnb-network` — the cluster firewall only admits the
+droplet); credentials come from the box's root-only `.env`, never ssh argv. `DB=<name>` targets
+another database (`DB=zitadel`, `DB=n8n_engine`, `DB=defaultdb`). You connect as the managed
+**admin** user — full rights, no RLS; type carefully.
 
 ## Runbook — AWS (`aws-prod`)
 

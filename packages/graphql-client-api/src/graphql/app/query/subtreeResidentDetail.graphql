@@ -1,0 +1,5 @@
+query SubtreeResidentDetail(
+  $residentId: UUID!
+) {
+  subtreeResidentDetail(_residentId: $residentId)
+}

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { License } from '@function-bucket/fnb-types'
 import type { SubscriptionPackDetail } from '@function-bucket/fnb-graphql-client-api'
-import { useAdminResident } from '~/composables/useAdminResidents'
+import { useAdminResident, useSubtreeResidentDetail } from '~/composables/useAdminResidents'
 
 const route = useRoute()
 const toast = useToast()
@@ -15,6 +15,32 @@ const {
   grantResidentLicense,
   revokeResidentLicense
 } = useAdminResident(String(route.params.id))
+
+// Read-only fallback (subtree roll-up): an RLS miss means the id belongs to a child-tenant
+// residency — load it via the DEFINER read instead; management actions stay hidden.
+const rlsMiss = computed(() => !fetching.value && !data.value)
+const detailPause = computed(() => !rlsMiss.value)
+const { data: subtreeDetail, error: subtreeError } = useSubtreeResidentDetail(
+  String(route.params.id),
+  detailPause
+)
+// Raw jsonb (siteUserById precedent): profile/resident keys are snake_case, enums lowercase.
+const roResident = computed<Record<string, unknown> | null>(() => {
+  const d = subtreeDetail.value as { resident?: Record<string, unknown> } | null
+  return d?.resident ?? null
+})
+const roResidencies = computed(() => {
+  const d = subtreeDetail.value as {
+    residencies?: Array<{
+      residentId: string
+      tenantName: string
+      residentType: string
+      status: string
+      licenses: Array<{ id: string, licenseTypeKey: string, status: string }>
+    }>
+  } | null
+  return d?.residencies ?? []
+})
 
 // Admin "send password reset" (password-self-service spec, admin-reset.data.md). Gated p:app-admin;
 // the DB also enforces it (registry gate + app.resident RLS on the email shown here). Fires the same
@@ -46,10 +72,15 @@ const subscriptionPacks = computed(
   () => (data.value?.subscriptionPacks ?? []) as unknown as SubscriptionPackDetail[]
 )
 
-const isBlocked = computed(() => {
-  const s = String(resident.value?.status ?? '')
-  return s === 'blocked_individual' || s === 'blocked_tenant'
-})
+// ResidentStatus arrives in GraphQL enum casing (UPPERCASE) — normalize once for the gates.
+const status = computed(() => String(resident.value?.status ?? '').toUpperCase())
+const isBlocked = computed(() => status.value === 'BLOCKED_INDIVIDUAL' || status.value === 'BLOCKED_TENANT')
+const isActive = computed(() => status.value === 'ACTIVE')
+const isInvited = computed(() => status.value === 'INVITED')
+
+// Resend invitation for a pending invitee (SendInviteModal: send email / copy link). The trigger
+// plugin injects the admin's own tenant from claims.
+const resendOpen = ref(false)
 
 async function block() {
   try {
@@ -101,6 +132,94 @@ async function revokeLicense(licenseId: string) {
       Residents
     </UButton>
 
+    <!-- Read-only mode: child-tenant resident reached through the subtree roll-up -->
+    <template v-if="rlsMiss">
+      <UAlert
+        v-if="roResident"
+        color="info"
+        variant="subtle"
+        icon="i-lucide-eye"
+        title="Read-only"
+        :description="`This person is a resident of ${roResident.tenant_name}, not this tenant. Manage them from that tenant.`"
+      />
+      <UAlert
+        v-else-if="subtreeError"
+        color="error"
+        variant="subtle"
+        icon="i-lucide-shield-x"
+        title="Not available"
+        description="This resident is outside your tenant tree."
+      />
+
+      <UCard v-if="roResident">
+        <template #header>
+          <div class="flex items-center gap-3">
+            <h1 class="text-lg font-semibold">
+              {{ roResident.display_name ?? roResident.email }}
+            </h1>
+            <UBadge
+              :color="statusColor('resident', String(roResident.status))"
+              variant="subtle"
+              size="sm"
+            >
+              {{ statusLabel(String(roResident.status)) }}
+            </UBadge>
+          </div>
+        </template>
+        <div class="grid grid-cols-[140px_1fr] gap-x-4 gap-y-3 text-sm">
+          <div class="text-muted">
+            Email
+          </div>
+          <div>{{ roResident.email }}</div>
+          <div class="text-muted">
+            Tenant
+          </div>
+          <div>{{ roResident.tenant_name }}</div>
+          <div class="text-muted">
+            Type
+          </div>
+          <div>{{ roResident.type }}</div>
+          <div class="text-muted">
+            ID
+          </div>
+          <div class="font-mono text-xs">
+            {{ roResident.id }}
+          </div>
+        </div>
+      </UCard>
+
+      <UCard v-if="roResidencies.length">
+        <template #header>
+          <h2 class="text-base font-semibold">
+            Residencies in your tree
+          </h2>
+        </template>
+        <ul class="flex flex-col gap-3">
+          <li
+            v-for="residency in roResidencies"
+            :key="residency.residentId"
+            class="flex flex-wrap items-center gap-2 text-sm"
+          >
+            <UBadge
+              :color="statusColor('resident', residency.status)"
+              variant="subtle"
+              size="sm"
+            >
+              {{ residency.tenantName }}
+            </UBadge>
+            <span>{{ residency.residentType }}</span>
+            <span class="text-muted">{{ statusLabel(residency.status) }}</span>
+            <span
+              v-if="residency.licenses.length"
+              class="text-xs text-muted"
+            >
+              {{ residency.licenses.map((l) => l.licenseTypeKey).join(', ') }}
+            </span>
+          </li>
+        </ul>
+      </UCard>
+    </template>
+
     <UCard v-if="resident">
       <template #header>
         <div class="flex items-center justify-between">
@@ -116,13 +235,23 @@ async function revokeLicense(licenseId: string) {
               {{ statusLabel(String(resident.status)) }}
             </UBadge>
           </div>
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2">
+            <UButton
+              v-if="canAdmin && isInvited"
+              size="sm"
+              variant="outline"
+              icon="i-lucide-mail"
+              @click="resendOpen = true"
+            >
+              Resend invitation
+            </UButton>
             <UButton
               v-if="canAdmin && resident.email"
               size="sm"
               color="neutral"
               variant="outline"
               icon="i-lucide-key-round"
+              :disabled="!isActive"
               @click="resetOpen = true"
             >
               Send password reset
@@ -189,6 +318,12 @@ async function revokeLicense(licenseId: string) {
         label="No subscription packs available for this tenant."
       />
     </template>
+
+    <SendInviteModal
+      v-if="resident"
+      v-model:open="resendOpen"
+      :resident="{ displayName: resident.displayName ?? null, email: String(resident.email) }"
+    />
 
     <UModal
       v-model:open="resetOpen"

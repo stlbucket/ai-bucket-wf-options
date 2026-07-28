@@ -15,7 +15,7 @@
         "httpMethod": "POST",
         "path": "invite-user",
         "authentication": "headerAuth",
-        "responseMode": "onReceived",
+        "responseMode": "lastNode",
         "options": {}
       },
       "credentials": {
@@ -65,12 +65,58 @@
       "id": "c2b00000-0000-4000-8000-000000000003"
     },
     {
+      "name": "Link Mode?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        920,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $('Webhook').first().json.body.mode }}",
+              "rightValue": "link",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c2b00000-0000-4000-8000-000000000006"
+    },
+    {
+      "name": "Respond Link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        320
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Link mode: skip the email — the webhook response (responseMode: lastNode) hands the\n// single-use ceremony URL back to the caller (site-admin Copy link / unchecked send-immediately).\nconst p = $('Invite Via ZITADEL').first().json;\nconst vars = p.vars || {};\nreturn [{ json: { link: vars.verifyUrl || vars.setPasswordUrl || null, template: p.templateKey || null, sent: false } }];\n"
+      },
+      "id": "c2b00000-0000-4000-8000-000000000007"
+    },
+    {
       "name": "Send Email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        920,
-        400
+        1160,
+        480
       ],
       "parameters": {
         "method": "POST",
@@ -79,7 +125,7 @@
         "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json) }}",
+        "jsonBody": "={{ JSON.stringify($('Invite Via ZITADEL').first().json) }}",
         "options": {}
       },
       "credentials": {
@@ -89,6 +135,20 @@
         }
       },
       "id": "c2b00000-0000-4000-8000-000000000005"
+    },
+    {
+      "name": "Respond Sent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1400,
+        480
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Email mode: the mail was handed to send-notification; respond with sent:true, no link.\nconst p = $('Invite Via ZITADEL').first().json;\nreturn [{ json: { link: null, template: p.templateKey || null, sent: true } }];\n"
+      },
+      "id": "c2b00000-0000-4000-8000-000000000008"
     }
   ],
   "connections": {
@@ -118,7 +178,36 @@
       "main": [
         [
           {
+            "node": "Link Mode?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Link Mode?": {
+      "main": [
+        [
+          {
+            "node": "Respond Link",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "Send Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email": {
+      "main": [
+        [
+          {
+            "node": "Respond Sent",
             "type": "main",
             "index": 0
           }

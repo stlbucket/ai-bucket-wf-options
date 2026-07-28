@@ -7,6 +7,14 @@ Implemented — GraphQL (claims delivery), 2026-07-10. Decisions locked 2026-07-
 day: tree renders from `ProfileClaims.residencies`). Corrections: README §Implementation
 corrections.
 
+**Pending refactor (2026-07-27, specced in `.claude/specs/home-app/`):** the modal's `UTree`
+body (item rendering: icons, Current/status badges, ghost lock, spinner) is being extracted
+into a shared presentational `packages/tenant-layer/app/components/ResidencyTree.vue`
+(props `nodes`/`disabled`/`switchingTenantId`, emits `select`) consumed by both this modal and
+the home-app landing's workspace cards. Trigger, on-open refresh, switch call, and toasts stay
+in this component. Behavior is unchanged — update the Modal section below to reference
+`ResidencyTree` once the refactor lands.
+
 ## Component — `packages/tenant-layer/app/components/WorkspaceSwitcher.vue`
 
 Self-contained (owns its modal `open` state and renders its own trigger — the

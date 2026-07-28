@@ -1,9 +1,26 @@
 # Admin — Invite User (Data)
 
 ## Status
-Draft. Mirrors the `useSendTest` carve-out (`notifications/send-test.data.md`) exactly — the invite
-dispatches through the **existing** `triggerWorkflow` GraphQL mutation, not a bespoke route or a
-new DB mutation.
+Implemented (Phase 1, verified live 2026-07-22; send-immediately checkbox built 2026-07-27 via
+plan `0160` — build gate passed, manual e2e pending). Mirrors the `useSendTest` carve-out
+(`notifications/send-test.data.md`) exactly — the invite dispatches through the **existing**
+`triggerWorkflow` GraphQL mutation, not a bespoke route or a new DB mutation.
+
+## Send-immediately checkbox — no new data surface
+
+The checkbox (`admin-invite.ui.md`) maps 1:1 onto the **extended invite contract owned by
+`../tenant-app/site-admin/tenant/[id].data.md`** (Delta 2 — sync link mode; issue `0160`):
+
+- checked → `invite({ …, mode: 'email' })` — today's behavior (fire the workflow, email #1).
+- unchecked → `invite({ …, mode: 'link' })` — the workflow skips Send Email and returns
+  `{ link, template, sent: false }`; the composable shapes it into `InviteUserResult.link`,
+  which the modal displays.
+- The localStorage persistence (`invite-user-send-immediately`) is a **UI-only** concern —
+  nothing here changes for it.
+
+This file adds **zero** contract of its own: `InviteUserInput.mode` / `InviteUserResult` are
+specified once, in the site-admin extension. Until those deltas land, unchecked/link mode cannot
+work — build them first or together.
 
 ## Send path — `triggerWorkflow` carve-out
 

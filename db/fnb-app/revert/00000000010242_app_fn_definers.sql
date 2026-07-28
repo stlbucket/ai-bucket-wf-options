@@ -2,6 +2,10 @@
 
 begin;
 
+drop function if exists app_api.subtree_resident_detail(uuid) cascade;
+drop function if exists app_fn.subtree_resident_detail(uuid, uuid) cascade;
+drop function if exists app_api.tenant_subtree_residents() cascade;
+drop function if exists app_fn.tenant_subtree_residents(uuid) cascade;
 drop function if exists app_api.set_workspace_membership(uuid, boolean) cascade;
 drop function if exists app_fn.set_workspace_membership(uuid, uuid, boolean, uuid) cascade;
 drop function if exists app_fn.remove_profile_from_tree_workspaces(uuid, uuid) cascade;

@@ -105,6 +105,9 @@ DOMAIN="$DOMAIN" "$ROOT/infra/scripts/health-verify.sh"
 # ── 6. bootstrap identities (spec production-runtime.md §9.1; idempotent) ─────
 # Site admin (anchor tenant + app-admin-super via /auth/api/setup/initialize) and the n8n
 # instance owner. Both calls are no-ops once the identity exists, so re-runs are safe.
+# Shared with do-db-rebuild.sh (spec prod-db-rebuild.md DR7) — reads DOMAIN + the SITE_ADMIN_* /
+# SITE_TENANT_NAME / SETUP_TOKEN / N8N_ADMIN_PASSWORD block from the environment; the secrets
+# file may not `export`, so guard + export the block here before the child runs.
 : "${SITE_ADMIN_EMAIL:?not set in $SECRETS_FILE}"
 : "${SITE_ADMIN_FIRST_NAME:?not set in $SECRETS_FILE}"
 : "${SITE_ADMIN_LAST_NAME:?not set in $SECRETS_FILE}"
@@ -113,43 +116,9 @@ DOMAIN="$DOMAIN" "$ROOT/infra/scripts/health-verify.sh"
 : "${SITE_TENANT_NAME:?not set in $SECRETS_FILE (the anchor tenant name, e.g. Anchor Tenant)}"
 : "${SETUP_TOKEN:?not set in $SECRETS_FILE (gates /auth/api/setup/initialize)}"
 : "${N8N_ADMIN_PASSWORD:?not set in $SECRETS_FILE (n8n policy: >=8 chars, 1 number, 1 capital)}"
-
-echo "==> bootstrap identities: site admin (${SITE_ADMIN_EMAIL})"
-setup_payload="$(jq -n \
-  --arg setupToken "$SETUP_TOKEN" --arg tenantName "$SITE_TENANT_NAME" \
-  --arg email "$SITE_ADMIN_EMAIL" --arg password "$SITE_ADMIN_PASSWORD" \
-  --arg firstName "$SITE_ADMIN_FIRST_NAME" --arg lastName "$SITE_ADMIN_LAST_NAME" \
-  --arg phone "$SITE_ADMIN_PHONE" \
-  '{setupToken:$setupToken,tenantName:$tenantName,email:$email,password:$password,firstName:$firstName,lastName:$lastName,phone:$phone}')"
-setup_res="$(curl -sS -o /tmp/fnb-setup-res.json -w '%{http_code}' \
-  -X POST "https://${DOMAIN}/auth/api/setup/initialize" \
-  -H 'content-type: application/json' -d "$setup_payload")"
-if [ "$setup_res" = "200" ]; then
-  echo "    site admin created (anchor tenant '${SITE_TENANT_NAME}')"
-elif [ "$setup_res" = "409" ]; then
-  echo "    setup already complete — no-op"
-else
-  echo "site-admin bootstrap failed (HTTP $setup_res): $(cat /tmp/fnb-setup-res.json)" >&2; exit 1
-fi
-
-echo "==> bootstrap identities: n8n owner (${SITE_ADMIN_EMAIL})"
-n8n_payload="$(jq -n \
-  --arg email "$SITE_ADMIN_EMAIL" --arg firstName "$SITE_ADMIN_FIRST_NAME" \
-  --arg lastName "$SITE_ADMIN_LAST_NAME" --arg password "$N8N_ADMIN_PASSWORD" \
-  '{email:$email,firstName:$firstName,lastName:$lastName,password:$password}')"
-n8n_res="$(curl -sS -o /tmp/fnb-n8n-owner-res.json -w '%{http_code}' \
-  -X POST "https://n8n.${DOMAIN}/rest/owner/setup" \
-  -H 'content-type: application/json' -d "$n8n_payload")"
-if [ "${n8n_res#2}" != "$n8n_res" ]; then   # 2xx
-  echo "    n8n owner created"
-elif [ "$n8n_res" = "404" ] || { [ "${n8n_res#4}" != "$n8n_res" ] && grep -qi "already" /tmp/fnb-n8n-owner-res.json; }; then
-  # Once an owner exists n8n DE-REGISTERS /rest/owner/setup — the re-run sees a bare 404
-  # ("Cannot POST"), not a 400 "already setup". Both mean the same no-op.
-  echo "    n8n owner already set up — no-op"
-else
-  echo "n8n owner bootstrap failed (HTTP $n8n_res): $(cat /tmp/fnb-n8n-owner-res.json)" >&2; exit 1
-fi
-rm -f /tmp/fnb-setup-res.json /tmp/fnb-n8n-owner-res.json
+export SITE_ADMIN_EMAIL SITE_ADMIN_FIRST_NAME SITE_ADMIN_LAST_NAME SITE_ADMIN_PHONE \
+  SITE_ADMIN_PASSWORD SITE_TENANT_NAME SETUP_TOKEN N8N_ADMIN_PASSWORD
+"$ROOT/infra/scripts/bootstrap-identities.sh"
 
 echo "==> do-prod is live @ ${IMAGE_TAG} — https://${DOMAIN}"
 echo "    app:  https://${DOMAIN}  (site admin: ${SITE_ADMIN_EMAIL} via ZITADEL login)"

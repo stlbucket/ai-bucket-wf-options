@@ -1,11 +1,15 @@
 query SearchProfiles(
   $searchTerm: String
+  $limit: Int
+  $offset: Int
 ) {
-  searchProfiles(_options: {
+  searchProfilesList(_options: {
     searchTerm: $searchTerm
+    pagingOptions: { itemLimit: $limit, itemOffset: $offset }
   }) {
-   nodes {
-      ...Profile
-    }    
+    ...Profile
   }
+  searchProfilesCount(_options: {
+    searchTerm: $searchTerm
+  })
 }

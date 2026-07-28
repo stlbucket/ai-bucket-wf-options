@@ -1,0 +1,14 @@
+query TenantSubtreeResidents {
+  tenantSubtreeResidentsList {
+    residentId
+    profileId
+    email
+    displayName
+    fullName
+    tenantId
+    tenantName
+    tenantType
+    residentType
+    residentStatus
+  }
+}

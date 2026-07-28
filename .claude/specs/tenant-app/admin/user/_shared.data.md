@@ -1,9 +1,9 @@
-# admin/user — Shared Data, Schema & Permissions (Manage Residents)
+# admin/user — Shared Data, Schema & Permissions (Manage Residents + Subtree Roll-up)
 
 ## Status
-Draft — build-ready (no `[FILL IN]`). Covers **only** the new Manage-Residents feature. Existing
-Resident/License/query shapes live in `../_shared.data.md` (the admin-module shared file) — do
-not duplicate them here.
+Manage Residents: Implemented (2026-07-22). **Subtree roll-up (bottom section): Implemented
+2026-07-27** (plan 0155; DB verified in a rolled-back claims txn). Existing Resident/License/query
+shapes live in `../_shared.data.md` (the admin-module shared file) — do not duplicate them here.
 
 > **Extended by `../nestable-tenant-types/`** (2026-07-23): the button gate broadens from
 > `tenantType === 'WORKSPACE'` to `∈ {WORKSPACE, CLIENT, ORGANIZATION}`, and the pool scope
@@ -329,5 +329,165 @@ keys `profileId` / `member` (V5 inflection of `_profile_id` / `_member`). Add a 
 Also expose `executeQuery` from `useAdminResidents` (currently returns `{ data, fetching, error }`
 only) so the page can refresh the workspace's resident list after the modal makes changes.
 
-## Open Questions
+---
+
+# Subtree Roll-up (2026-07-27) — child-tree resident list + read-only cross-tenant detail
+
+Everything below is the roll-up contract. Scope = the current tenant plus **all descendants**
+(`app_fn.tenant_tree_ids(jwt.tenant_id())` — the existing DEFINER helper computes a subtree from
+any node, `db/fnb-app/deploy/00000000010242_app_fn_definers.sql`). No ancestors, no siblings.
+
+## Permission Model (roll-up)
+
+| Action | Required | Enforced by |
+|---|---|---|
+| Read the subtree resident list | `p:app-admin` | `app_api.tenant_subtree_residents` guard + `SECURITY DEFINER` body keyed on `jwt.tenant_id()` |
+| Read a subtree resident's detail (read-only) | `p:app-admin` | `app_api.subtree_resident_detail` guard; the DEFINER body raises `30000` if the target is outside the caller's subtree |
+| Manage (block/licenses) a resident | `p:app-admin` **and** the resident is in the **current** tenant | unchanged — the existing RLS-scoped `ResidentById` + mutations; child-tenant residents are read-only |
+
+No super-admin carve-out: a super admin is an anchor-tenant admin (holds `p:app-admin` there)
+and/or enters any tenant via support mode. **No new RLS policies** — same DEFINER rationale as
+Manage Residents above.
+
+## Type — `db/fnb-app/deploy/00000000010230_app_fn_types.sql` (in-place)
+
+```sql
+create type app_fn.subtree_resident_row as (
+  resident_id      uuid
+  ,profile_id      uuid                 -- null ⇒ pending invite (no profile yet)
+  ,email           citext
+  ,display_name    citext
+  ,full_name       citext
+  ,tenant_id       uuid
+  ,tenant_name     citext
+  ,tenant_type     app.tenant_type
+  ,resident_type   app.resident_type
+  ,resident_status app.resident_status
+);
+```
+
+One row per **residency** — the client groups into per-person view rows (locked decision: flat
+`setof composite` is PostGraphile-friendly; grouping is presentation logic).
+
+## Functions — `db/fnb-app/deploy/00000000010242_app_fn_definers.sql` (in-place)
+
+### `app_fn.tenant_subtree_residents(_tenant_id uuid) returns setof app_fn.subtree_resident_row` — DEFINER, STABLE
+```sql
+return query
+select
+  r.id,
+  r.profile_id,
+  coalesce(p.email, r.email::citext),   -- app.resident.email is text, the composite is citext
+  coalesce(p.display_name, r.display_name, split_part(coalesce(p.email, r.email::citext),'@',1))::citext,
+  p.full_name,
+  t.id,
+  t.name,
+  t.type,
+  r.type,
+  r.status
+from app.resident r
+join app.tenant t on t.id = r.tenant_id
+left join app.profile p on p.id = r.profile_id
+where r.tenant_id in (select app_fn.tenant_tree_ids(_tenant_id))
+  and r.type <> 'support'          -- support staff hidden from tenant views
+  and r.status <> 'removed'        -- ex-members of a roster are not members
+order by 4, 7;                     -- display_name, tenant_name
+```
+
+### `app_api.tenant_subtree_residents() returns setof app_fn.subtree_resident_row` — INVOKER, STABLE
+```sql
+perform jwt.enforce_permission('p:app-admin');
+return query select * from app_fn.tenant_subtree_residents(jwt.tenant_id());
+```
+PostGraphile exposes this as **`tenantSubtreeResidentsList`**.
+
+### `app_fn.subtree_resident_detail(_tenant_id uuid, _resident_id uuid) returns jsonb` — DEFINER, STABLE
+Read-only cross-tenant detail (jsonb — mirrors the `siteUserById` JSON-scalar precedent):
+```
+1. select * into _r from app.resident where id = _resident_id;
+   if _r.id is null or _r.tenant_id not in (select app_fn.tenant_tree_ids(_tenant_id))
+     then raise exception '30000: NOT AUTHORIZED'; end if;
+2. return jsonb_build_object(
+     'profile', (select to_jsonb(p) from app.profile p where p.id = _r.profile_id),  -- null for pending invites
+     'resident', to_jsonb(_r),
+     'residencies', (
+        -- ALL of the person's residencies within the caller's subtree (incl. the target row),
+        -- each with its tenant context + licenses; same support/removed filters as the list
+        select coalesce(jsonb_agg(x order by x->>'tenantName'), '[]'::jsonb) from (
+          select jsonb_build_object(
+            'residentId', r2.id, 'tenantId', t2.id, 'tenantName', t2.name,
+            'tenantType', t2.type, 'residentType', r2.type, 'status', r2.status,
+            'licenses', (select coalesce(jsonb_agg(jsonb_build_object(
+                'id', l.id, 'licenseTypeKey', l.license_type_key, 'status', l.status)), '[]'::jsonb)
+              from app.license l where l.resident_id = r2.id)
+          ) as x
+          from app.resident r2 join app.tenant t2 on t2.id = r2.tenant_id
+          where r2.profile_id = _r.profile_id and _r.profile_id is not null
+            and r2.tenant_id in (select app_fn.tenant_tree_ids(_tenant_id))
+            and r2.type <> 'support' and r2.status <> 'removed'
+        ) s));
+```
+Values are raw pg strings (lowercase enums) — same caveat as `siteUserById`; the composable
+returns it raw.
+
+### `app_api.subtree_resident_detail(_resident_id uuid) returns jsonb` — INVOKER, STABLE
+```sql
+perform jwt.enforce_permission('p:app-admin');
+return app_fn.subtree_resident_detail(jwt.tenant_id(), _resident_id);
+```
+PostGraphile exposes this as **`subtreeResidentDetail`** (JSON scalar).
+
+## View types (R4 — in the composable file)
+
+```ts
+// packages/graphql-client-api/src/composables/useAdminResidents.ts
+export interface SubtreeTenancy {
+  residentId: string
+  tenantId: string
+  tenantName: string
+  tenantType: string
+  residentType: string
+  status: string            // GraphQL enum casing (UPPERCASE)
+}
+
+export interface SubtreeUserView {
+  key: string               // profileId, or `resident:${residentId}` for pending invites
+  profileId: string | null
+  email: string
+  displayName: string
+  fullName: string | null
+  currentResidentId: string | null   // their resident row in the acting tenant, if any
+  currentStatus: string | null       // status in the acting tenant
+  linkResidentId: string             // detail link target: current-tenant resident id, else first tenancy's
+  tenancies: SubtreeTenancy[]        // current tenant first, then by tenantName
+}
+```
+
+## GraphQL Operations (roll-up)
+
+Files under `packages/graphql-client-api/src/graphql/app/query/`:
+
+| Operation | File | Generated hook | Variables |
+|---|---|---|---|
+| `TenantSubtreeResidents` | `tenantSubtreeResidents.graphql` — `tenantSubtreeResidentsList { residentId profileId email displayName fullName tenantId tenantName tenantType residentType residentStatus }` | `useTenantSubtreeResidentsQuery()` | none |
+| `SubtreeResidentDetail` | `subtreeResidentDetail.graphql` — `subtreeResidentDetail(_residentId: $residentId)` | `useSubtreeResidentDetailQuery({ variables: { residentId } })` | `{ residentId: UUID! }` |
+
+## Composables (roll-up)
+
+**Source:** `packages/graphql-client-api/src/composables/useAdminResidents.ts` (same file as the
+existing admin-resident composables). **Re-export:** `apps/tenant-app/app/composables/useAdminResidents.ts`.
+
+### `useSubtreeResidents()`
+| Return | Shape | Notes |
+|---|---|---|
+| `users` | `computed<SubtreeUserView[]>` | groups flat rows by `profileId` (pending invites keyed `resident:${residentId}`); `currentResidentId`/`currentStatus` from the row whose `tenantId === claims.tenantId` — pass the current tenant id in (from `useAuth()` at the page, or read the claim in the app-side wrapper) so the package stays auth-agnostic |
+| `fetching` / `error` / `executeQuery` | urql standard | `executeQuery({ requestPolicy: 'network-only' })` refresh after roster edits |
+
+Signature: `useSubtreeResidents(currentTenantId: MaybeRefOrGetter<string | null>)`.
+
+### `useSubtreeResidentDetail(id: string, pause?: Ref<boolean>)`
+Wraps `useSubtreeResidentDetailQuery` with `pause` (the detail page only runs it when the RLS
+query missed). Returns `{ data, fetching, error }`; `data` is the raw jsonb (lowercase enums).
+
+## Open Questions (roll-up)
 - [ ] None blocking.

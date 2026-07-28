@@ -47,6 +47,7 @@ top-level **`infra/`** directory.
 | D11 | **Managed-PG multi-DB + role bootstrap replaces the dev init scripts** | Managed PG has no `/docker-entrypoint-initdb.d` hook and no superuser; `zitadel`/`n8n_engine` DBs + roles + PostGIS must be created explicitly (native DO resources / a psql one-shot on AWS) |
 | D12 | **Site admin is bootstrapped by `do-env-build`**, not a manual `/auth/setup` visit — the script POSTs the first-run-setup endpoint with `SITE_ADMIN_*` + `SETUP_TOKEN` + `SITE_TENANT_NAME` from `~/.config/fnb/prod-secrets.env` (2026-07-24; resolves old Open Question 3) | One-command deploy includes the first identity; the endpoint is already idempotent (409 = no-op), and `/auth/setup` stays as the human fallback. See `production-runtime.md` §9.1 |
 | D13 | **n8n instance owner is bootstrapped the same way** — `POST https://n8n.<domain>/rest/owner/setup` with the same `SITE_ADMIN_*` identity + its own `N8N_ADMIN_PASSWORD` (2026-07-24) | Same one-command posture; the call is a no-op once an owner exists. Separate password var because n8n and ZITADEL have different complexity policies |
+| D14 | **Prod DB rebuild is its own user-run script** (`do-db-rebuild`), scoped to the `fnb` DB only, backup opt-in (`BACKUP=1`), assets bucket always purged, DO-only (2026-07-27) | See `prod-db-rebuild.md` — decisions DR1–DR7 with the why; a *data* reset that never runs terraform, preserving ZITADEL, n8n_engine, and all infrastructure |
 
 ---
 
@@ -59,6 +60,7 @@ top-level **`infra/`** directory.
 | `environment-digitalocean.md` | DO topology + Terraform resources (droplet, Managed PG, Spaces, DOCR, DNS, firewall) + deploy flow |
 | `environment-aws.md` | AWS topology + Terraform resources (EC2, RDS, S3, ECR, Route 53, IAM, SSM) + deploy flow + why-not-Fargate |
 | `terraform-and-cicd.md` | the `infra/` directory layout, Terraform module/env structure, secrets, GitHub Actions pipeline |
+| `prod-db-rebuild.md` | `do-db-rebuild` — user-run fnb-DB drop/recreate + re-migrate + bucket purge + identity re-bootstrap (D14) |
 
 ---
 
@@ -130,6 +132,21 @@ top-level **`infra/`** directory.
 - [x] Verify live (2026-07-26): site admin logs in via ZITADEL end-to-end; n8n editor at
       `n8n.<domain>` accepts the owner login; re-run `do-env-build` → both no-ops (site admin
       409; n8n owner 404-route-deregistered, handled). First-boot findings recorded in plan 0010
+
+### Phase 9 — Prod DB rebuild script (D14; `prod-db-rebuild.md`)
+- [x] Factor `do-env-build.sh` step 6 into a shared `infra/scripts/bootstrap-identities.sh`
+      (DR7) and call it from `do-env-build.sh` — behavior unchanged — 2026-07-27
+- [x] `infra/scripts/do-db-rebuild.sh` — secrets + read-only tf outputs → typed confirm
+      (`rebuild do-prod fnb`) → optional `BACKUP=1` pg_dump (abort on failure) → stop
+      fnb-connected services → `DROP DATABASE fnb WITH (FORCE)` + recreate (owner =
+      `app_pg_user`) → one-shots `pg-bootstrap`/`db-migrate` (exit codes checked) → purge
+      assets bucket (versioned, always) → `up -d` + `restart n8n` → `health-verify.sh` →
+      `bootstrap-identities.sh` — 2026-07-27
+- [x] Register: root `package.json` `do-db-rebuild` script + `infra/README.md` layout tree and
+      runbook entry (blast radius, `BACKUP=1`, user-run-only) — 2026-07-27
+- [ ] Verify on live do-prod (user-run): rebuild completes, terraform plan shows no drift on
+      `digitalocean_database_db`, site admin re-login works, an upload scans+promotes, a game
+      plays; resolve OQ1 (invite-user workflow vs. pre-existing ZITADEL user)
 
 ---
 

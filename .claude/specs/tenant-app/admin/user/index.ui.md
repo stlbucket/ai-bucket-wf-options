@@ -1,8 +1,9 @@
 # admin/user/index — User List UI
 
 ## Status
-Implemented (list + **Manage Residents**, workspace-only, 2026-07-22). See `README.md` +
-`_shared.data.md`.
+Implemented (list + **Manage Residents**, 2026-07-22; **one-row-per-person subtree roll-up
+2026-07-27**, `SubtreeResidentList.vue` — `ResidentList.vue` deleted, no consumers remained).
+See `README.md` + `_shared.data.md`.
 
 ## Route
 `/tenant/admin/user` → `apps/tenant-app/app/pages/admin/user/index.vue`
@@ -11,10 +12,22 @@ Implemented (list + **Manage Residents**, workspace-only, 2026-07-22). See `READ
 `p:app-admin`
 
 ## Layout
-- Title: "Residents" (`PageHeader`, subtitle = resident count)
-- `#actions`: `InviteUserModal` (shown when `canInvite`), and — **NEW** —
-  `WorkspaceResidentsModal` (shown when `canInvite && claims.tenantType === 'WORKSPACE'`)
-- `ResidentList.vue` table
+- Title: "Residents" (`PageHeader`, subtitle = **people count**, e.g. `12 people across 4 tenants`
+  — tenant count = distinct `tenantId`s in the loaded rows; omit the suffix when it is 1)
+- `#actions`: `InviteUserModal` (shown when `canInvite`), and `WorkspaceResidentsModal` (shown
+  when `canInvite && claims.tenantType ∈ {WORKSPACE, CLIENT, ORGANIZATION}`)
+- **`SubtreeResidentList.vue` table (replaces `ResidentList.vue` on this page)**
+
+## Component: `SubtreeResidentList.vue` — NEW (roll-up)
+Props: `users: SubtreeUserView[]` (see `_shared.data.md`)
+- Columns (responsive, `overflow-x-auto` — UC5):
+  - **Name** — link to `/admin/user/{linkResidentId}`; bold; pending invites show the email stem
+  - **Email** — muted
+  - **Status** — badge of `currentStatus` (colors below); `—` (neutral, no badge) when the person
+    has no residency in the current tenant
+  - **Tenants** — one `UBadge` per tenancy (label = `tenantName`, current tenant first;
+    badge color = that tenancy's status color; `variant="subtle"`); flex-wrap
+- No emits — navigation only
 
 ## NEW — Manage Residents (workspace tenants only)
 
@@ -45,12 +58,12 @@ Emits `changed` when at least one membership toggled (so the page can refresh th
 | ✓ | Person is a member of this workspace (`is_member` — resident exists, status ≠ `removed`) |
 | ☐ | Not a member (no row, or soft-`removed`) |
 
-## Component: `ResidentList.vue`
+## Component: `ResidentList.vue` — no longer used by this page after the roll-up
 Props: `residents: Resident[]`
 - Columns: name (link to `/admin/user/{id}`), email, status badge, type
-- No emits — navigation only
+- Keep the component only if another page still consumes it; otherwise delete at implementation time.
 
-**Status badge colors:**
+**Status badge colors** (shared by `SubtreeResidentList` status + tenancy badges):
 | Status | Color |
 |---|---|
 | active, supporting | success (green) |
@@ -59,4 +72,6 @@ Props: `residents: Resident[]`
 | other | neutral |
 
 ## User Interactions
-- Click resident name → navigate to `/admin/user/{id}`
+- Click person's name → navigate to `/admin/user/{linkResidentId}` (current-tenant residency when
+  one exists → full management detail; otherwise a child-tenant residency → read-only detail, see
+  `[id].ui.md`)

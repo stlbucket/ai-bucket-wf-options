@@ -8,7 +8,16 @@
 
 **Draft** — locked decisions captured 2026-07-22 (three design forks resolved with the user).
 No `[FILL IN]` blockers remain except the two confirm-against-running-ZITADEL items (endpoint
-field names, PAT delivery to n8n) called out in Open Questions.
+field names, PAT delivery to n8n) called out in Open Questions. Phases 1–3 built + verified
+live 2026-07-22. **U9 (send-immediately checkbox, Phase 5) built 2026-07-27 via plan 0160 —
+build gate passed, manual e2e pending.**
+
+> **Extended by `.claude/specs/tenant-app/site-admin/tenant/[id].data.md`** (2026-07-27): a
+> synchronous **link mode** on the `invite-user` workflow (returns the ceremony URL instead of
+> emailing it) — used by the tenant-admin resend + the U9 checkbox. That spec is authoritative
+> for the delta. (Its cross-tenant `targetTenantId` pass-through was built and **removed the
+> same day** — reversal, user directive: super admins enter support mode to invite; invites
+> always target the caller's claims tenant.)
 
 **Supersedes** the notifications spec's deferred **Phase 3 (invitation email)**
 (`.claude/specs/notifications/invitation-email.data.md`). That draft deliberately carried **no**
@@ -76,6 +85,7 @@ Invitee signs in (ZITADEL hosted login) → provision_idp_user email-matches the
 | U6 | Resident creation | **Reuse `app_fn.invite_user`** (already exists, SECURITY DEFINER, takes `_tenant_id, _email`) called by `n8n_worker` inside the workflow | No new DB surface; keeps licensing/resident logic in one place. The held-out `app_api.invite_user` stub stays retired (its Supabase comment is obsolete). |
 | U7 | Invite gate | **`p:app-admin`** on the `invite-user` registry entry | Mirrors the held-out `app_api.invite_user`'s `jwt.has_permission('p:app-admin')`; tenant admins invite into their own tenant. |
 | U8 | ZITADEL admin auth | Both n8n and auth-app authenticate to the ZITADEL **management/v2 API** with the **`fnb-seeder` PAT** from the shared `zitadel-seed` volume, over the internal URL + external-Host split-horizon | Reuses the existing service account + transport; no new machine user. Delivery of the PAT into n8n is the one infra Open Question. |
+| U9 | Send-immediately checkbox | `InviteUserModal` gains a **"Send invite immediately"** `UCheckbox`: checked → email mode (today's behavior); unchecked → **link mode** — no email, the modal shows the ceremony URL with a copy button. Default = the value used on the admin's **previous successful invite** (localStorage `invite-user-send-immediately`; first use → checked) | (User pick 2026-07-27.) Link mode reuses the site-admin sync contract (`tenant-app/site-admin/tenant/[id].data.md` Delta 2) — zero new workflow/DB surface; localStorage over a DB preference (per-browser is acceptable, no backend for one checkbox). |
 
 ## Files in this spec
 
@@ -148,6 +158,21 @@ Phased build order; each phase is independently verifiable. **Depends on notific
 - [ ] Rate-limit / abuse-guard `request-password` + `set-password` (unauthenticated routes).
 - [ ] Re-invite / resend semantics (throttle; reuse vs. rotate the ZITADEL user).
 - [ ] Expired/consumed-code UX on both ceremony pages ("request a new link" path).
+
+### Phase 5 — Send-immediately checkbox (U9, built 2026-07-27 via plan 0160)
+Built together with the invite-contract link-mode deltas (`tenant-app/site-admin/tenant/
+[id].data.md` Deltas 1–2, plan `0160__app_______site-admin-tenant-detail-users__MED__`:
+workflow `lastNode` + `mode` payload + `TriggerWorkflowResult.result` + `useInviteUser`
+`mode`/`InviteUserResult`).
+- [x] `InviteUserModal.vue`: "Send invite immediately" `UCheckbox` + a single constant **Save**
+      submit button (user directive 2026-07-27); unchecked → `invite({ …, mode: 'link' })` →
+      in-modal readonly-URL + copy-button link view (single-use caption, Done closes).
+- [x] Persistence: localStorage `invite-user-send-immediately`, written **on successful submit
+      only**, read client-side on mount, missing → checked.
+- [x] `invited` emit fires on both modes (site-admin page refresh).
+- [ ] Verify (manual, user-run env): invite with the box unchecked → no Mailpit mail, working
+      ceremony link in-modal; re-open the modal → checkbox remembers; email mode unchanged.
+      (`pnpm build` gate ✅ 13/13, 2026-07-27.)
 
 ## Remaining Open Questions
 

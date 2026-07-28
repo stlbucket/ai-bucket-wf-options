@@ -23,6 +23,7 @@
     "env-destroy": "tsx scripts/env-destroy.ts",
     "env-rebuild": "tsx scripts/env-destroy.ts && tsx scripts/env-build.ts",
     "env-rebuild-empty": "tsx scripts/env-destroy.ts && tsx scripts/env-build-empty.ts",
+    "do-pre-deploy": "bash infra/scripts/do-pre-deploy.sh",
     "do-env-build": "bash infra/scripts/do-env-build.sh",
     "do-env-teardown": "bash infra/scripts/do-env-teardown.sh",
     "do-db-rebuild": "bash infra/scripts/do-db-rebuild.sh",

@@ -48,6 +48,10 @@ top-level **`infra/`** directory.
 | D12 | **Site admin is bootstrapped by `do-env-build`**, not a manual `/auth/setup` visit — the script POSTs the first-run-setup endpoint with `SITE_ADMIN_*` + `SETUP_TOKEN` + `SITE_TENANT_NAME` from `~/.config/fnb/prod-secrets.env` (2026-07-24; resolves old Open Question 3) | One-command deploy includes the first identity; the endpoint is already idempotent (409 = no-op), and `/auth/setup` stays as the human fallback. See `production-runtime.md` §9.1 |
 | D13 | **n8n instance owner is bootstrapped the same way** — `POST https://n8n.<domain>/rest/owner/setup` with the same `SITE_ADMIN_*` identity + its own `N8N_ADMIN_PASSWORD` (2026-07-24) | Same one-command posture; the call is a no-op once an owner exists. Separate password var because n8n and ZITADEL have different complexity policies |
 | D14 | **Prod DB rebuild is its own user-run script** (`do-db-rebuild`), scoped to the `fnb` DB only, backup opt-in (`BACKUP=1`), assets bucket always purged, DO-only (2026-07-27) | See `prod-db-rebuild.md` — decisions DR1–DR7 with the why; a *data* reset that never runs terraform, preserving ZITADEL, n8n_engine, and all infrastructure |
+| D15 | **A `v*` tag on main auto-deploys to do-prod** — `deploy.yml` gains `workflow_call`, `build-images.yml` chains guard → deploy after the tag build; manual dispatch remains for infra/previews/rollbacks (2026-07-27) | See `tag-auto-deploy.md` TD1/TD4 — zero-click releases without a cross-workflow race; only commits on main pass the ancestry guard |
+| D16 | **The auto tag-deploy never runs `terraform apply`** — outputs-only (`mode=deploy-only`); `run_apply` becomes a 3-way `mode` input (2026-07-27) | `tag-auto-deploy.md` TD2/TD3 — a code tag can't surprise-apply infra drift; infra changes stay deliberate via manual dispatch |
+| D17 | **`deploy.sh` hard-gates on db-migrate** — exit-code-checked one-shot before app cutover, all paths (CI + laptop) (2026-07-27) | `tag-auto-deploy.md` TD5 — a failed migration aborts with old code still running; today's implicit `up -d` migrate has no exit check |
+| D18 | **`pnpm do-pre-deploy` is the user-run release front door** — guards + build/lockfile gates + semver bump + workspace version true-up + commit + lightweight tag, printing the atomic push command (2026-07-27) | `tag-auto-deploy.md` TD7 — one command stamps a consistent release and fails locally in minutes instead of in a ~12-min CI build |
 
 ---
 
@@ -61,6 +65,7 @@ top-level **`infra/`** directory.
 | `environment-aws.md` | AWS topology + Terraform resources (EC2, RDS, S3, ECR, Route 53, IAM, SSM) + deploy flow + why-not-Fargate |
 | `terraform-and-cicd.md` | the `infra/` directory layout, Terraform module/env structure, secrets, GitHub Actions pipeline |
 | `prod-db-rebuild.md` | `do-db-rebuild` — user-run fnb-DB drop/recreate + re-migrate + bucket purge + identity re-bootstrap (D14) |
+| `tag-auto-deploy.md` | `v*` tag on main → zero-click deploy: workflow_call chaining, ancestry guard, outputs-only terraform, db-migrate gate, `do-pre-deploy` release script (D15–D18) |
 
 ---
 
@@ -147,6 +152,20 @@ top-level **`infra/`** directory.
 - [ ] Verify on live do-prod (user-run): rebuild completes, terraform plan shows no drift on
       `digitalocean_database_db`, site admin re-login works, an upload scans+promotes, a game
       plays; resolve OQ1 (invite-user workflow vs. pre-existing ZITADEL user)
+
+### Phase 10 — Tag auto-deploy (D15–D17; `tag-auto-deploy.md`)
+- [x] `deploy.yml`: `run_apply` → 3-way `mode` input (default `deploy-only`) + `workflow_call`
+      trigger; steps re-gated; caller-job concurrency group per TD6 — 2026-07-27
+- [x] `build-images.yml`: tag-push-only `guard` (main-ancestry check) + `deploy`
+      (`uses: ./.github/workflows/deploy.yml`, `mode=deploy-only`, `secrets: inherit`) jobs — 2026-07-27
+- [x] `deploy.sh`: `compose up --exit-code-from db-migrate db-migrate` before `up -d` (TD5) — 2026-07-27
+- [x] `infra/scripts/do-pre-deploy.sh` (TD7/D18) + root `package.json` `do-pre-deploy` entry —
+      user-run release stamp: guards → gates → bump → true-up → commit + lightweight tag →
+      print `git push --atomic origin main v<next>` — 2026-07-27
+- [x] Docs: `deploy.README.md` (zero-click flow + new `mode` values + rollback command) +
+      `infra/README.md` runbook — 2026-07-27
+- [ ] Verify (user-run): plan-only + apply-and-deploy dispatch regressions; `do-pre-deploy` on
+      main → push → auto-deploy green; tag off main → build only, guard fails, no deploy
 
 ---
 

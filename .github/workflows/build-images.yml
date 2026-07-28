@@ -1,5 +1,7 @@
 # Build + push the 8 prod app images, git-SHA tagged (spec terraform-and-cicd.md §4).
-# DESIGN ONLY — the repo owner wires the referenced secrets / AWS OIDC role and owns all commits.
+# On v* tag pushes this also chains the deploy (guard → deploy jobs below — spec
+# tag-auto-deploy.md): commits on main auto-deploy to do-prod with mode=deploy-only.
+# The repo owner wires the referenced secrets / AWS OIDC role and owns all commits.
 # The image build happens inside Docker; pnpm/turbo run in the container, not on the runner.
 name: build-images
 
@@ -77,3 +79,43 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: infra/scripts/build-images.sh
+
+  # ── v*-tag auto-deploy chain (spec tag-auto-deploy.md TD1/TD4) ──────────────
+  # Tag pushes only — manual dispatch builds never chain into a deploy. Builds are harmless on
+  # any commit (immutable SHA-tagged images); only commits on main may auto-deploy.
+  guard:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history — the ancestry check needs origin/main
+      - name: tagged commit must be on main (TD4)
+        run: |
+          if git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "OK: $GITHUB_SHA is on origin/main — proceeding to deploy"
+          else
+            echo "::error::tagged commit $GITHUB_SHA is NOT on origin/main — images stay pushed, deploy skipped"
+            exit 1
+          fi
+
+  deploy:
+    if: github.event_name == 'push'
+    needs: [build, guard]
+    permissions:
+      id-token: write   # cap for the called workflow's jobs (reusable-workflow permission ceiling)
+      contents: read
+    # Repo-scoped group matching deploy.yml's dispatch group — serializes tag deploys against
+    # manual deploys too (TD6: the called workflow's own workflow-level concurrency does not
+    # bind runs made via workflow_call).
+    concurrency:
+      group: deploy-do-prod
+      cancel-in-progress: false
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: do-prod            # aws-prod parked — extend when it stands up (plan 0560 item 7)
+      image_tag: ${{ github.sha }}    # exactly the tag the build job pushed
+      mode: deploy-only               # TD2 — the tag path never applies terraform
+    secrets: inherit

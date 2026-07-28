@@ -1,6 +1,8 @@
-# Provision/refresh infra + deploy the stack to the box (spec terraform-and-cicd.md §4).
-# DESIGN ONLY — the repo owner wires the referenced secrets / AWS OIDC role, decides whether apply
-# is gated for prod (spec §6 open item), and owns all commits. The assistant never runs git/apply.
+# Provision/refresh infra + deploy the stack to the box (spec terraform-and-cicd.md §4 +
+# tag-auto-deploy.md TD1–TD3). Two entry points: manual dispatch (infra applies, plan previews,
+# rollbacks, non-main ships) and workflow_call from build-images.yml (the v*-tag-on-main auto
+# path, always mode=deploy-only). The repo owner wires the referenced secrets / AWS OIDC role
+# and owns all commits. The assistant never runs git/apply.
 name: deploy
 
 on:
@@ -16,13 +18,35 @@ on:
       image_tag:
         description: Image tag (git SHA) built by build-images
         required: true
-      run_apply:
-        description: Run `terraform apply` (else init+plan only — prod gate, spec §6)
-        type: boolean
-        default: true
+      mode:
+        description: >-
+          deploy-only = terraform outputs only, then deploy (default; rollbacks, code ships) ·
+          apply-and-deploy = terraform apply first (infra changes) ·
+          plan-only = terraform plan preview, no deploy (prod gate, spec §6)
+        type: choice
+        options: [deploy-only, apply-and-deploy, plan-only]
+        default: deploy-only
+  # Called by build-images.yml after a v* tag build passes the main-ancestry guard (TD1/TD4).
+  # Same input names as dispatch — both populate the inputs.* context. Caller passes
+  # secrets: inherit; its job carries the matching concurrency group (TD6 — workflow-level
+  # concurrency below does not bind called runs).
+  workflow_call:
+    inputs:
+      environment:
+        description: Environment to deploy (do-prod)
+        type: string
+        required: true
+      image_tag:
+        description: Image tag (git SHA) built by build-images
+        type: string
+        required: true
+      mode:
+        description: deploy-only | apply-and-deploy | plan-only
+        type: string
+        default: deploy-only
 
 concurrency:
-  group: deploy-${{ inputs.environment }}   # serialize applies per env (also the practical state lock)
+  group: deploy-${{ inputs.environment }}   # serialize deploys per env (also the practical state lock)
   cancel-in-progress: false
 
 jobs:
@@ -61,17 +85,19 @@ jobs:
       - name: terraform init
         run: terraform -chdir="$TF_DIR" init -input=false
       - name: terraform apply
-        if: inputs.run_apply
+        if: inputs.mode == 'apply-and-deploy'
         env:
           TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}   # RDS master (aws-prod); ignored on do-prod
         run: terraform -chdir="$TF_DIR" apply -input=false -auto-approve -var-file="${{ inputs.environment }}.tfvars"
-      - name: terraform plan (no-apply gate)
-        if: ${{ !inputs.run_apply }}
+      - name: terraform plan (preview gate — no deploy)
+        if: inputs.mode == 'plan-only'
         run: terraform -chdir="$TF_DIR" plan -input=false -var-file="${{ inputs.environment }}.tfvars"
 
       # ── Export Terraform outputs into the environment for render-env ──
+      # Pure `terraform output` — works with or without a fresh apply (TD2: the tag path never
+      # applies; it deploys against existing infra state).
       - name: export tf outputs
-        if: inputs.run_apply
+        if: inputs.mode != 'plan-only'
         run: |
           terraform -chdir="$TF_DIR" output -json > tf.json
           # tf outputs are NOT GitHub secrets — mask the sensitive ones or they print in clear
@@ -98,7 +124,7 @@ jobs:
 
       # ── Render the box .env (secrets + tf outputs) and deploy ──
       - name: render .env
-        if: inputs.run_apply
+        if: inputs.mode != 'plan-only'
         env:
           IMAGE_TAG: ${{ inputs.image_tag }}
           # aws-prod PG values come from the DB_PASSWORD secret / a fixed maintenance DB; on
@@ -135,12 +161,12 @@ jobs:
       # runner is not in. Add the runner's IP for the deploy; the close step below removes it
       # (always). A doctl-added rule sits outside terraform state, so even a failed cleanup
       # self-heals at the next apply (the firewall resource's rule set is authoritative).
-      - if: inputs.run_apply && inputs.environment == 'do-prod'
+      - if: inputs.mode != 'plan-only' && inputs.environment == 'do-prod'
         uses: digitalocean/action-doctl@v2
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
       - name: open ssh window for the runner
-        if: inputs.run_apply && inputs.environment == 'do-prod'
+        if: inputs.mode != 'plan-only' && inputs.environment == 'do-prod'
         run: |
           RUNNER_IP="$(curl -fsS https://api.ipify.org)/32"
           echo "RUNNER_IP=$RUNNER_IP" >> "$GITHUB_ENV"
@@ -148,7 +174,7 @@ jobs:
             --inbound-rules "protocol:tcp,ports:22,address:$RUNNER_IP"
 
       - name: deploy to the box
-        if: inputs.run_apply
+        if: inputs.mode != 'plan-only'
         env:
           ENVIRONMENT: ${{ inputs.environment }}
           IMAGE_TAG: ${{ inputs.image_tag }}
@@ -163,7 +189,7 @@ jobs:
           infra/scripts/deploy.sh
         # SSH_KEY is the private key matching the box's authorized key (a secret).
       - name: health verify
-        if: inputs.run_apply
+        if: inputs.mode != 'plan-only'
         run: DOMAIN="$DOMAIN" infra/scripts/health-verify.sh
 
       - name: close ssh window

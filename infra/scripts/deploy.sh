@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Deploy the prod stack to the box: copy artifacts, log the box into the registry, pull + up -d.
-# The primitive behind deploy.yml — a human can run the exact same deploy from a laptop (spec §4).
+# Deploy the prod stack to the box: copy artifacts, log the box into the registry, pull,
+# exit-code-gated db-migrate (tag-auto-deploy.md TD5 — a failed migration aborts before the app
+# cutover), then up -d. The primitive behind deploy.yml — a human can run the exact same deploy
+# from a laptop (spec §4); do-env-build and the CI tag path both inherit the migrate gate.
 # Runs from the repo root (or anywhere; paths are resolved from this script's location).
 #
 # Required env:
@@ -74,9 +76,20 @@ case "$ENVIRONMENT" in
     ;;
 esac
 
-echo "==> compose pull && up -d"
+echo "==> compose pull"
 COMPOSE="docker compose -f $REMOTE_DIR/infra/compose/docker-compose.prod.yml --env-file $REMOTE_DIR/infra/compose/.env"
 ssh_box "$COMPOSE pull"
+
+# Migrate gate (spec tag-auto-deploy.md TD5): run the db-migrate one-shot to completion with its
+# exit code checked BEFORE the app cutover — a failed migration aborts the deploy here, with the
+# old images still running against the old schema. depends_on runs pg-bootstrap first
+# (idempotent); db-migrate is build:-based, so `pull` above skipped it and this `up` builds it.
+# Same invocation do-db-rebuild.sh uses. Sqitch is forward-only + idempotent (no-op when the
+# db/ tree carries nothing new).
+echo "==> db-migrate (exit-code gated)"
+ssh_box "$COMPOSE up --exit-code-from db-migrate db-migrate"
+
+echo "==> compose up -d"
 ssh_box "$COMPOSE up -d --remove-orphans"
 
 # n8n registers webhook routes in memory at boot, but n8n-import writes workflows/credentials

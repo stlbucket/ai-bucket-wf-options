@@ -37,7 +37,8 @@ infra/
 │   └── render-env.mjs                # fail-loud renderer (missing key => non-zero)
 ├── scripts/
 │   ├── build-images.sh               # 7 apps + hardened n8n image -> build+push, git-SHA tag
-│   ├── deploy.sh                     # ssh box: copy artifacts, registry login, compose pull && up -d
+│   ├── deploy.sh                     # ssh box: copy artifacts, registry login, pull, gated db-migrate, up -d
+│   ├── do-pre-deploy.sh              # pnpm do-pre-deploy — version bump + true-up + commit + v* tag (user-run)
 │   ├── health-verify.sh              # post-deploy TLS/health probes
 │   ├── bootstrap-identities.sh       # idempotent site-admin + n8n-owner bootstrap (§9.1; called by the two below)
 │   ├── do-env-build.sh               # pnpm do-env-build — one-command DO deploy (chains the above; user-run)
@@ -192,12 +193,22 @@ DOMAIN=<domain> infra/scripts/health-verify.sh
 ```
 Details + notes: `infra/terraform/environments/aws-prod/README.md`.
 
-## CI (GitHub Actions — design; you wire secrets/OIDC)
+## CI (GitHub Actions — you wire secrets/OIDC)
 
+- **`pnpm do-pre-deploy [patch|minor|major]`** — the user-run release front door (spec
+  `tag-auto-deploy.md` TD7): guards (on main, clean, not behind origin) → frozen-lockfile +
+  build gates → version true-up across every workspace `package.json` → commit + lightweight
+  `vX.Y.Z` tag → prints `git push --atomic origin main vX.Y.Z`, which sets off the chain below.
 - **`build-images.yml`** — on tag `v*` (or manual, env input): build 7 app images + fnb-n8n → push to the env's
-  registry (DOCR via doctl / ECR via OIDC), git-SHA tag.
-- **`deploy.yml`** — manual (env + image_tag inputs): `terraform apply` → `render-env.mjs` →
-  `deploy.sh` → `health-verify.sh`. `run_apply=false` gives an init+plan-only gate for prod safety.
+  registry (DOCR via doctl / ECR via OIDC), git-SHA tag. **On tag pushes it then chains the
+  deploy**: a `guard` job requires the tagged commit to be on `main`, then calls `deploy.yml`
+  (`workflow_call`) with `mode=deploy-only` — zero-click releases (spec `tag-auto-deploy.md`).
+- **`deploy.yml`** — callable + manual (env + image_tag + `mode` inputs): `mode=deploy-only`
+  (default — terraform outputs only, then deploy; rollbacks + the auto tag path),
+  `mode=apply-and-deploy` (`terraform apply` first — infra changes), `mode=plan-only`
+  (init+plan preview, nothing deploys). Then `render-env.mjs` → `deploy.sh` →
+  `health-verify.sh`. `deploy.sh` hard-gates on the `db-migrate` one-shot (exit-code checked)
+  **before** the app cutover — a failed migration aborts with old code still running.
 
 The scripts are the primitive; the workflows are thin wrappers, so the exact same deploy runs from
 a laptop if CI is unavailable.

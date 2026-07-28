@@ -2,6 +2,9 @@
 import { useAuth } from '@function-bucket/fnb-auth-layer/app/composables/useAuth'
 import { useRuntimeConfig } from 'nuxt/app'
 import { computed, onMounted, watch } from 'vue'
+// The layer's own manifest version — every workspace package.json is trued up to the release
+// tag by `pnpm do-pre-deploy` (tag-auto-deploy spec TD7), so any of them is the app version.
+import { version as appVersion } from '../../package.json'
 import { useAppNav } from '../composables/useAppNav'
 
 const { availableSections, navCollapsed, toggleCollapsed, hydrateSectionState } = useAppNav()
@@ -36,12 +39,21 @@ watch(navCollapsed, (v) => localStorage.setItem(NAV_COLLAPSED_KEY, v ? '1' : '0'
     <NuxtLink
       to="/"
       :external="true"
-      class="flex items-center gap-2.5 border-b border-white/10 pb-3.5"
-      :class="navCollapsed ? 'justify-center' : 'px-1.5'"
+      class="flex flex-col border-b border-white/10 pb-3.5"
+      :class="navCollapsed ? 'items-center' : 'px-1.5'"
     >
-      <FunctionBucketMark color="secondary" :monogram="false" class="size-[26px]" />
-      <span v-if="!navCollapsed" class="font-mono text-[15px] font-bold tracking-tight">
-        function-bucket
+      <span class="flex items-center gap-2.5">
+        <FunctionBucketMark color="secondary" :monogram="false" class="size-[26px]" />
+        <span v-if="!navCollapsed" class="font-mono text-[15px] font-bold tracking-tight">
+          function-bucket
+        </span>
+      </span>
+      <!-- pl-9 = the 26px mark + the 10px gap, so the version sits under the wordmark -->
+      <span
+        class="mt-1 font-mono text-[10px] leading-none text-white/40"
+        :class="navCollapsed ? '' : 'pl-9'"
+      >
+        v{{ appVersion }}
       </span>
     </NuxtLink>
 

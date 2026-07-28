@@ -123,6 +123,16 @@ onMounted(() => hydrateSectionState())
 The `<ModuleNavSection v-for … :section :collapsed>` loops in both files are **unchanged** — the
 component now sources its open-state from the composable itself.
 
+### Version line under the brand (2026-07-27; desktop `AppNav.vue` only)
+
+The Brand `NuxtLink` is a column: the mark + wordmark row, then
+`v{{ appVersion }}` in `font-mono text-[10px] text-white/40` — `pl-9` when expanded (the 26px
+mark + 10px gap, so it sits under the wordmark), centered when collapsed. `appVersion` is a
+named import of `version` from the layer's own `package.json` (Vite tree-shakes the rest of the
+manifest out of the bundle); every workspace version is trued up to the release tag by
+`pnpm do-pre-deploy` (deployment spec `tag-auto-deploy.md` TD7), so prod shows the deployed
+release. `AppNavMobile.vue` deliberately unchanged.
+
 ## Interactions
 
 | Element | Action | Result |

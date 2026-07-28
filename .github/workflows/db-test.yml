@@ -52,11 +52,11 @@ jobs:
       N8N_WORKER_PG_PASSWORD: ci-n8n-worker
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v4 # reads the packageManager field (pnpm@10)
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm

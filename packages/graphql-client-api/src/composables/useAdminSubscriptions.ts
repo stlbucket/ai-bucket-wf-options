@@ -1,4 +1,5 @@
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 import type {
   Resident,
   TenantSubscription,
@@ -28,8 +29,13 @@ export interface SubscriptionDetail {
   residents: Resident[]
 }
 
-export function useAdminSubscriptions() {
-  const { data, fetching, error, executeQuery } = useAdminSubscriptionsQuery()
+// tenantId scopes the list to one tenant (normally the caller's claims tenantId): the unfiltered
+// tenantSubscriptionsList leans on RLS alone, and super/parent admins see other tenants' rows.
+export function useAdminSubscriptions(tenantId: MaybeRefOrGetter<string | null | undefined>) {
+  const { data, fetching, error, executeQuery } = useAdminSubscriptionsQuery({
+    variables: computed(() => ({ tenantId: toValue(tenantId) })),
+    pause: computed(() => !toValue(tenantId)),
+  })
   const { executeMutation: execDeactivate } = useDeactivateTenantSubscriptionMutation()
   const { executeMutation: execReactivate } = useReactivateTenantSubscriptionMutation()
 
@@ -56,8 +62,14 @@ export function useAdminSubscriptions() {
   return { data: computedData, fetching, error, deactivateSubscription, reactivateSubscription }
 }
 
-export function useAdminSubscription(id: string) {
-  const { data, fetching, error, executeQuery } = useAdminSubscriptionsQuery()
+export function useAdminSubscription(
+  id: string,
+  tenantId: MaybeRefOrGetter<string | null | undefined>,
+) {
+  const { data, fetching, error, executeQuery } = useAdminSubscriptionsQuery({
+    variables: computed(() => ({ tenantId: toValue(tenantId) })),
+    pause: computed(() => !toValue(tenantId)),
+  })
   const { executeMutation: execDeactivate } = useDeactivateTenantSubscriptionMutation()
   const { executeMutation: execReactivate } = useReactivateTenantSubscriptionMutation()
 

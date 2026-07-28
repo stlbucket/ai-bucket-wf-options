@@ -7,13 +7,13 @@ import type {
   LicenseType,
 } from '@function-bucket/fnb-types'
 import {
-  useAdminSubscriptionsQuery,
   useBlockResidentMutation,
   useGrantUserLicenseMutation,
   useResidentByIdQuery,
   useRevokeUserLicenseMutation,
   useSubtreeResidentDetailQuery,
   useTenantResidentsQuery,
+  useTenantSubscriptionsQuery,
   useTenantSubtreeResidentsQuery,
   useUnblockResidentMutation,
 } from '../generated/fnb-graphql-api'
@@ -147,11 +147,18 @@ export function useAdminResident(id: string) {
     executeQuery: execRes,
   } = useResidentByIdQuery({ variables: { residentId: id } })
 
+  // Scoped to the resident's tenant: the unfiltered tenantSubscriptionsList leans on RLS, and a
+  // super admin (manage_tenant_subscription) or parent admin (view_child_workspace_subscriptions)
+  // sees every visible tenant's subscriptions — one pack card per row on this resident's page.
+  const residentTenantId = computed(() => resData.value?.resident?.tenantId ?? null)
   const {
     data: subsData,
     fetching: fetchingSubs,
     executeQuery: execSubs,
-  } = useAdminSubscriptionsQuery()
+  } = useTenantSubscriptionsQuery({
+    variables: computed(() => ({ tenantId: residentTenantId.value })),
+    pause: computed(() => !residentTenantId.value),
+  })
 
   const { executeMutation: execBlock } = useBlockResidentMutation()
   const { executeMutation: execUnblock } = useUnblockResidentMutation()
@@ -170,7 +177,7 @@ export function useAdminResident(id: string) {
     const resident = toResident(rawResident)
     const licenses = (rawResident.licenses ?? []).map(toLicense)
 
-    const subscriptionPacks: SubscriptionPackDetail[] = (subsData.value?.adminSubscriptions ?? [])
+    const subscriptionPacks: SubscriptionPackDetail[] = (subsData.value?.tenantSubscriptions ?? [])
       .filter((s) => !!s.licensePack)
       .map((s) => {
         const lplt = s.licensePack!.licensePackLicenseTypes ?? []

@@ -1,7 +1,7 @@
 # home-app/index — Landing Page Data
 
 ## Status
-Draft — workspace-cards redesign locked 2026-07-27; implementation pending.
+Implemented — workspace-cards redesign 2026-07-27.
 
 ## Route
 `/` — see `index.ui.md` for UI details

@@ -13,20 +13,11 @@
         <p class="text-xs font-semibold uppercase tracking-wider text-muted">
           Scoped
         </p>
-        <div class="flex flex-col gap-2">
-          <div
-            v-for="lt in scopedTypes"
-            :key="lt.key"
-            class="flex items-center gap-2"
-          >
-            <URadio
-              :model-value="selectedScoped"
-              :value="lt.key"
-              :label="lt.displayName"
-              @update:model-value="onScopedChange(lt.key)"
-            />
-          </div>
-        </div>
+        <URadioGroup
+          :model-value="selectedScoped"
+          :items="scopedItems"
+          @update:model-value="onScopedChange(String($event))"
+        />
       </div>
       <div
         v-if="unscopedTypes.length"
@@ -63,14 +54,23 @@ const emit = defineEmits<{
   (e: 'revoke', licenseId: string): void
 }>()
 
+// assignmentScope arrives in GraphQL enum casing (UPPERCASE) — compare case-insensitively.
 const UNSCOPED = ['none', 'all']
 
 const scopedTypes = computed(() =>
-  props.subscriptionPack.licenseTypes.filter(lt => !UNSCOPED.includes(String(lt.assignmentScope)))
+  props.subscriptionPack.licenseTypes.filter(
+    lt => !UNSCOPED.includes(String(lt.assignmentScope).toLowerCase())
+  )
 )
 
 const unscopedTypes = computed(() =>
-  props.subscriptionPack.licenseTypes.filter(lt => UNSCOPED.includes(String(lt.assignmentScope)))
+  props.subscriptionPack.licenseTypes.filter(
+    lt => UNSCOPED.includes(String(lt.assignmentScope).toLowerCase())
+  )
+)
+
+const scopedItems = computed(() =>
+  scopedTypes.value.map(lt => ({ label: lt.displayName, value: lt.key }))
 )
 
 const selectedScoped = computed(() => {

@@ -282,6 +282,9 @@ importers:
 
   apps/home-app:
     dependencies:
+      '@function-bucket/fnb-auth-layer':
+        specifier: workspace:*
+        version: link:../../packages/auth-layer
       '@function-bucket/fnb-graphql-client-api':
         specifier: workspace:*
         version: link:../../packages/graphql-client-api

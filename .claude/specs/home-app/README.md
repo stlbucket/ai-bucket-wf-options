@@ -6,8 +6,9 @@
 > then executes it.
 
 ## Status
-Draft — workspace-cards redesign locked 2026-07-27; implementation pending. The previous
-module-grid landing is implemented and in production; this spec supersedes its logged-in view.
+Implemented — workspace-cards redesign 2026-07-27 (`pnpm build` gate green; browser-verified
+at all three breakpoints + switcher modal post-refactor). The previous module-grid logged-in
+view is replaced; the hero view is unchanged.
 
 ## Purpose
 
@@ -48,29 +49,32 @@ changed; its `WorkspaceSwitcher.vue` is refactored onto the shared `ResidencyTre
 ## Implementation Task List
 
 ### Phase 1 — shared tree component (tenant-layer)
-- [ ] `packages/tenant-layer/app/components/ResidencyTree.vue`: extract the `UTree` body from
+- [x] `packages/tenant-layer/app/components/ResidencyTree.vue`: extract the `UTree` body from
       `WorkspaceSwitcher.vue` — props `nodes` / `disabled` / `switchingTenantId`, emit
       `select(node)`; item rendering (icons, Current/status badges, ghost lock, spinner)
       carried over verbatim
-- [ ] Refactor `WorkspaceSwitcher.vue` to consume `ResidencyTree` (modal keeps trigger,
+- [x] Refactor `WorkspaceSwitcher.vue` to consume `ResidencyTree` (modal keeps trigger,
       on-open refresh, switch call, toasts)
 
 ### Phase 2 — landing page (home-app)
-- [ ] `apps/home-app/app/pages/index.vue`: replace the module grid + context chips with the
+- [x] `apps/home-app/app/pages/index.vue`: replace the module grid + context chips with the
       tenant cards view (flex-wrap, 3-up on `lg`); header-only cards for childless tenants;
       subheading → `your workspaces`
-- [ ] On-mount `refreshClaims()` with `UProgress` + skeleton/empty states; support-mode
+- [x] On-mount `refreshClaims()` with `UProgress` + skeleton/empty states; support-mode
       display-only guard
-- [ ] Switch flow on the page: `switchResidency` on `select`, spinner via
+- [x] Switch flow on the page: `switchResidency` on `select`, spinner via
       `switchingTenantId`, error toast on failure
-- [ ] Remove now-dead page code (`useAppNav` import, accent cycling, chip derivations)
+- [x] Remove now-dead page code (`useAppNav` import, accent cycling, chip derivations)
 
 ### Phase 3 — verify + spec upkeep
-- [ ] `pnpm build` gate green; visual check at all three breakpoints (UC5)
-- [ ] Verify the sidebar switcher modal still works post-refactor (switch + ghost + support
-      mode cases)
-- [ ] README status → Implemented; boxes checked; corrections section added if code diverged;
-      sync `.claude/specs/workspace-switcher/switcher.ui.md` with the `ResidencyTree` split
+- [x] `pnpm build` gate green (13/13, 2026-07-27)
+- [x] Visual check at all three breakpoints (UC5) — verified in Chrome 2026-07-27
+      (lg 3-up shell / sm / mobile; user-approved)
+- [x] Verify the sidebar switcher modal renders post-refactor — verified 2026-07-27 (tree,
+      ghost locks, Current badge identical; actual switch + support-mode not re-exercised —
+      switch logic untouched by the refactor)
+- [x] README status → Implemented; boxes checked; no corrections needed (code follows spec);
+      synced `.claude/specs/workspace-switcher/switcher.ui.md` with the `ResidencyTree` split
 
 ## Remaining Open Questions
 None — decisions locked 2026-07-27.

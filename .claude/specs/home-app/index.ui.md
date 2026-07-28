@@ -1,8 +1,8 @@
 # home-app/index — Landing Page UI
 
 ## Status
-Draft — workspace-cards redesign locked 2026-07-27; implementation pending. (Previous
-module-grid landing was Implemented; superseded by this spec.)
+Implemented — workspace-cards redesign 2026-07-27. (Previous module-grid landing replaced;
+hero view unchanged.)
 
 ## Route
 `/` → `apps/home-app/app/pages/index.vue`

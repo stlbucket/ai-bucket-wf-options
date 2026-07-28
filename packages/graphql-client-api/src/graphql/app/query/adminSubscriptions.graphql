@@ -1,5 +1,9 @@
-query AdminSubscriptions {
-  adminSubscriptions: tenantSubscriptionsList {
+query AdminSubscriptions(
+  $tenantId: UUID!
+) {
+  adminSubscriptions: tenantSubscriptionsList(condition: {
+    tenantId: $tenantId
+  }) {
     ...TenantSubscription
     licensePack {
       ...LicensePack

@@ -12184,7 +12184,9 @@ export type ActiveLicensePacksQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type ActiveLicensePacksQuery = { __typename: 'Query', licensePacksList?: Array<{ __typename: 'LicensePack', key: string, displayName: string, description: string, autoSubscribe: boolean, createdAt: any, updatedAt: any }> | null };
 
-export type AdminSubscriptionsQueryVariables = Exact<{ [key: string]: never; }>;
+export type AdminSubscriptionsQueryVariables = Exact<{
+  tenantId: Scalars['UUID']['input'];
+}>;
 
 
 export type AdminSubscriptionsQuery = { __typename: 'Query', adminSubscriptions?: Array<{ __typename: 'TenantSubscription', id: any, tenantId: any, licensePackKey: string, status: TenantSubscriptionStatus, createdAt: any, updatedAt: any, licensePack?: { __typename: 'LicensePack', key: string, displayName: string, description: string, autoSubscribe: boolean, createdAt: any, updatedAt: any, licensePackLicenseTypes: Array<{ __typename: 'LicensePackLicenseType', id: any, licensePackKey: string, licenseTypeKey: string, numberOfLicenses: number, expirationIntervalType: ExpirationIntervalType, expirationIntervalMultiplier: number, issuedCount?: number | null, licenseType?: { __typename: 'LicenseType', key: string, applicationKey: string, displayName: string, assignmentScope: LicenseTypeAssignmentScope, createdAt: any, updatedAt: any } | null }> } | null, licensesList: Array<{ __typename: 'License', id: any, tenantId: any, residentId: any, profileId?: any | null, tenantSubscriptionId: any, licenseTypeKey: string, status: LicenseStatus, createdAt: any, updatedAt: any, expiresAt?: any | null, resident?: { __typename: 'Resident', id: any, profileId?: any | null, invitedByProfileId?: any | null, invitedByDisplayName?: string | null, tenantId: any, tenantName: string, status: ResidentStatus, displayName?: string | null, email: string, type: ResidentType, createdAt: any, updatedAt: any, urn: string } | null }> }> | null };
@@ -13812,8 +13814,8 @@ export function useActiveLicensePacksQuery(options?: Omit<Urql.UseQueryArgs<neve
   return Urql.useQuery<ActiveLicensePacksQuery, ActiveLicensePacksQueryVariables | undefined>({ query: ActiveLicensePacksDocument, variables: undefined, ...options });
 };
 export const AdminSubscriptionsDocument = gql`
-    query AdminSubscriptions {
-  adminSubscriptions: tenantSubscriptionsList {
+    query AdminSubscriptions($tenantId: UUID!) {
+  adminSubscriptions: tenantSubscriptionsList(condition: {tenantId: $tenantId}) {
     ...TenantSubscription
     licensePack {
       ...LicensePack

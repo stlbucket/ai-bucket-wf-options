@@ -30,96 +30,118 @@
     </div>
   </div>
 
-  <!-- logged in: dashboard -->
+  <!-- logged in: workspace cards (the sidebar switcher's tree, laid out as tenant cards) -->
   <div
     v-else
-    class="mx-auto max-w-[760px] space-y-7 p-9 sm:px-12 sm:py-11"
+    class="mx-auto max-w-5xl space-y-7 p-9 sm:px-12 sm:py-11"
   >
     <div>
       <h1 class="font-mono text-[28px] font-bold tracking-tight">
         hey, {{ firstName }}.
       </h1>
       <p class="mt-1 text-sm text-muted">
-        here's what's in your bucket
+        your workspaces
       </p>
-
-      <!-- tenant / workspace context chips (display-only; the switcher lives in the sidebar) -->
-      <div
-        v-if="tenantChip"
-        class="mt-3.5 flex flex-wrap items-center gap-2"
-      >
-        <span
-          class="inline-flex items-center gap-[7px] rounded-md border border-primary/18 bg-primary/8 px-2.5 py-[5px] font-mono text-xs font-semibold text-primary"
-        >
-          <UIcon name="i-lucide-building-2" class="size-[13px] shrink-0" />
-          {{ tenantChip }}
-        </span>
-        <template v-if="workspaceChip">
-          <span class="font-mono text-xs text-dimmed">/</span>
-          <span
-            class="inline-flex items-center gap-[7px] rounded-md border border-secondary/18 bg-secondary/8 px-2.5 py-[5px] font-mono text-xs font-semibold text-secondary"
-          >
-            <UIcon name="i-lucide-layers" class="size-[13px] shrink-0" />
-            {{ workspaceChip }}
-          </span>
-        </template>
-      </div>
     </div>
 
-    <div
-      v-if="availableSections.length > 0"
-      class="grid grid-cols-[repeat(auto-fit,minmax(300px,1fr))] items-start gap-x-12 gap-y-9"
-    >
-      <section
-        v-for="(s, si) in availableSections"
-        :key="s.key"
-        class="flex flex-col gap-1.5"
-      >
-        <div class="flex items-center gap-2.5 pb-2">
-          <UIcon
-            :name="s.icon"
-            class="size-[15px] shrink-0"
-            :style="{ color: accents[si % accents.length] }"
-          />
-          <span class="font-mono text-[11px] font-bold uppercase tracking-[0.08em] text-muted">
-            {{ s.label }}
-          </span>
-          <span class="font-mono text-[11px] font-semibold text-dimmed">
-            {{ String(s.items.length).padStart(2, '0') }}
-          </span>
-          <span class="h-px flex-1 border-t border-default" />
-        </div>
+    <!-- cards render instantly from localStorage claims; the background refresh rides on top -->
+    <UProgress v-if="refreshing" size="xs" />
 
-        <NuxtLink
-          v-for="(item, ii) in s.items"
-          :key="item.key"
-          :to="item.route"
-          :external="true"
-          class="-mx-2.5 flex items-center gap-3 rounded-lg border-b border-muted p-2.5 transition-colors last:border-b-0 hover:bg-default"
-        >
-          <UIcon
-            :name="item.icon"
-            class="size-[18px] shrink-0"
-            :style="{ color: rowAccent(si, ii) }"
-          />
-          <span class="text-[15px] font-medium">{{ item.label }}</span>
-          <span class="ml-auto text-[13px] text-dimmed">→</span>
-        </NuxtLink>
-      </section>
+    <div
+      v-if="roots.length === 0 && refreshing"
+      class="flex flex-wrap items-start gap-4"
+    >
+      <USkeleton
+        v-for="i in 3"
+        :key="i"
+        class="h-28 basis-full sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33.333%-0.75rem)]"
+      />
     </div>
 
     <UEmpty
-      v-else
-      icon="i-lucide-package-open"
-      label="nothing in the bucket yet"
-      description="ask your admin for access to some tools"
+      v-else-if="roots.length === 0"
+      icon="i-lucide-building-2"
+      label="no workspaces yet"
+      description="ask your admin for an invitation"
     />
+
+    <div
+      v-else
+      class="flex flex-wrap items-start gap-4"
+    >
+      <UCard
+        v-for="node in roots"
+        :key="node.tenantId"
+        class="min-w-0 basis-full sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33.333%-0.75rem)]"
+        :title="isInSupportMode ? 'Exit support to switch' : undefined"
+      >
+        <!-- header = the root tenant itself (a selectable node) -->
+        <template #header>
+          <component
+            :is="headerClickable(node) ? 'button' : 'div'"
+            :type="headerClickable(node) ? 'button' : undefined"
+            class="flex w-full min-w-0 items-center gap-2"
+            :class="headerClickable(node) ? 'cursor-pointer text-left hover:text-primary' : ''"
+            @click="onSelect(node)"
+          >
+            <UIcon name="i-lucide-building-2" class="size-4 shrink-0" />
+            <span
+              class="truncate font-medium"
+              :class="node.canEnter || node.isCurrent ? '' : 'text-muted'"
+            >
+              {{ node.tenantName }}
+            </span>
+            <UBadge
+              v-if="node.isCurrent"
+              color="primary"
+              variant="subtle"
+              size="sm"
+            >
+              Current
+            </UBadge>
+            <UBadge
+              v-else-if="statusBadge(node)"
+              :color="statusBadge(node)!.color"
+              variant="subtle"
+              size="sm"
+            >
+              {{ statusBadge(node)!.label }}
+            </UBadge>
+            <span class="ml-auto flex shrink-0 items-center">
+              <UIcon
+                v-if="switchingTenantId === node.tenantId"
+                name="i-lucide-loader-circle"
+                class="size-4 animate-spin"
+              />
+              <UIcon
+                v-else-if="node.residentId === null"
+                name="i-lucide-lock"
+                class="size-4 text-muted"
+                title="No residency in this workspace"
+              />
+            </span>
+          </component>
+        </template>
+
+        <!-- body = the workspace tree under this tenant; header-only card when childless -->
+        <template v-if="node.children.length > 0" #default>
+          <ResidencyTree
+            :nodes="node.children"
+            :disabled="switching || isInSupportMode"
+            :switching-tenant-id="switchingTenantId"
+            @select="onSelect"
+          />
+        </template>
+      </UCard>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-const { isLoggedIn, user } = useAuth()
-const { availableSections } = useAppNav()
+import type { ResidencySwitchNode } from '@function-bucket/fnb-auth-layer/app/composables/useResidencySwitcher'
+
+const { isLoggedIn, user, refreshClaims } = useAuth()
+const { roots, switchResidency } = useResidencySwitcher()
 const { public: { authAppUrl } } = useRuntimeConfig()
 
 // Stale-claims recovery landing (claims-revalidation-pattern.md): the hydrate-claims plugin
@@ -138,43 +160,58 @@ onMounted(() => {
   router.replace({ query: { ...route.query, session: undefined } })
 })
 
-// Icon accent cycled globally across all tool rows in page order — deliberately does NOT
-// reset per module (mock: blue/green/warn). Module header icons use the section index.
-const accents = ['var(--ui-primary)', 'var(--ui-secondary)', 'var(--ui-warning)']
-
-const sectionOffsets = computed(() => {
-  const offsets: number[] = []
-  let total = 0
-  for (const s of availableSections.value) {
-    offsets.push(total)
-    total += s.items.length
-  }
-  return offsets
-})
-const rowAccent = (si: number, ii: number) =>
-  accents[((sectionOffsets.value[si] ?? 0) + ii) % accents.length]
-
-// Context chips: when the current residency is a workspace, the first chip shows its parent
-// tenant and the second the workspace itself; otherwise one tenant chip, no separator.
-// Same derivation as use-residency-switcher.ts (residentId matched against residencies).
-const currentResidency = computed(() => {
-  const residentId = user.value?.residentId
-  if (!residentId) return null
-  return user.value?.residencies?.find((r) => r.residentId === residentId) ?? null
-})
-const workspaceParent = computed(() => {
-  const cur = currentResidency.value
-  if (cur?.tenantType !== 'WORKSPACE' || !cur.parentTenantId) return null
-  return user.value?.residencies?.find((r) => r.tenantId === cur.parentTenantId) ?? null
-})
-const tenantChip = computed(() =>
-  workspaceParent.value ? workspaceParent.value.tenantName : (user.value?.tenantName ?? null),
-)
-const workspaceChip = computed(() =>
-  workspaceParent.value
-    ? (currentResidency.value?.tenantName ?? user.value?.tenantName ?? null)
-    : null,
-)
-
 const firstName = computed(() => (user.value?.displayName ?? 'there').split(/\s+/)[0])
+
+// Support mode: cards are display-only — switching would silently drop the support session
+// (same rule as the sidebar switcher's static trigger).
+const isInSupportMode = computed(() => user.value?.permissions?.includes('p:exit-support') ?? false)
+
+const refreshing = ref(false) // on-mount refreshClaims in flight → UProgress
+const switching = ref(false) // a switch is in flight — the full reload ends it
+const switchingTenantId = ref<string | null>(null)
+
+// Cards render from current claims immediately; the background refresh updates the tree if
+// changed. Refresh failure keeps the last-known tree (claims are still valid locally) and toasts.
+onMounted(() => {
+  if (!isLoggedIn.value) return
+  refreshing.value = true
+  refreshClaims()
+    .catch(() => {
+      toast.add({ title: 'Could not refresh workspaces', color: 'error' })
+    })
+    .finally(() => {
+      refreshing.value = false
+    })
+})
+
+function headerClickable(node: ResidencySwitchNode) {
+  return node.canEnter && node.residentId !== null && !isInSupportMode.value
+}
+
+// Same disabled/muted priority as ResidencyTree.vue: ghosts show a lock; non-enterable
+// residencies show why as a status badge (UC1 shared tenant/resident maps).
+function statusBadge(node: ResidencySwitchNode) {
+  if (node.isCurrent || node.canEnter || node.residentId === null) return null
+  if (node.tenantStatus !== 'ACTIVE') {
+    return { color: statusColor('tenant', node.tenantStatus), label: statusLabel(node.tenantStatus) }
+  }
+  return {
+    color: statusColor('resident', node.residentStatus),
+    label: statusLabel(node.residentStatus),
+  }
+}
+
+async function onSelect(node: ResidencySwitchNode) {
+  if (!node.canEnter || node.residentId === null || switching.value || isInSupportMode.value) return
+  switching.value = true
+  switchingTenantId.value = node.tenantId
+  try {
+    // assumeResidency → refreshClaims → full reload home; the reload ends the interaction.
+    await switchResidency(node.residentId)
+  } catch {
+    toast.add({ title: 'Failed to switch workspace', color: 'error' })
+    switching.value = false
+    switchingTenantId.value = null
+  }
+}
 </script>

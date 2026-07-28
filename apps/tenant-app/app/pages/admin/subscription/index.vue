@@ -3,7 +3,10 @@ import type { TenantSubscription } from '@function-bucket/fnb-types'
 import { useAdminSubscriptions } from '~/composables/useAdminSubscriptions'
 
 const toast = useToast()
-const { data: subsData, deactivateSubscription, reactivateSubscription } = useAdminSubscriptions()
+const { user } = useAuth()
+const { data: subsData, deactivateSubscription, reactivateSubscription } = useAdminSubscriptions(
+  () => user.value?.tenantId
+)
 
 const subscriptions = computed(() => subsData.value ?? [])
 

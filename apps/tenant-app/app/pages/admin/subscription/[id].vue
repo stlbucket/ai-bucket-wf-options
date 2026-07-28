@@ -3,9 +3,11 @@ import { useAdminSubscription } from '~/composables/useAdminSubscriptions'
 
 const route = useRoute()
 const toast = useToast()
+const { user } = useAuth()
 
 const { data, fetching, deactivateSubscription, reactivateSubscription } = useAdminSubscription(
   String(route.params.id),
+  () => user.value?.tenantId,
 )
 
 const subscription = computed(() => data.value?.subscription)

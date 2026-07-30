@@ -28,7 +28,9 @@
     "do-env-build": "bash infra/scripts/do-env-build.sh",
     "do-env-teardown": "bash infra/scripts/do-env-teardown.sh",
     "do-db-rebuild": "bash infra/scripts/do-db-rebuild.sh",
-    "do-db-psql": "bash infra/scripts/do-db-psql.sh"
+    "do-db-psql": "bash infra/scripts/do-db-psql.sh",
+    "do-ssh-allow": "bash infra/scripts/do-ssh-allow.sh",
+    "do-ssh-revoke": "bash infra/scripts/do-ssh-revoke.sh"
   },
   "devDependencies": {
     "@nuxt/eslint": "catalog:",

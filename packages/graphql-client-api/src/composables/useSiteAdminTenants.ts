@@ -121,11 +121,27 @@ export function useSiteAdminTenant(id: string) {
   }
 }
 
+// Admin identity for the new tenant: first/last land on a pre-created app.profile (phone
+// optional) — see docs/specs/tenant-app/site-admin/tenant/index.data.md
+export interface CreateTenantInput {
+  name: string
+  email: string
+  firstName: string
+  lastName: string
+  phone?: string | null
+}
+
 export function useCreateTenant() {
   const { executeMutation: execCreate } = useCreateTenantMutation()
 
-  async function createTenant(name: string, email: string): Promise<Tenant> {
-    const result = await execCreate({ name, email })
+  async function createTenant(input: CreateTenantInput): Promise<Tenant> {
+    const result = await execCreate({
+      name: input.name,
+      email: input.email,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      phone: input.phone ?? null,
+    })
     if (result.error) throw result.error
     const created = result.data?.createTenant?.tenant
     if (!created) throw new Error('createTenant returned no tenant')

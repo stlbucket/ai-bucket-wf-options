@@ -42,6 +42,7 @@ database schema. PostGraphile 5 is a complete rewrite of V4, powered by the Graf
 | Mark view column non-null | `@notNull` smart tag |
 | Mount in Nuxt/Nitro | `grafserv` from `postgraphile/grafserv/h3/v1` |
 | Deploy behind path-prefix proxy | Set ALL grafserv path options explicitly — see path-prefix section below |
+| Surface real error messages to clients | Custom `grafserv.maskError` — see error-masking section below |
 | Serve Ruru static assets behind prefix | Separate nginx location + Nitro plugin `serv.addTo(nitroApp.h3App)` |
 | SSE stream for schema watch | Separate Nuxt route `server/api/graphql/stream.ts` → `serv.handleEventStreamEvent(event)` |
 
@@ -95,6 +96,29 @@ database schema. PostGraphile 5 is a complete rewrite of V4, powered by the Graf
 - **H3 context:** extract `H3Event` from `requestContext.h3v1?.event` (HTTP) or construct from `requestContext.ws.request._req` (WebSocket)
 - **Dual pools:** use `authPgPool` (unprivileged) for PostGraphile, `rootPgPool` (superuser) for session management
 - **Grafserv path options are independent:** `graphqlPath`, `eventStreamPath`, and `graphiqlStaticPath` each have their own defaults — `eventStreamPath` is NOT derived from `graphqlPath`. When deploying behind a path prefix, every option must be set explicitly.
+
+## Error Masking (`grafserv.maskError`)
+
+By default grafserv **masks** every GraphQL error whose `originalError` is not a `GraphQLError` or
+a grafast `SafeError` — this includes **every PL/pgSQL `raise exception`**. The client receives
+`An error occurred (logged with hash: '…', id: '…')` with `extensions` wiped; the real error is
+only `console.error`-logged server-side (`defaultMaskError` in `grafserv/dist/options.js`).
+
+Ways to change this:
+- **`throw new SafeError('message')`** in plan functions / extendSchema plugins — messages that are
+  intentionally user-facing pass through the default mask.
+- **Custom `grafserv.maskError(error) => GraphQLError`** in the preset — full control; keep the
+  default's pass-throughs, then decide what to expose (message, pg `code`/`detail`/`hint` in
+  `extensions`). `defaultMaskError` is importable to delegate back to.
+- **v4 preset options** `extendedErrors` / `showErrorStack` / `handleErrors` — generate a
+  `maskError` for V4-compat setups, but bypass the default's `SafeError` semantics.
+
+Imports under strict pnpm (bare `grafserv`/`grafast` are usually not direct deps):
+`defaultMaskError` from `postgraphile/grafserv`, `SafeError`/`isSafeError` from
+`postgraphile/grafast`, `GraphQLError` from `postgraphile/graphql`.
+
+fnb decision record: errors are surfaced by default with a `GRAPHQL_MASK_ERRORS=true` escape hatch
+— see `docs/specs/graphql-api-app/server-pattern.md` → Error surfacing.
 
 ## Nuxt + Path-Prefix Proxy Deployment
 

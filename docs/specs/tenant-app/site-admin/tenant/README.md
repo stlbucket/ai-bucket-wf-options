@@ -14,6 +14,14 @@ user-invitation **U9 send-immediately checkbox**): users card (status + license 
 read-only subscriptions card, workflow link mode + `TriggerWorkflowResult.result`. `pnpm build`
 gate passed (13/13) + codegen against the restarted API; manual e2e pending (user-run env).
 
+**Admin-identity extension — built 2026-07-30** (plan
+`0650__app_______new-tenant-admin-identity_______MED__`, user directive same day): the New
+Tenant modal grows **admin first/last name (required) + optional phone**, persisted on a
+**pre-created `app.profile`** row via extended `create_tenant` params (the `initialize_anchor`
+precedent). Supersedes the "Modal fields: Name + admin email only" and "DB changes: None"
+locked decisions below. `pnpm build` gate passed (13/13) + codegen against the rebuilt API;
+manual e2e pending (user-run env, Phase 12).
+
 **Reversal (2026-07-27, user directive):** the cross-tenant invite surface was **removed** the
 same day it was built — a super admin must NOT add (or re-invite) users from this page; they
 enter **support mode** and do it from the tenant's own admin pages. Removed: the `[id]` page's
@@ -39,11 +47,14 @@ tenant's own admin pages (user directive 2026-07-27; see the Reversal note in St
 ## Locked decisions
 | Decision | Choice | Why |
 |---|---|---|
-| Modal fields | Name + admin email only | User directive 2026-07-27: "this will always be a 'customer' tenant in this context" — type stays the DB default `'customer'`, identifier stays `null`. Keeps the existing `createAppTenant.graphql` doc usable unchanged. |
+| Modal fields | ~~Name + admin email only~~ **Name + admin first/last name (required) + admin email + optional phone** (2026-07-30) | Original 2026-07-27 directive kept the modal minimal; superseded by the 2026-07-30 admin-identity directive. Type still stays `'customer'`, identifier still `null`. |
 | Tenant type select | Not offered | Same directive. Root-creatable alternatives (demo/test/trial) can be added later by extending the mutation doc. |
 | Admin email required in the form | Yes | The SQL param is nullable but `app_fn.invite_user` inserts an `app.resident` row from it — a null email fails at the DB. The mutation doc already declares `$email: String!`. |
 | Post-create behavior | Navigate to `/site-admin/tenant/{id}` | User choice 2026-07-27 — land on the detail page to review subscriptions + the invited admin. No list re-fetch needed. |
-| DB changes | None | The button "calls the existing infrastructure" — `app_api.create_tenant` as-is. The missing `jwt.enforce_permission` gate is recorded as a Known Gap (RLS `manage_tenant` already enforces `p:app-admin-super`), not fixed here. |
+| DB changes | ~~None~~ **Extend `create_tenant` + pre-create the admin profile** (2026-07-30) | first/last/phone need a durable home and `app.resident` has no such columns — `app.profile` does. Extend `app_api`/`app_fn.create_tenant` with `_first_name`/`_last_name`/`_phone` (defaulted) and pre-create the profile before `invite_user` (`initialize_anchor` precedent; `provision_idp_user` links by email at first login). The missing `jwt.enforce_permission` gate stays a Known Gap. |
+| Existing-profile collision | Blank-fill only | User pick 2026-07-30: if `_email` already has a profile, `coalesce` the three new fields into nulls only — a super admin never overwrites a user's self-maintained data. |
+| Pre-created `display_name` | **Lowercase** first initial + last name (e.g. `jsmith`), fallback lowercased email local part, then null | User picks 2026-07-30 (lowercase directive at plan close). `display_name` is UNIQUE — fallbacks keep tenant creation from ever failing on a name collision. `invite_user` copies it onto the resident. |
+| Phone handling | `PhoneSegments` (E.164), stored raw, no verification | User pick 2026-07-30: same pattern as the profile page (auth-layer shared component). The notify phone-verification ceremony (D13) stays the user's own later flow. |
 | Duplicate-name handling | Error toast, modal stays open | DB raises `30002: APP TENANT WITH THIS NAME OR IDENTIFIER ALREADY EXISTS`; surface as "A tenant with this name already exists" (UC7). |
 
 Tenant-detail extension (all user picks 2026-07-27; **superseded rows struck by the same-day
@@ -107,6 +118,27 @@ cross-tenant pieces of Phases 5–7 were **removed the same day** by the reversa
       invite affordances; support mode → tenant admin pages handle invites; link mode / U9
       checkbox verified from `admin/user` (see `user-invitation/`)
 
+Admin-identity extension (built 2026-07-30, plan `0650` — contract in `index.ui.md` /
+`index.data.md`):
+- [x] **Phase 9 — DB**: in-place edit of `00000000010240_app_fn.sql` (house pattern — no
+      rework tag; envs rebuild) with `drop function if exists` guards for the old 4-arg
+      signatures (overload gotcha), both functions recreated with
+      `_first_name`/`_last_name`/`_phone` (defaulted); admin-profile pre-create/blank-fill
+      before `invite_user` with the display-name recipe (lowercase first initial + last name →
+      lowercased email local part → null)
+- [x] **Phase 10 — client package**: `createAppTenant.graphql` extended
+      (`$firstName!/$lastName!/$phone` → `_firstName/_lastName/_phone` — inflection confirmed
+      via introspection), codegen against the rebuilt API, `useCreateTenant` → object-input
+      signature (`CreateTenantInput`)
+- [x] **Phase 11 — tenant-app**: `NewTenantModal.vue` first/last/phone fields (`PhoneSegments`
+      for phone), payload-object `create` emit (`NewTenantPayload` exported from the SFC);
+      page `onCreate` passes the payload through (toast/navigation/30002 handling unchanged)
+- [ ] **Phase 12 — verify**: `pnpm build` gate ✅ (13/13, 2026-07-30); manual pending — create
+      a tenant with names + phone, confirm the pre-created profile (first/last/phone,
+      display_name recipe) and the already-linked admin resident on the detail page; create
+      with an **existing** user's email → their profile only blank-filled; phone omitted →
+      profile.phone null
+
 ## Remaining Open Questions
 - ~~Confirm the generated FK field name `licensePack` on `TenantSubscription` (V5 inflection)~~ —
   resolved 2026-07-27: `licensePack?: Maybe<LicensePack>` exists in the generated schema; no
@@ -115,6 +147,12 @@ cross-tenant pieces of Phases 5–7 were **removed the same day** by the reversa
 ## Considered & rejected
 - **Identifier + type fields in the modal** — rejected 2026-07-27 (user directive: always
   `'customer'` here; identifier adds friction with no current need).
+- **Storing admin names/phone without DB change** — rejected 2026-07-30: `app.resident` has no
+  such columns and no profile exists at invite time; the fields would be collected and dropped.
+- **Overwriting an existing profile's fields from the modal** — rejected 2026-07-30 in favor of
+  blank-fill only (a super admin must not clobber a user's self-maintained data).
+- **Triggering notify phone-verification at creation** — rejected 2026-07-30: the admin hasn't
+  even logged in yet; verification (D13) stays a later, user-owned ceremony.
 - **Stay on list + re-fetch after create** — rejected in favor of navigating to the new
   tenant's detail page.
 - **Adding `jwt.enforce_permission('p:app-admin-super')` to `app_api.create_tenant`** — out of

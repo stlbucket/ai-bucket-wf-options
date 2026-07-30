@@ -2,6 +2,9 @@ import { PostGraphileAmberPreset } from 'postgraphile/presets/amber'
 import { PgSimplifyInflectionPreset } from '@graphile/simplify-inflection'
 import { makePgService } from 'postgraphile/adaptors/pg'
 import { makeV4Preset } from 'postgraphile/presets/v4'
+import { isSafeError } from 'postgraphile/grafast'
+import { defaultMaskError } from 'postgraphile/grafserv'
+import { GraphQLError } from 'postgraphile/graphql'
 import { H3Event } from 'h3'
 import { ServerResponse } from 'node:http'
 import { TagsFilePlugin } from 'postgraphile/utils'
@@ -10,6 +13,45 @@ import { TriggerWorkflowPlugin } from './graphile/trigger-workflow.plugin.js'
 import { requiredEnv } from './lib/required-env.js'
 
 const baseUrl = requiredEnv('NUXT_APP_BASE_URL')
+
+// grafserv's defaultMaskError hides every non-SafeError (incl. every <module>_api raise) behind
+// a logged hash with extensions wiped — production bugs became unreportable from the client.
+// Contract: docs/specs/graphql-api-app/server-pattern.md → Error surfacing. GRAPHQL_MASK_ERRORS
+// is the escape hatch back to stock masking; stacks never reach the client on either branch.
+function maskError(error: GraphQLError): GraphQLError {
+  // Same pass-throughs as grafserv's defaultMaskError
+  if (!error.originalError && error instanceof GraphQLError) return error
+  if (error.originalError instanceof GraphQLError) return error
+  if (error.originalError != null && isSafeError(error.originalError)) {
+    return new GraphQLError(
+      error.originalError.message,
+      error.nodes,
+      error.source,
+      error.positions,
+      error.path,
+      error.originalError,
+      error.originalError.extensions ?? null
+    )
+  }
+  if (process.env.GRAPHQL_MASK_ERRORS === 'true') return defaultMaskError(error)
+  console.error('Unmasked GraphQL error\n%O', error.originalError ?? error)
+  const orig = error.originalError as
+    | (Error & { code?: string, detail?: string, hint?: string })
+    | null
+  return new GraphQLError(
+    orig?.message ?? error.message,
+    error.nodes,
+    error.source,
+    error.positions,
+    error.path,
+    error.originalError,
+    {
+      errcode: orig?.code,
+      detail: orig?.detail,
+      hint: orig?.hint
+    }
+  )
+}
 
 const preset: GraphileConfig.Preset = {
   plugins: [TagsFilePlugin, AssetDownloadUrlPlugin, TriggerWorkflowPlugin],
@@ -57,7 +99,8 @@ const preset: GraphileConfig.Preset = {
     graphqlPath: `${baseUrl}/api/graphql`,
     eventStreamPath: `${baseUrl}/api/graphql/stream`,
     graphiql: true,
-    watch: process.env.NODE_ENV !== 'production'
+    watch: process.env.NODE_ENV !== 'production',
+    maskError
   },
   grafast: {
     explain: process.env.NODE_ENV !== 'production',

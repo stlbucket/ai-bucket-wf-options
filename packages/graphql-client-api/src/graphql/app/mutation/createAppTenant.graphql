@@ -1,10 +1,16 @@
 mutation CreateTenant(
   $name: String!
   $email: String!
+  $firstName: String!
+  $lastName: String!
+  $phone: String
 ) {
   createTenant(input: {
     _name: $name
-    _email: $email    
+    _email: $email
+    _firstName: $firstName
+    _lastName: $lastName
+    _phone: $phone
   }) {
     tenant {
       ...Tenant

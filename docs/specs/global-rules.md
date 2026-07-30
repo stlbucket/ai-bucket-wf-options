@@ -162,7 +162,9 @@ Gate: `pnpm dep-audit` (hard-fail). Full pattern:
 
 ## Known Gaps (rules to add once resolved)
 
-- Error handling strategy for `<module>_api` permission failures surfaced through GraphQL
+- Client-side error taxonomy — the transport now surfaces real `<module>_api` messages + pg
+  fields (`graphql-api-pattern.md` → Error surfacing, 2026-07-30), but mapping
+  `errcode`/messages to typed UI errors (instead of string matching) has no convention yet
 - Pagination convention — no standard established yet
 - Form validation — no standard library or pattern chosen (reserved as UC13)
 - Optimistic UI updates — not yet used anywhere

@@ -1,7 +1,8 @@
 # site-admin/tenant/index — Tenant List UI
 
 ## Status
-Implemented (New Tenant modal built 2026-07-27; manual e2e verification pending)
+Implemented (New Tenant modal built 2026-07-27; admin-identity extension — first/last name +
+optional phone — built 2026-07-30, plan `0650`; manual e2e verification pending).
 
 ## Route
 `/tenant/site-admin/tenant` → `apps/tenant-app/app/pages/site-admin/tenant/index.vue`
@@ -35,7 +36,20 @@ Follows the house modal precedent `WorkspaceCreateModal.vue` + `admin/workspace/
 and navigation).
 
 **Component: `NewTenantModal.vue`** (`apps/tenant-app/app/components/`)
-Props: `creating?: boolean`. Emits: `create(name: string, email: string)`.
+Props: `creating?: boolean`. Emits: `create(payload: NewTenantPayload)` where
+
+```ts
+interface NewTenantPayload {
+  name: string
+  email: string
+  firstName: string
+  lastName: string
+  phone: string | null // E.164 (+1XXXXXXXXXX) or null
+}
+```
+
+(admin-identity extension 2026-07-30 — replaces the original two-positional-arg
+`create(name, email)` emit; the page is the only consumer).
 Exposes: `reset()` (closes + clears the form — parent calls it via template ref on success).
 
 Renders its own trigger `UButton` — label "New Tenant", icon `i-lucide-plus`, `size="sm"` —
@@ -47,10 +61,18 @@ itself is already `p:app-admin-super`.
 and license packs auto-subscribe) with `UFormField` fields:
 | Field | Component | Rules |
 |---|---|---|
-| Name | `UFormField required` + `UInput` | required, non-empty (trimmed) |
+| Name | `UFormField required` + `UInput` | required, non-empty (trimmed) — the tenant name |
+| Admin first name | `UFormField required` + `UInput` | required, non-empty (trimmed) |
+| Admin last name | `UFormField required` + `UInput` | required, non-empty (trimmed) |
 | Admin email | `UFormField required` + `UInput type="email"` | required, valid email — this address is invited as the tenant **admin** |
+| Admin phone | `UFormField` (not required) + `PhoneSegments` | optional — the shared segmented E.164 input from `packages/auth-layer/app/components/PhoneSegments.vue` (same pattern as the profile-page notification preferences + SMS-Test). v-models `+1XXXXXXXXXX`, `''` while incomplete → emit `null` |
 
-Submit disabled until both fields validate; `@keyup.enter` submits.
+First/last name and phone land on the admin's pre-created `app.profile` row (see
+`index.data.md` — the initialize_anchor precedent; existing profiles are only blank-filled).
+
+Submit disabled until name, first/last name, and email validate (a partially-entered phone —
+`PhoneSegments` still `''` — does **not** block submit but should be visually incomplete;
+treat `''` as "not provided"); `@keyup.enter` submits from the text inputs.
 
 The tenant type is **not** collected — always `'customer'` in this context (DB default; locked
 decision, see README). Identifier is not collected either (stays `null`).

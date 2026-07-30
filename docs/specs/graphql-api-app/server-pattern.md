@@ -6,7 +6,8 @@ metadata:
 ---
 
 ## Status
-Implemented — reverse-engineered from the existing codebase.
+Implemented — reverse-engineered from the existing codebase; the **Error surfacing (`maskError`)**
+section was implemented forward from spec 2026-07-30 and verified against the dev env.
 
 ---
 
@@ -53,9 +54,53 @@ grafserv: {
   graphqlPath: `${baseUrl}/api/graphql`,
   eventStreamPath: `${baseUrl}/api/graphql/stream`,
   graphiql: true,
-  watch: process.env.NODE_ENV !== 'production'    // hot-reload schema in dev
+  watch: process.env.NODE_ENV !== 'production',   // hot-reload schema in dev
+  maskError                                       // custom — see Error surfacing below
 }
 ```
+
+**Error surfacing (`maskError`)** — *Implemented 2026-07-30*
+
+grafserv's `defaultMaskError` (`grafserv/dist/options.js`) passes through pure `GraphQLError`s and
+`SafeError`s but replaces everything else — including every PL/pgSQL `raise exception` from
+`<module>_api` — with `An error occurred (logged with hash: '…', id: '…')`, wiping `extensions`.
+Client-facing consequence + rationale: `graphql-api-pattern.md` → Error Handling.
+
+The custom `maskError` in `graphile.config.ts` (module scope, referenced from the `grafserv` block):
+
+```ts
+import { isSafeError } from 'postgraphile/grafast'
+import { defaultMaskError } from 'postgraphile/grafserv'
+import { GraphQLError } from 'postgraphile/graphql'
+
+function maskError(error: GraphQLError): GraphQLError {
+  // Same pass-throughs as grafserv's defaultMaskError
+  if (!error.originalError && error instanceof GraphQLError) return error
+  if (error.originalError instanceof GraphQLError) return error
+  if (error.originalError != null && isSafeError(error.originalError)) {
+    return new GraphQLError(error.originalError.message, error.nodes, error.source,
+      error.positions, error.path, error.originalError, error.originalError.extensions ?? null)
+  }
+  // Escape hatch: restore stock masking without a code change
+  if (process.env.GRAPHQL_MASK_ERRORS === 'true') return defaultMaskError(error)
+  // Surface: keep the real message, expose pg error fields, never the stack
+  console.error('Unmasked GraphQL error\n%O', error.originalError ?? error)
+  const orig = error.originalError as (Error & { code?: string; detail?: string; hint?: string }) | null
+  return new GraphQLError(orig?.message ?? error.message, error.nodes, error.source,
+    error.positions, error.path, error.originalError, {
+      errcode: orig?.code,
+      detail: orig?.detail,
+      hint: orig?.hint
+    })
+}
+```
+
+- Import paths verified against the installed packages: `defaultMaskError` from
+  `postgraphile/grafserv`, `isSafeError` from `postgraphile/grafast`, `GraphQLError` from
+  `postgraphile/graphql` (strict pnpm — bare `grafserv`/`grafast` are not app dependencies).
+- `GRAPHQL_MASK_ERRORS` is optional (not `requiredEnv`); unset ⇒ errors surfaced. No compose/deploy
+  change needed for the current debugging posture.
+- Stack traces are never sent to the client in either branch.
 
 **Context function (`grafast.context`):**
 

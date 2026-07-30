@@ -104,7 +104,7 @@ GraphQL types generated from the PostGraphile schema; fragments in `src/graphql/
 | `UpdateUser` / `UpdateUserStatus` | `app/mutation/updateUser*.graphql` | `useUpdateUserMutation()` / `useUpdateUserStatusMutation()` | `useSiteAdminUser` |
 | `UpdateResidentStatus` | `app/mutation/updateResidentStatus.graphql` | `useUpdateResidentStatusMutation()` | `useSiteAdminUser` |
 | `BecomeSupport` | `app/mutation/becomeSupport.graphql` | `useBecomeSupportMutation()` | `useBecomeSupport()` |
-| `CreateTenant($name, $email)` | `app/mutation/createAppTenant.graphql` | `useCreateTenantMutation()` | `useCreateTenant()` (New Tenant modal — see `tenant/index.data.md`) |
+| `CreateTenant($name, $email, $firstName, $lastName, $phone)` | `app/mutation/createAppTenant.graphql` | `useCreateTenantMutation()` | `useCreateTenant()` (New Tenant modal — see `tenant/index.data.md`; `$firstName`/`$lastName`/`$phone` are the admin-identity extension built 2026-07-30, pre-creating the admin's `app.profile`) |
 
 `AppTenantById` is extended (`tenant/[id].data.md`) to return the tenant's residents (with
 licenses) and subscriptions (with pack + license counts) — read-only. The tenant detail page

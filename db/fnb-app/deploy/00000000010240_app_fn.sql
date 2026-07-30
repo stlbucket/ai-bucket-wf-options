@@ -663,7 +663,19 @@ CREATE OR REPLACE FUNCTION app_fn.decline_invitation(_resident_id uuid)
   ;
 
 ----------------------------------- create_tenant
-CREATE OR REPLACE FUNCTION app_api.create_tenant(_name citext, _identifier citext default null, _email citext default null, _type app.tenant_type default 'customer'::app.tenant_type)
+-- guard against the old 4-arg overloads on a live DB (PostGraphile would see two createTenant candidates)
+drop function if exists app_api.create_tenant(citext, citext, citext, app.tenant_type);
+drop function if exists app_fn.create_tenant(citext, citext, citext, app.tenant_type);
+
+CREATE OR REPLACE FUNCTION app_api.create_tenant(
+  _name citext
+  ,_identifier citext default null
+  ,_email citext default null
+  ,_type app.tenant_type default 'customer'::app.tenant_type
+  ,_first_name citext default null
+  ,_last_name citext default null
+  ,_phone citext default null
+  )
   RETURNS app.tenant
   LANGUAGE plpgsql
   VOLATILE
@@ -672,7 +684,7 @@ CREATE OR REPLACE FUNCTION app_api.create_tenant(_name citext, _identifier citex
   DECLARE
     _tenant app.tenant;
   BEGIN
-    _tenant := app_fn.create_tenant(_name, _identifier, _email, _type);
+    _tenant := app_fn.create_tenant(_name, _identifier, _email, _type, _first_name, _last_name, _phone);
     return _tenant;
   end;
   $function$
@@ -683,6 +695,9 @@ CREATE OR REPLACE FUNCTION app_fn.create_tenant(
   ,_identifier citext default null
   ,_email citext default null
   ,_type app.tenant_type default 'customer'::app.tenant_type
+  ,_first_name citext default null
+  ,_last_name citext default null
+  ,_phone citext default null
   )
   RETURNS app.tenant
   LANGUAGE plpgsql
@@ -691,6 +706,8 @@ CREATE OR REPLACE FUNCTION app_fn.create_tenant(
   AS $function$
   DECLARE
     _tenant app.tenant;
+    _profile app.profile;
+    _display_name citext;
   BEGIN
     -- check for an existing tenant by this name (root tenants only — workspace names are sibling-scoped)
     select * into _tenant from app.tenant where (name = _name and parent_tenant_id is null) or (_identifier is not null and identifier = _identifier);
@@ -712,6 +729,35 @@ CREATE OR REPLACE FUNCTION app_fn.create_tenant(
     perform res_fn.register_resource(_tenant.id, _tenant.id, 'app', 'tenant');
 
     perform app_fn.subscribe_tenant_to_license_pack(_tenant.id, key) from app.license_pack where auto_subscribe = true;
+
+    -- pre-create/blank-fill the admin's profile BEFORE invite_user so the resident is created
+    -- already linked, with display_name copied from the profile (initialize_anchor precedent;
+    -- provision_idp_user links by email at first login and leaves the row untouched)
+    if _email is not null then
+      select * into _profile from app.profile where email = _email;
+      if _profile.id is null then
+        -- display_name is UNIQUE: lowercase first initial + last name, then email local part,
+        -- then null — tenant creation must never fail on a display-name collision
+        _display_name := lower(left(_first_name, 1) || _last_name);
+        if _display_name is null or exists (select 1 from app.profile where display_name = _display_name) then
+          _display_name := lower(split_part(_email, '@', 1))::citext;
+        end if;
+        if exists (select 1 from app.profile where display_name = _display_name) then
+          _display_name := null;
+        end if;
+        insert into app.profile (email, display_name, first_name, last_name, phone)
+        values (_email, _display_name, _first_name, _last_name, _phone);
+      else
+        -- existing user: fill blanks only — never overwrite self-maintained data
+        update app.profile set
+          first_name = coalesce(first_name, _first_name)
+          ,last_name = coalesce(last_name, _last_name)
+          ,phone = coalesce(phone, _phone)
+          ,updated_at = current_timestamp
+        where id = _profile.id;
+      end if;
+    end if;
+
     perform app_fn.invite_user(_tenant.id, _email, 'admin');
 
     return _tenant;

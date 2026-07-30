@@ -1631,8 +1631,11 @@ export type CreatePollPayloadPollEdgeArgs = {
 /** All input for the `createTenant` mutation. */
 export type CreateTenantInput = {
   _email?: InputMaybe<Scalars['String']['input']>;
+  _firstName?: InputMaybe<Scalars['String']['input']>;
   _identifier?: InputMaybe<Scalars['String']['input']>;
+  _lastName?: InputMaybe<Scalars['String']['input']>;
   _name?: InputMaybe<Scalars['String']['input']>;
+  _phone?: InputMaybe<Scalars['String']['input']>;
   _type?: InputMaybe<TenantType>;
   /**
    * An arbitrary string value with no semantic meaning. Will be included in the
@@ -12231,6 +12234,9 @@ export type BlockResidentMutation = { __typename: 'Mutation', blockResident?: { 
 export type CreateTenantMutationVariables = Exact<{
   name: Scalars['String']['input'];
   email: Scalars['String']['input'];
+  firstName: Scalars['String']['input'];
+  lastName: Scalars['String']['input'];
+  phone?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
@@ -13747,8 +13753,10 @@ export function useBlockResidentMutation() {
   return Urql.useMutation<BlockResidentMutation, BlockResidentMutationVariables>(BlockResidentDocument);
 };
 export const CreateTenantDocument = gql`
-    mutation CreateTenant($name: String!, $email: String!) {
-  createTenant(input: {_name: $name, _email: $email}) {
+    mutation CreateTenant($name: String!, $email: String!, $firstName: String!, $lastName: String!, $phone: String) {
+  createTenant(
+    input: {_name: $name, _email: $email, _firstName: $firstName, _lastName: $lastName, _phone: $phone}
+  ) {
     tenant {
       ...Tenant
     }

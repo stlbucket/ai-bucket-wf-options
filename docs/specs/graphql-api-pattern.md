@@ -218,6 +218,28 @@ transport awareness. They consume `{ data | <computed lists>, fetching, error, <
 
 Composables surface `error` from the urql hook; pages render it (UC7 toast / UAlert).
 
+### Error surfacing (`maskError`) — Implemented 2026-07-30
+
+The table above assumes raised messages reach the client — today they mostly don't. grafserv's
+default `maskError` passes through only pure `GraphQLError`s and `SafeError`s; **everything else —
+including every PL/pgSQL `raise exception` from `<module>_api` (permission denials, validation
+failures) — is replaced with `An error occurred (logged with hash: '…', id: '…')`** and its
+`extensions` are wiped. The real message reaches only the server console. This already broke client
+error mapping once (the trigger-workflow plugin's `SafeError` workaround, 2026-07-27) and hides
+production bug detail.
+
+**Contract** (implemented in `apps/graphql-api-app/server/graphile.config.ts`, see
+`graphql-api-app/server-pattern.md` → Error surfacing):
+
+- Custom `grafserv.maskError` keeps the default's pass-throughs (pure `GraphQLError`, `SafeError`)
+  but for all other errors **preserves the original error message** as the GraphQL error message and
+  copies the pg error fields into `extensions` (`errcode`, `detail`, `hint`). Stack traces are never
+  sent to the client.
+- The full original error is still `console.error`-logged server-side.
+- Setting env `GRAPHQL_MASK_ERRORS=true` restores stock masking. It is deliberately **unset**
+  (errors surfaced) while production debugging is ongoing — accepted-risk decision recorded in
+  `graphql-api-app/README.md`.
+
 ---
 
 ## REST/H3 Carve-out #1 — authorized operations outside GraphQL (`withClaims`)

@@ -1,29 +1,58 @@
 <script setup lang="ts">
+// Emit contract for the New Tenant form (spec: site-admin/tenant/index.ui.md); the page feeds
+// it straight into useCreateTenant's CreateTenantInput
+export interface NewTenantPayload {
+  name: string
+  email: string
+  firstName: string
+  lastName: string
+  phone: string | null
+}
+
 const props = defineProps<{
   creating?: boolean
 }>()
 
 const emit = defineEmits<{
-  (e: 'create', name: string, email: string): void
+  (e: 'create', payload: NewTenantPayload): void
 }>()
 
 const open = ref(false)
 const form = reactive({
   name: '',
-  email: ''
+  firstName: '',
+  lastName: '',
+  email: '',
+  // E.164 from PhoneSegments ('' while incomplete — treated as "not provided")
+  phone: ''
 })
 
-const valid = computed(() => !!form.name.trim() && /^\S+@\S+\.\S+$/.test(form.email.trim()))
+const valid = computed(
+  () =>
+    !!form.name.trim()
+    && !!form.firstName.trim()
+    && !!form.lastName.trim()
+    && /^\S+@\S+\.\S+$/.test(form.email.trim())
+)
 
 function submit() {
   if (!valid.value) return
-  emit('create', form.name.trim(), form.email.trim())
+  emit('create', {
+    name: form.name.trim(),
+    email: form.email.trim(),
+    firstName: form.firstName.trim(),
+    lastName: form.lastName.trim(),
+    phone: form.phone || null
+  })
 }
 
 function reset() {
   open.value = false
   form.name = ''
+  form.firstName = ''
+  form.lastName = ''
   form.email = ''
+  form.phone = ''
 }
 
 defineExpose({ reset })
@@ -58,6 +87,30 @@ defineExpose({ reset })
         </UFormField>
 
         <UFormField
+          label="Admin first name"
+          required
+        >
+          <UInput
+            v-model="form.firstName"
+            placeholder="Jane"
+            class="w-full"
+            @keyup.enter="submit"
+          />
+        </UFormField>
+
+        <UFormField
+          label="Admin last name"
+          required
+        >
+          <UInput
+            v-model="form.lastName"
+            placeholder="Smith"
+            class="w-full"
+            @keyup.enter="submit"
+          />
+        </UFormField>
+
+        <UFormField
           label="Admin email"
           required
         >
@@ -68,6 +121,10 @@ defineExpose({ reset })
             class="w-full"
             @keyup.enter="submit"
           />
+        </UFormField>
+
+        <UFormField label="Admin phone">
+          <PhoneSegments v-model="form.phone" />
         </UFormField>
 
         <div class="flex gap-3">

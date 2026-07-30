@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Tenant } from '@function-bucket/fnb-types'
+import type { NewTenantPayload } from '~/components/NewTenantModal.vue'
 import { useSiteAdminTenants, useBecomeSupport, useCreateTenant } from '~/composables/useSiteAdminTenants'
 
 const { user, refreshClaims } = useAuth()
@@ -13,10 +14,10 @@ const { createTenant } = useCreateTenant()
 const creating = ref(false)
 const createModal = ref<{ reset: () => void } | null>(null)
 
-async function onCreate(name: string, email: string) {
+async function onCreate(payload: NewTenantPayload) {
   creating.value = true
   try {
-    const created = await createTenant(name, email)
+    const created = await createTenant(payload)
     createModal.value?.reset()
     toast.add({ title: `Tenant ${created.name} created`, color: 'success' })
     navigateTo(`/site-admin/tenant/${created.id}`)

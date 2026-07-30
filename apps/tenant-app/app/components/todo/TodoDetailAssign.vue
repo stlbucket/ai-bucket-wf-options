@@ -21,7 +21,9 @@ const emit = defineEmits<{
 }>()
 
 const residentOptions = computed<ResidentOption[]>(() =>
-  props.residents.map(r => ({ label: r.displayName, value: r.urn }))
+  props.residents
+    .map(r => ({ label: r.displayName, value: r.urn }))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }))
 )
 
 const open = ref(false)

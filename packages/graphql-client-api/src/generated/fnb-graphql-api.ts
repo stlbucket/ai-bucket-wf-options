@@ -12487,7 +12487,7 @@ export type ResidentByIdQuery = { __typename: 'Query', resident?: { __typename: 
 export type ResidentPickerQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ResidentPickerQuery = { __typename: 'Query', residentsList?: Array<{ __typename: 'Resident', id: any, urn: string, displayName?: string | null, tenantId: any, status: ResidentStatus }> | null };
+export type ResidentPickerQuery = { __typename: 'Query', residentsList?: Array<{ __typename: 'Resident', id: any, profileId?: any | null, urn: string, displayName?: string | null, tenantId: any, status: ResidentStatus }> | null };
 
 export type SearchProfilesQueryVariables = Exact<{
   searchTerm?: InputMaybe<Scalars['String']['input']>;
@@ -14386,6 +14386,7 @@ export const ResidentPickerDocument = gql`
     query ResidentPicker {
   residentsList {
     id
+    profileId
     urn
     displayName
     tenantId

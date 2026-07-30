@@ -19,6 +19,8 @@ export type SubscribedTopicSummary = {
 
 export type MsgResidentItem = {
   residentId: string
+  // null for invited residents that have no linked profile yet
+  profileId: string | null
   urn: string // the reference value modules store (subscriber.residentUrn, ...)
   displayName: string
   tenantId: string
@@ -90,10 +92,10 @@ export function useMsgResidents() {
   const residents = computed<MsgResidentItem[]>(() =>
     (data.value?.residentsList ?? [])
       .filter((r): r is NonNullable<typeof r> => r != null)
-      // msg participants stay active-only (the pre-TenantResidents behavior)
-      .filter((r) => r.status === 'ACTIVE')
+      .filter((r) => r.status === 'ACTIVE' || r.status === 'INACTIVE' || r.status === 'INVITED')
       .map((r) => ({
         residentId: String(r.id),
+        profileId: r.profileId != null ? String(r.profileId) : null,
         urn: String(r.urn),
         displayName: r.displayName ?? '',
         tenantId: String(r.tenantId),

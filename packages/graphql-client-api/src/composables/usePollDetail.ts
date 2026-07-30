@@ -171,8 +171,7 @@ export function usePollDetail(pollId: string, myUrn: MaybeRefOrGetter<string>) {
   const residents = computed(() =>
     (residentsData.value?.residentsList ?? [])
       .filter((r): r is NonNullable<typeof r> => r != null)
-      // poll share picker stays active-only (the pre-TenantResidents behavior)
-      .filter((r) => r.status === 'ACTIVE')
+      .filter((r) => r.status === 'ACTIVE' || r.status === 'INACTIVE' || r.status === 'INVITED')
       .map((r) => ({ residentId: r.id, urn: String(r.urn), displayName: r.displayName ?? '', tenantId: r.tenantId })),
   )
 

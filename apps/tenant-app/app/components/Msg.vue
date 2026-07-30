@@ -10,7 +10,7 @@ const props = defineProps<{
 const UCard = resolveComponent('UCard')
 
 const topicIdRef = computed(() => props.topicId)
-const { topic, messages, sending, sendMessage } = useMsgTopic(topicIdRef)
+const { topic, participantNames, messages, sending, sendMessage } = useMsgTopic(topicIdRef)
 
 const threadEl = useTemplateRef<HTMLDivElement>('thread')
 function scrollToBottom() {
@@ -113,6 +113,12 @@ const displayMessages = computed(() =>
     >
       <div class="text-base font-semibold">
         {{ topic?.name ?? 'Topic' }}
+      </div>
+      <div
+        v-if="participantNames.length"
+        class="text-[10px] text-dimmed"
+      >
+        {{ participantNames.join(', ') }}
       </div>
     </template>
 

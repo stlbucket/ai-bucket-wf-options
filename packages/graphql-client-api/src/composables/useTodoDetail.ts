@@ -68,7 +68,7 @@ export function useTodoDetail(todoId: string) {
     return chain
   })
 
-  // Assignable residents: invited or active residents of the todo's EXACT tenant.
+  // Assignable residents: active, inactive, or invited residents of the todo's EXACT tenant.
   // RLS on app.resident spans the workspace tree, so the rows must be pinned to the
   // todo's own tenant_id here — never the top-level tenant or a sibling workspace.
   const residents = computed(() => {
@@ -77,7 +77,7 @@ export function useTodoDetail(todoId: string) {
     return (residentsData.value?.residentsList ?? [])
       .filter((r): r is NonNullable<typeof r> => r != null)
       .filter((r) => String(r.tenantId) === String(todoTenantId))
-      .filter((r) => r.status === 'ACTIVE' || r.status === 'INVITED')
+      .filter((r) => r.status === 'ACTIVE' || r.status === 'INACTIVE' || r.status === 'INVITED')
       .map((r) => ({ residentId: r.id, urn: String(r.urn), displayName: r.displayName ?? '', tenantId: r.tenantId }))
   })
 

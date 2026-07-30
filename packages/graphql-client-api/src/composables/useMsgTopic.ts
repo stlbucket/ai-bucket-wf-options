@@ -37,6 +37,15 @@ export function useMsgTopic(topicId: MaybeRefOrGetter<string>) {
     }
   })
 
+  // Active subscribers' display names, for the participant strip on the detail view.
+  const participantNames = computed<string[]>(() =>
+    (data.value?.topic?.subscribers ?? [])
+      .filter((s): s is NonNullable<typeof s> => s != null)
+      .filter((s) => s.status === 'ACTIVE')
+      .map((s) => s.residentResource?.resident?.displayName ?? '')
+      .filter(Boolean),
+  )
+
   const sending = ref(false)
 
   // Ordered source of truth from the server query.
@@ -111,5 +120,5 @@ export function useMsgTopic(topicId: MaybeRefOrGetter<string>) {
     }
   }
 
-  return { topic, messages, fetching, error, sending, sendMessage }
+  return { topic, participantNames, messages, fetching, error, sending, sendMessage }
 }

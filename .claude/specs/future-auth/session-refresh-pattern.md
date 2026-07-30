@@ -78,6 +78,14 @@ alter table auth.session enable row level security;   -- R9; no policies — den
 | Absolute cap | **7 days** | invalid when `created_at < now() - interval '7 days'` |
 | Revocation | immediate | invalid when `revoked_at is not null` |
 
+**Per-method lifetimes (added by `00000000010295_otp_login`, spec `.claude/specs/otp-login/`):**
+the table gained an `auth_method text` column (`'zitadel'` default | `'otp'`;
+`app_fn.create_session(_profile_id, _auth_method default 'zitadel')`), and
+`claims_for_session` / `session_info` branch on it — **`otp` sessions use idle 1 hour +
+absolute cap 8 hours** (the values above are the `zitadel` branch). The temporary-session
+banner reads `app_fn.session_info(sid)` via auth-app's pre-claims
+`server/api/session-info.get.ts`.
+
 Validation order: check revoked/idle/absolute against the **existing** `last_seen_at`, then
 touch. A request 23h59m after the last touch is valid (and renews); 24h01m is dead. The cookie
 seal keeps `maxAge` = 7 days (matching the absolute cap) as defense-in-depth — the row is the

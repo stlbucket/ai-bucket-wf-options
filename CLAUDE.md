@@ -72,7 +72,10 @@ dropped). The auth-app callback maps the verified identity to `app.profile` (`id
 sets the **sealed** httpOnly `session` cookie, which stays the root of trust → `ProfileClaims` →
 `pgSettings` → RLS. Claims are fetched from GraphQL and mirrored to **localStorage** client-side
 (the full JSON overflowed `Set-Cookie` → proxy 502). `db-access`'s 2-arg `withClaims(claims, fn)`
-is the outside-GraphQL carve-out. Details: security section of `.claude/specs/graphql-api-pattern.md`.
+is the outside-GraphQL carve-out. A second, link-driven way in: **OTP quick-login** deep links
+(`/auth/go/<id>`, tenant-scoped, self-identify by contact) mint the same `auth.session` rows with
+`auth_method='otp'` (1h idle / 8h cap — spec `.claude/specs/otp-login/`). Details: security
+section of `.claude/specs/graphql-api-pattern.md`.
 
 ## Tech Stack
 

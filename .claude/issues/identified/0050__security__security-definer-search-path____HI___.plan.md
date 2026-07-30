@@ -41,6 +41,21 @@ INVOKER and need no pinning. Note: the rest of the notify module is otherwise a 
 correct grant posture — `notify_fn` is granted only to `n8n_worker` + the two prefs functions to
 `authenticated`, never to `anon`, so it does not add to `0020__security__fn-schema-grant-bypass`.)
 
+### Scope update — 2026-07-30 recurring RLS sweep (0030 leg)
+
+- **File relocation:** the `app_fn` definers were consolidated into the new
+  `db/fnb-app/deploy/00000000010242_app_fn_definers.sql` (workspace/subtree/participants work,
+  landed since 2026-07-23). It now holds **21 SECURITY DEFINER functions** — none pin
+  `search_path`: `configure_user_metadata`, `assume_residency` (api+fn), `decline_residency`
+  (api+fn), `update_profile` (api+fn), `invite_user`, `demo_profile_residencies` (api+fn),
+  `get_ab_listings`, `tenant_tree_root`, `tenant_tree_ids`, `tenant_spine_ids`,
+  `workspace_resident_pool` (api+fn), `remove_profile_from_tree_workspaces`,
+  `set_workspace_membership` (api+fn), `tenant_subtree_residents` (api+fn),
+  `subtree_resident_detail` (api+fn). Fold this file into the fnb-app leg of the fix.
+- **Historical note:** `auth.login_user` (the worked example above) is deployed then **dropped**
+  at the ZITADEL cutover (`db/fnb-app/deploy/00000000010280_drop_auth_user.sql:59`) — it no
+  longer exists at runtime. The class and the fix remain valid for every other definer.
+
 ## Implication
 
 A SECURITY DEFINER function without a fixed search_path resolves unqualified identifiers using the

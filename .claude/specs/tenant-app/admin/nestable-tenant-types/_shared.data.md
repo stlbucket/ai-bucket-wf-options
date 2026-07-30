@@ -1,7 +1,8 @@
 # admin/nestable-tenant-types — Shared Data, Schema & Permissions
 
 ## Status
-Draft — build-ready (no `[FILL IN]`). Authoritative delta for the `client`/`organization` node
+Implemented (2026-07-23; status trued up 2026-07-30 by the recurring spec/code reconciliation —
+the module README already recorded Implemented). Authoritative delta for the `client`/`organization` node
 types, the spine pool scope, and the `p:app-admin` type-editing path. Existing tenant/resident
 shapes live in `../_shared.data.md` and `../workspace/_shared.data.md` — not duplicated here.
 

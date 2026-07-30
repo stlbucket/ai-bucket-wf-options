@@ -39,7 +39,7 @@ user-invoked workflow that does its own recon (producing a `<dataset>-expert` sp
 | `sqitch-expert` | any sqitch mechanics: plan entries, dependencies (incl. cross-project `project:change`), deploy/revert/verify, tags, rework, numbering ranges |
 | `new-db-package` | creating a brand-new `db/<package>` (scaffolds files + registers in `DEPLOY_PACKAGES`) |
 | `true-up-sqitch-package` | a package has deploy files missing revert/verify counterparts or plan entries out of sync |
-| `fnb-create-app` | scaffolding a brand-new `apps/<slug>-app` (package.json, nuxt.config, compose service, nginx location) |
+| `fnb-create-app` | scaffolding a brand-new `apps/<slug>-app` (package.json, nuxt.config, compose service, Caddy handle block) |
 | `function-bucket-legacy-ui-converter` | migrating UI from the legacy Nuxt 3 function-bucket project |
 
 ## Specialists — technology references

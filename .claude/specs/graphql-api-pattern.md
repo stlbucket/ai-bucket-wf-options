@@ -265,6 +265,18 @@ permanent server-side "root of trust". **Authentication itself is ZITADEL's** (O
 **Never migrate these to GraphQL.** `to_jsonb(...)` returns snake_case; `camelCaseKeys` in
 db-access recursively camelCases nested keys (the retired Kysely `CamelCasePlugin` behavior).
 
+**OTP quick-login** (`.claude/specs/otp-login/`) adds a second way to *mint* a session in the
+same posture — link-driven deep links (`/auth/go/<id>`): `getDeepLink(id)` →
+`app_fn.get_deep_link`, `requestOtpLogin(deepLinkId, identifier)` → `app_fn.request_otp_login`
+(enumeration-safe contact match within the link's tenant), and `verifyOtpLogin(deepLinkId,
+code)` → `app_fn.verify_otp_login` (mints the session row via
+`app_fn.create_session(profile_id, 'otp')`). `createSession` carries an optional second arg
+`authMethod` (`'zitadel'` default | `'otp'`); `claims_for_session` branches lifetimes per
+`auth.session.auth_method` — OTP sessions run sliding **1h idle + 8h absolute** (vs 24h/7d).
+Consumed only by auth-app's pre-claims Nitro routes `server/api/otp/{link.get,request.post,
+verify.post}.ts` (+ `session-info.get.ts` → `app_fn.session_info` for the temporary-session
+banner). Same rule: never GraphQL-ify them.
+
 **First-run setup** (`.claude/specs/first-run-setup/`) adds two more pre-claims functions in the
 same posture — they bootstrap a virgin env (no anchor tenant, no profiles) from auth-app's
 `/auth/setup` before any session exists: `anchorExists()` → `app_fn.anchor_exists` (the gate) and

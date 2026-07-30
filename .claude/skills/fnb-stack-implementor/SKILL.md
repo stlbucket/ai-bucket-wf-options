@@ -573,7 +573,7 @@ export default defineConfig({ test: { passWithNoTests: true } })
 | Apply claims to request | `packages/auth-layer/server/utils/applyEventClaims.ts` |
 | Auth middleware (tenant apps) | `packages/tenant-layer/server/middleware/auth.ts` |
 | `withClaims` (2-arg) | `packages/db-access/src/with-claims.ts` |
-| Pre-claims fns | `packages/db-access/src/mutations/{provision-idp-user,create-session,claims-for-session,revoke-session,current-profile-claims,profile-claims-for-user}.ts` |
+| Pre-claims fns | `packages/db-access/src/mutations/{provision-idp-user,create-session,claims-for-session,revoke-session,current-profile-claims,profile-claims-for-user,initialize-anchor,request-otp-login,verify-otp-login}.ts` + `src/queries/{anchor-exists,get-deep-link,session-info}.ts` |
 | Session table + fns (0185/0180) | `db/fnb-app/deploy/00000000010290_session.sql` (`auth.session`, `app_fn.claims_for_session`, `app_api.revoke_my_sessions`) |
 | Shared types (fnb-types) | `packages/fnb-types/src/*.ts` (barrel `src/index.ts`) |
 | ProfileClaims type | `packages/fnb-types/src/profile-claims.ts` |
@@ -615,9 +615,12 @@ export default defineConfig({ test: { passWithNoTests: true } })
   the retired 3-arg `withClaims(db, claims, trx => …)`.
 
 - **Never GraphQL-ify the pre-claims functions.** `provisionIdpUser` / `createSession` /
-  `claimsForSession` / `revokeSession` / `profileClaimsForUser` / `currentProfileClaims` run
-  before claims exist and stay raw `pg` in `db-access`. This is the most likely wrong "cleanup" —
-  do not do it. (`loginUser` is retired — ZITADEL owns authentication.)
+  `claimsForSession` / `revokeSession` / `profileClaimsForUser` / `currentProfileClaims` — plus
+  the first-run pair (`anchorExists` / `initializeAnchor`) and the OTP quick-login set
+  (`getDeepLink` / `requestOtpLogin` / `verifyOtpLogin` / `sessionInfo` — spec
+  `.claude/specs/otp-login/`) — run before claims exist and stay raw `pg` in `db-access`. This
+  is the most likely wrong "cleanup" — do not do it. (`loginUser` is retired — ZITADEL owns
+  authentication. `createSession` takes an optional `authMethod` — `'zitadel'` default | `'otp'`.)
 
 - **`to_jsonb` yields snake_case**; `db-access`'s `camelCaseKeys` recursively camelCases nested keys
   (the retired Kysely `CamelCasePlugin` behavior — memory `project_camelcase_plugin_nested_keys`).

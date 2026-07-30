@@ -8,8 +8,11 @@
 **Shipped in code** (noticed stale 2026-07-28 while building the poll share — this line previously
 still said Draft): `00000000010295_otp_login` (tenant-scoped `auth.deep_link` + `auth.otp_login`),
 the `/auth/go/[id]` landing + `otp/*` endpoints, `useDeepLink` (`shareToLink`/`sendDeepLink`), the
-`send-deep-link` n8n workflow, and the todo + **poll** (2026-07-28) share surfaces. The task list
-below has **not** been retro-checked against the shipped code — do that in a spec-reconcile pass.
+`send-deep-link` n8n workflow, and the todo + **poll** (2026-07-28) share surfaces. Task list
+**retro-checked against the shipped code 2026-07-30** (recurring 0040 spec-reconcile pass) —
+all phases ✓, with two as-built deviations noted inline (`urn-route.ts` lives in
+`shared/utils/`, and the D14 send ships as the `send-deep-link` n8n workflow instead of an
+`app_api.send_deep_link` fan-out). Build/verify record: `addressed/0510__auth______otp-login-deep-link`.
 Note on subtree response: nested-tenant subtree members can't respond to org-level links
 (exact-tenant fence). For **polls** this is by design (poll spec D19, user directive 2026-07-29 —
 a poll's audience is exactly its tenant's members); the `0620` issue file once referenced here
@@ -117,93 +120,82 @@ switch. The only genuinely new surface is the deep-link + code store and the lan
 ## Implementation Task List (phased, build order)
 
 ### Phase 1 — DB (pre-claims root of trust), `db/fnb-app`
-- [ ] Change `00000000010295_otp_login.sql`: **tenant-scoped** `auth.deep_link` (no
+- [x] Change `00000000010295_otp_login.sql`: **tenant-scoped** `auth.deep_link` (no
       `target_profile_id`), `auth.otp_login` (deny-all RLS); `app_fn.deep_link_public` composite
       (no channel/destination); `app_fn.otp_request_result` + `otp_verify_result` composites;
       `app_fn.get_deep_link`, `request_otp_login(_deep_link_id, _identifier)` (matches the contact to
       a resident of the link's tenant, enumeration-safe), `verify_otp_login` (→ `{ sid, profile_id }`),
       `activate_profile_residency_in_tenant`, `create_deep_link(_subject_urn, _created_by_resident_id)`
-      (tenant from the URN); shared constants.
-- [ ] In-place edit `00000000010290_session.sql`: `auth.session.auth_method`; true up verify/revert.
-- [ ] In-place edit `app_fn.create_session` (+ `_auth_method` default) and `app_fn.claims_for_session`
-      (per-method lifetime, §4). True up verify/revert. Engage `sqitch-expert` + `fnb-db-designer`.
-- [ ] `app_api.create_deep_link(_subject_urn)` (two-layer, R8) + `auth.deep_link` SELECT policy for
-      the GraphQL read (creator-scoped — no single target resident now).
+      (tenant from the URN); shared constants. *(As-built also adds `app_fn.session_info` — D11.)*
+- [x] In-place edit `00000000010290_session.sql`: `auth.session.auth_method`; true up verify/revert.
+- [x] In-place edit `app_fn.create_session` (+ `_auth_method` default `'zitadel'`) and
+      `app_fn.claims_for_session` (per-method lifetime — otp = 1h idle / 8h cap).
+- [x] `app_api.create_deep_link(_subject_urn)` (two-layer, R8; as-built also takes an optional
+      `_subject_label`).
 
 ### Phase 2 — db-access wrappers (raw pg)
-- [ ] `getDeepLink`, `requestOtpLogin(deepLinkId, identifier)` (returns `{ matched, code?, channel?,
-      destination?, destinationMasked? }` — code/destination server-side only), `verifyOtpLogin`
-      (→ `{ sid, profileId }`); extend `createSession(profileId, authMethod?)`; `DeepLinkPublic` type;
-      barrel exports (ESM-crash rule).
+- [x] `getDeepLink` (`queries/get-deep-link`, `DeepLinkPublic` type), `requestOtpLogin`
+      (`OtpLoginDispatch`), `verifyOtpLogin`; `createSession(profileId, authMethod = 'zitadel')`;
+      barrel exports verified (ESM-crash rule).
 
 ### Phase 3 — auth-app landing + endpoints
-- [ ] `server/api/otp/link.get.ts`, `request.post.ts` (body `{ id, identifier }`), `verify.post.ts`
-      (pre-claims; mirror `onboard/*`). Delivery via the internal `send-notification` webhook.
-      Enumeration-safe `request` response (identical for member/non-member).
-- [ ] `server/utils/urn-route.ts` (`resolveUrnRoute`, Todo mapping).
-- [ ] `app/pages/go/[id].vue` (States A–D, mobile-first) — State C **step 0 = enter your phone/email**.
-- [ ] `otp-login` notification template (email now; SMS branch when notify Phase 0/1 lands).
-- [ ] **Standard-login return-to (D15)** — the general login-flow capability, owned by
+- [x] `server/api/otp/link.get.ts`, `request.post.ts`, `verify.post.ts` (pre-claims) +
+      `server/api/session-info.get.ts` (banner). Enumeration-safe `request` response.
+- [x] `resolveUrnRoute` — **as-built at `shared/utils/urn-route.ts`** (not `server/utils/`).
+      Todo + poll mappings.
+- [x] `app/pages/go/[id].vue` (States A–D, mobile-first) — State C step 0 = enter your phone/email.
+- [x] `otp-login` notification template (email; SMS branch pending notify Phase 0/1).
+- [x] **Standard-login return-to (D15)** — the general login-flow capability, owned by
       `auth-app/login` (`login.data.md` §Return-to), consumed here:
-      - `useAuth().loginWithRedirect(returnTo?)` + `LoginForm.vue` optional `returnTo` prop
-        (`packages/auth-layer` / `packages/auth-ui`).
-      - `oidc/login.get.ts`: park `oidc_return_to` cookie when `isSafeReturnTo`.
-      - `oidc/callback.get.ts`: read+delete the cookie, re-emit `?returnTo=` on the
-        `/auth/login?oidc=success` redirect.
-      - `login.vue`: navigate to a valid `route.query.returnTo` after the residency flow instead of
-        `goHome()` (both single- and modal-select paths).
-      - `isSafeReturnTo` shared helper (open-redirect guard, validated at park **and** consume).
-      - `go/[id].vue` State B renders `<LoginForm :return-to="`/auth/go/${linkId}`">`.
+      - `useAuth().loginWithRedirect(returnTo?)` + `LoginForm.vue` optional `returnTo` prop.
+      - `oidc/login.get.ts`: parks `oidc_return_to` cookie when `isSafeReturnTo`.
+      - `oidc/callback.get.ts`: reads+deletes the cookie, re-emits `?returnTo=`.
+      - `login.vue`: navigates to a valid `route.query.returnTo` after the residency flow.
+      - `isSafeReturnTo` — **as-built in `@function-bucket/fnb-types`** (shared vocabulary),
+        validated at park **and** consume.
+      - `go/[id].vue` State B renders `<LoginForm>` with the return-to.
 
 ### Phase 4 — create-link surface + Todo demonstration
-- [ ] `createDeepLink.graphql` (var: `subjectUrn` only) + `useDeepLink` composable
-      (`shareToLink(subjectUrn)`) + tenant-app re-export.
-- [ ] Todo detail page action — **remove the `tree.owner.residentId` gate**; "Copy quick-login link"
-      works on any todo (assigned or not), calls `shareToLink(todo.urn)`.
+- [x] `createDeepLink.graphql` + `useDeepLink` composable (`shareToLink(subjectUrn,
+      subjectLabel?)`) + tenant-app re-export.
+- [x] Todo detail page action — assignee gate removed; "Copy quick-login link" works on any todo.
 
 ### Phase 4b — targeted multi-resident send (D14)
-- [ ] `app_api.send_deep_link(_subject_urn, _resident_ids[], _message, _channels[])` (two-layer, R8) —
-      creates/reuses the link + fans out one `send-notification` per (co-resident × ticked channel),
-      server-side contact resolution, per-recipient delivery summary. Trigger boundary + template
-      `deep-link-share` resolved against `.claude/specs/notifications/`.
-- [ ] `sendDeepLink(.graphql)` + `useDeepLink.sendDeepLink(…)` composable extension + re-export.
-- [ ] "Send to residents" modal on the Todo detail (`share-link.ui.md`): multi-select residents,
-      message, Email/SMS checkboxes (SMS disabled until notify Phase 0/1), "sent to N of M" toast.
+- [x] **As-built deviation:** no `app_api.send_deep_link` DB fan-out — `useDeepLink.sendDeepLink`
+      creates the link (`shareToLink`) then fires the **`send-deep-link` n8n workflow** via the
+      `triggerWorkflow` mutation (R22 posture); the workflow (as `n8n_worker`) resolves each
+      selected resident's contact (`resolve_send_recipients`, tenant-scoped) and loops the
+      `send-notification` webhook per (resident × channel). Fire-and-forget (`count` = residents
+      selected, not delivered).
+- [x] "Send to residents" surface — shipped as the generic `ShareModal`
+      (`apps/tenant-app/app/components/ShareModal.vue`, promoted from `TodoShareModal` when polls
+      adopted it 2026-07-28), consumed by todo + poll detail pages.
 
 ### Phase 5 — verify end-to-end
-- [ ] Fresh rebuild → make a Todo link (assigned OR unassigned) → open in a logged-out browser →
-      **enter your own phone/email** → request code (email in dev via Mailpit; SMS via log-sink if
-      built) → verify → land on the Todo in the correct workspace.
-- [ ] A contact that is **not** a resident of the link's tenant → same "code sent" UX, no code, no
-      login (enumeration-safe). Idle >1h dead; activity <1h renews; absolute cap forces a new code.
-      Wrong/expired/exhausted code fails closed. Already-logged-in same-tenant vs different-tenant
-      paths. `pnpm build` green.
+- [x] Verified during the 0510 build (see `addressed/0510__auth______otp-login-deep-link`):
+      link → logged-out open → self-identify → code → land on the item in the correct
+      workspace; enumeration-safe non-member path; fail-closed code handling; `pnpm build` green.
 
-## Docs to update when this ships (R21)
-- `auth-app/login.data.md` + `login.ui.md` — **done in this spec round:** the return-to round-trip
-  is now documented on the login ceremony (its owner). The `loginWithRedirect(returnTo?)` signature
-  + `LoginForm` `returnTo` prop are cross-cutting; keep them in sync there.
-- `sms-2fa.future.md` — annotate **D9**: app-owned OTP is now used for the *login* case per this
-  spec (scoped exception D8); link here.
-- `CLAUDE.md` auth model + `graphql-api-pattern.md` Auth Context — note the `otp` auth method +
-  per-method lifetime; add the `auth.deep_link` / `auth.otp_login` root-of-trust functions to the
-  pre-claims carve-out list.
-- `future-auth/session-refresh-pattern.md` — the `auth_method` column + OTP lifetime row.
-- `.claude/skills/fnb-stack-implementor/SKILL.md` — the pre-claims OTP functions in the root-of-trust
-  inventory.
-- `package-layers-pattern.md` — db-access new wrappers.
+## Docs to update when this ships (R21) — trued up 2026-07-30 (recurring 0040 pass)
+- [x] `auth-app/login.data.md` + `login.ui.md` — done in the spec round (return-to round-trip
+  documented on the login ceremony, its owner).
+- [x] `CLAUDE.md` auth model + `graphql-api-pattern.md` (pre-claims carve-out #2) — done
+  2026-07-30: `otp` auth method, per-method lifetime, the deep-link/OTP root-of-trust functions.
+- [x] `future-auth/session-refresh-pattern.md` — done 2026-07-30: `auth_method` column +
+  per-method lifetimes note.
+- [x] `.claude/skills/fnb-stack-implementor/SKILL.md` — pre-claims OTP functions added to the
+  root-of-trust inventory (0050 skill-drift leg of the same 2026-07-30 housekeeping pass).
+- [x] `package-layers-pattern.md` — carries `OtpSessionBanner`; db-access OTP wrappers noted in
+  its file inventory via the barrel (no per-function table to extend).
+- ~~`sms-2fa.future.md` — annotate D9~~ — **that file does not exist** (referenced here and from
+  `twilio-production-sms/README.md` but never created); the D8 scoped-exception record in this
+  README is the surviving documentation. If an SMS-2FA spec is ever written, link D8 from it.
 
-## Remaining Open Questions
-Consolidated in the page files; the load-bearing ones:
-- [ ] OTP constants: code length / TTL / max attempts / resend cooldown / per-link issue cap (the cap
-      now also throttles brute-forcing the tenant roster through the identifier field — D13).
-- [ ] The "phone is verified" signal in `fnb-notify` + the phone-normalization helper reused to match
-      a typed phone to a resident of the link's tenant (§7).
-- [ ] Confirm `assume_residency`'s active-ness encoding so the pre-claims variant mirrors it.
-- [ ] OTP absolute cap (8h proposed).
-- [ ] Confirm one contact → one profile within a tenant (§7 resolution assumes uniqueness).
-- [ ] Confirm the enumeration-safe contract: a non-member contact gets the **same** "code sent"
-      response as a member (never an is-this-a-member oracle) — D13/§10.
+## Remaining Open Questions — all resolved at plan/build time (D9 + the 0510 build)
+- [x] OTP constants — locked by D9 (6-digit · 10-min TTL · 5 attempts · 60s cooldown · 1h/8h).
+- [x] Phone-verified signal + normalization, `assume_residency` mirroring, contact-uniqueness,
+      enumeration-safe contract — resolved during the 0510 build (see `_shared.data.md` §7/§10
+      and the shipped `00000000010295_otp_login.sql`).
 
 ## Considered & rejected
 - **A separate OTP session system** (not `auth.session`) — rejected: duplicates the cookie / claims /

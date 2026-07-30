@@ -6,7 +6,7 @@ import { PG_URL, REPO_ROOT } from './_env'
 
 // Captures the entire live DB structure as psql-native text files (one file per object) into a
 // TEMP capture tree, then emits the db-structure.data.js rollup consumed by the hand-written
-// index.html tree browser. Contract: .claude/specs/db-introspect/db-structure.data.md.
+// index.html tree browser. Contract: docs/specs/db-introspect/db-structure.data.md.
 // Only index.html (hand-written) + db-structure.data.js live in docs/db-structure/ — the
 // per-object files are a build intermediate, never committed (user decision 2026-07-24).
 // Regeneration wipes everything under docs/db-structure/ EXCEPT index.html.

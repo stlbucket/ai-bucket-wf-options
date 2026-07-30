@@ -1,4 +1,4 @@
--- App-package retrofit (.claude/specs/urn-registry/_shared.data.md §4.6).
+-- App-package retrofit (docs/specs/urn-registry/_shared.data.md §4.6).
 -- The three fnb-app registered tables get their urn DDL HERE (not in fnb-app) because
 -- fnb-app deploys before res_fn.build_urn exists. Register calls live in the app_fn bodies
 -- (plpgsql resolves at execution — seed time — not definition time).

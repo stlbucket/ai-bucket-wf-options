@@ -2,7 +2,7 @@ import { execSync } from 'child_process'
 import net from 'node:net'
 import { requiredEnv } from './_env'
 
-// first-run-setup (.claude/specs/first-run-setup/infrastructure.md): the EMPTY-env entry point.
+// first-run-setup (docs/specs/first-run-setup/infrastructure.md): the EMPTY-env entry point.
 // Identical to env-build.ts except it sets SEED_DATA=empty in the compose child env, so the stack
 // comes up with the schema deployed but NO seed data beyond the app-install path (no anchor
 // tenant, no profiles, no ZITADEL user roster). First open → /auth/setup bootstraps the anchor.

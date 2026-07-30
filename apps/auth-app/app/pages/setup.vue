@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// First-run setup (spec: .claude/specs/first-run-setup/setup.ui.md). On a VIRGIN env (no anchor
+// First-run setup (spec: docs/specs/first-run-setup/setup.ui.md). On a VIRGIN env (no anchor
 // tenant) the first visitor names the first tenant + site admin here; a provisioned env never
 // shows this page (mount gate redirects to /login). Submitting mints the anchor tenant + admin
 // profile (db-access raw pg) AND the matching ZITADEL user, then auto-redirects into OIDC login.

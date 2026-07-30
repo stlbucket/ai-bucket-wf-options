@@ -1,5 +1,5 @@
 // Checkers per-seat view shapes — mirrors the player_views_after seat blobs computed by
-// packages/game-engines (.claude/specs/game-server/checkers/_shared.data.md §player view).
+// packages/game-engines (docs/specs/game-server/checkers/_shared.data.md §player view).
 // Checkers hides no information, so a seat's board is the FULL board; the only per-seat
 // differences are `yourSeat` and whose `legalMoves` are populated. Shared vocabulary across
 // the engine package, the workflow contract, and the UI.

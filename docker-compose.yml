@@ -26,7 +26,7 @@ services:
     # Dev image = PostGIS + pgTAP (docker/db.Dockerfile). pgTAP's OS package is baked in so
     # scripts/db-test.ts can `CREATE EXTENSION pgtap` on demand; prod uses managed Postgres and
     # never builds this. Rebuild after first adding this: `docker compose build db` (spec
-    # .claude/specs/db-testing/harness.md §1).
+    # docs/specs/db-testing/harness.md §1).
     build:
       context: .
       dockerfile: docker/db.Dockerfile
@@ -214,7 +214,7 @@ services:
     restart: "no"
 
   # ZITADEL — identity provider (OIDC login ceremony ONLY; the httpOnly `session`
-  # cookie stays the root of trust). Spec: .claude/specs/future-auth/zitadel-login-pattern.md.
+  # cookie stays the root of trust). Spec: docs/specs/future-auth/zitadel-login-pattern.md.
   # Own host port like minio — the issuer must own its origin, so it cannot live
   # under the Caddy path prefix. No Caddy change in dev.
   zitadel:
@@ -319,7 +319,7 @@ services:
     volumes:
       - zitadel-seed:/zitadel-seed
       - ./docker/zitadel/seed.mjs:/seed.mjs:ro
-      - ./.claude/design-implementations/design_handoff_fn_bucket_brand/assets:/brand-assets:ro
+      - ./docker/brand-assets:/brand-assets:ro
     command: ["node", "/seed.mjs"]
     restart: "no"
 
@@ -633,7 +633,7 @@ services:
     working_dir: /app
     command: ["sh", "-c", "pnpm --filter @function-bucket/fnb-storage-app exec nuxt dev --host 0.0.0.0 --port 3000"]
 
-  # ─── n8n workflow engine (spec: .claude/specs/agentic-decommission/) ───
+  # ─── n8n workflow engine (spec: docs/specs/agentic-decommission/) ───
   # The sole workflow engine (R22). State lives in the separate n8n_engine database in the
   # shared postgis cluster; editor + webhooks on their own host port (ZITADEL own-port
   # precedent — no Caddy route). Custom image (docker/n8n/Dockerfile) adds ffmpeg + clamdscan

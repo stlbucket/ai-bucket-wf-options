@@ -7,7 +7,7 @@ import { requestOtpLogin } from '@function-bucket/fnb-db-access'
 // webhook (the onboard/request-password.post.ts shared-secret pattern). ENUMERATION-SAFE: a contact
 // that isn't a tenant resident (dispatch.matched === false) gets the exact same `{ ok: true }`
 // response — nothing is sent and the browser cannot tell member from non-member. Spec:
-// .claude/specs/otp-login/ (go.data.md).
+// docs/specs/otp-login/ (go.data.md).
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ id?: string; identifier?: string }>(event)
   const id = body?.id?.trim()

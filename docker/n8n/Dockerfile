@@ -1,4 +1,4 @@
-# Custom n8n image for the fnb workflow engine (spec: .claude/specs/agentic-decommission/
+# Custom n8n image for the fnb workflow engine (spec: docs/specs/agentic-decommission/
 # infrastructure.md). The asset-scan workflow's Execute Command nodes need binaries the stock
 # image lacks: clamdscan (--stream to the clamav container) and ffmpeg (256px webp thumbnails).
 #

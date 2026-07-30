@@ -1,5 +1,5 @@
 // Battleship per-seat redacted view shapes — mirrors the player_views_after seat blobs
-// computed by packages/game-engines (.claude/specs/game-server/_shared.data.md
+// computed by packages/game-engines (docs/specs/game-server/_shared.data.md
 // §player_views_after). Shared vocabulary across the engine package, the workflow
 // contract, and the UI.
 

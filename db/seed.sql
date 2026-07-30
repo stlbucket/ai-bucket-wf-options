@@ -107,7 +107,7 @@ begin;
 -- Create one nested node under _parent, randomly typed workspace/client/organization and named
 -- WS/CLI/ORG l-seq to match. create_workspace does the residency + license pack + URN registration
 -- (it always inserts type='workspace'); we then relabel — the three nestable types are behaviorally
--- interchangeable (see .claude/specs/tenant-app/admin/nestable-tenant-types/).
+-- interchangeable (see docs/specs/tenant-app/admin/nestable-tenant-types/).
 create function pg_temp.mk_nested(_parent uuid, _l int, _seq int, _email citext)
   returns app.tenant
   language plpgsql

@@ -94,7 +94,7 @@ NOTIFY_SMTP_PASSWORD=${RESEND_API_KEY}
 NOTIFY_SMTP_SECURE=true
 NOTIFY_SMTP_DISABLE_STARTTLS=false
 
-# ─── SMS (spec .claude/specs/twilio-production-sms/ — PARKED 2026-07-27) ──────
+# ─── SMS (spec docs/specs/twilio-production-sms/ — PARKED 2026-07-27) ──────
 # The Twilio cutover is built + dev-verified but parked: prod stays on the
 # log-sink (records rows, dispatches nothing) so deploys need no Twilio secrets.
 # To un-park (plan 0580 Phase 3): set NOTIFY_SMS_PROVIDER=twilio and swap the

@@ -1,4 +1,4 @@
-// Game server shared vocabulary (.claude/specs/game-server/_shared.data.md §fnb-types).
+// Game server shared vocabulary (docs/specs/game-server/_shared.data.md §fnb-types).
 // Enums mirror GraphQL verbatim (UPPERCASE) — except game_type, which is NOT an enum:
 // ids are lowercase citext registry keys that pass through as strings.
 

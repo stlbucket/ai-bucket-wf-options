@@ -1,6 +1,6 @@
 -- msg_fn.upsert_topic behaviour: creates a topic (generated urn + res.resource registration),
 -- creates the initial message, upserts by identifier (no duplicate), and rejects a bad resident.
--- Spec: .claude/specs/db-testing/fn-behaviour-tests.md. Run as owner (resident_id passed explicitly).
+-- Spec: docs/specs/db-testing/fn-behaviour-tests.md. Run as owner (resident_id passed explicitly).
 \set t_a   '11111111-1111-1111-1111-111111111111'
 \set res_a '55555555-5555-5555-5555-555555555555'
 

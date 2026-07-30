@@ -1,6 +1,6 @@
 // POST /auth/api/setup/initialize
 //
-// First-run setup (spec: .claude/specs/first-run-setup/setup.data.md). Unauthenticated,
+// First-run setup (spec: docs/specs/first-run-setup/setup.data.md). Unauthenticated,
 // pre-claims (R5 carve-out) — no session exists yet, so every DB touch is db-access raw pg and
 // ZITADEL is called with the seeder PAT. Guarded in EVERY environment by a mandatory SETUP_TOKEN.
 //

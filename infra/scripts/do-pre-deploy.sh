@@ -3,7 +3,7 @@ set -euo pipefail
 
 # do-pre-deploy — stamp the next release so `git push` sets off the tag auto-deploy pipeline
 # (`pnpm do-pre-deploy [patch|minor|major]`, default patch). Spec:
-# .claude/specs/deployment/tag-auto-deploy.md (TD7) — the release front door:
+# docs/specs/deployment/tag-auto-deploy.md (TD7) — the release front door:
 #
 #   fetch + guards (on main, clean tree, not behind origin) → next version from the latest
 #   v* tag → y/N confirm → pnpm install --frozen-lockfile → pnpm build (SKIP_BUILD=1 skips)

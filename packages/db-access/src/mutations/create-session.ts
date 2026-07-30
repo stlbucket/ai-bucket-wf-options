@@ -6,7 +6,7 @@ import { query } from '@/pool'
 // server-side row touch inside claimsForSession, never a re-seal.
 // `authMethod` defaults to 'zitadel' (the OIDC callback call site is unchanged); the OTP login
 // verify path passes 'otp', which claims_for_session gives a shorter lifetime (spec otp-login).
-// Spec: .claude/specs/future-auth/session-refresh-pattern.md.
+// Spec: docs/specs/future-auth/session-refresh-pattern.md.
 export async function createSession(
   profileId: string,
   authMethod: 'zitadel' | 'otp' = 'zitadel',

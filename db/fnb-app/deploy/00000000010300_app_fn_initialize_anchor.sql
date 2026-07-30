@@ -1,7 +1,7 @@
 -- Deploy fnb-app:00000000010300_app_fn_initialize_anchor to pg
 -- requires: 00000000010290_session
 
--- First-run setup (spec: .claude/specs/first-run-setup/). Two pre-claims functions
+-- First-run setup (spec: docs/specs/first-run-setup/). Two pre-claims functions
 -- that let a human bootstrap a VIRGIN environment (schema deployed, no anchor tenant,
 -- no profiles, no ZITADEL roster) from /auth/setup. Same posture as
 -- app_fn.provision_idp_user (00000000010270): SECURITY DEFINER, granted to the login

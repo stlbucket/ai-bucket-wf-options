@@ -2,7 +2,7 @@
 
 begin;
 
--- n8n asset-scan workflow (spec: .claude/specs/agentic-decommission/): the asset-scan +
+-- n8n asset-scan workflow (spec: docs/specs/agentic-decommission/): the asset-scan +
 -- asset-scan-reaper workflows' Postgres nodes connect as n8n_worker and reach storage data
 -- exclusively through _fn functions — the two raw SELECTs the retired worker handlers did
 -- become asset_for_scan, and the reaper's stuck-asset query becomes stuck_pending_assets.

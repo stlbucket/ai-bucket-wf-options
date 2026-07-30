@@ -1,4 +1,4 @@
--- Grants + RLS (.claude/specs/urn-registry/_shared.data.md §4.5).
+-- Grants + RLS (docs/specs/urn-registry/_shared.data.md §4.5).
 -- SELECT-only registry: NO insert/update/delete grants on res.resource to any request
 -- role — only the SECURITY DEFINER res_fn functions write it.
 

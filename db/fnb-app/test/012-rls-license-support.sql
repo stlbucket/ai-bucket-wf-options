@@ -1,7 +1,7 @@
 -- fnb-app RLS (part 3): license + support_ticket — the tables behind the tenant_subscription →
 -- license_pack / license_type / application seed chain (self-seeded here so the test owns its data).
 -- license: own-profile OR tenant-admin (+ super). support_ticket: own-resident OR tenant-admin OR
--- support staff. Spec: .claude/specs/db-testing/rls-tests.md. Completes the 14-table app coverage.
+-- support staff. Spec: docs/specs/db-testing/rls-tests.md. Completes the 14-table app coverage.
 \set t_a     '11111111-1111-1111-1111-111111111111'
 \set t_b     '22222222-2222-2222-2222-222222222222'
 \set prof_a1 '33333333-3333-3333-3333-333333333333'

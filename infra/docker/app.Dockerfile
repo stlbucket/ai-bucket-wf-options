@@ -3,7 +3,7 @@
 #
 # NUXT_APP_BASE_URL is baked at BUILD time — Nuxt bakes app.baseURL into asset URLs, so the runtime
 # value MUST equal the built value. This is the highest-risk part of the prod pipeline:
-# .claude/specs/deployment/production-runtime.md §3.1 + §10. The dev bind-mount hides it.
+# docs/specs/deployment/production-runtime.md §3.1 + §10. The dev bind-mount hides it.
 #
 # Nuxt builds to a self-contained .output/ (Nitro bundles the exact deps it needs), so the runtime
 # image is just Node + .output — no node_modules, no pnpm, no workspace. The dev .dockerignore keeps

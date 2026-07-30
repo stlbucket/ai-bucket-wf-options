@@ -1,7 +1,7 @@
 import { parseUrn } from '@function-bucket/fnb-types'
 
 // Maps a URN to the in-app route that renders / responds to it — the single route map for the
-// OTP deep-link flow (spec .claude/specs/otp-login/ D7). Lives in shared/utils so both sides
+// OTP deep-link flow (spec docs/specs/otp-login/ D7). Lives in shared/utils so both sides
 // auto-import the same resolver: the server OTP verify redirect (server/api/otp/verify.post.ts)
 // and the /auth/go landing page's logged-in switch path (app/pages/go/[id].vue). Add entries as
 // modules register (approvals, …). Unknown → home.

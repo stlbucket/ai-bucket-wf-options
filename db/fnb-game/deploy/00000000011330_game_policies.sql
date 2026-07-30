@@ -1,5 +1,5 @@
 -- Deploy fnb-game:00000000011330_game_policies to pg
--- Spec: .claude/specs/game-server/_shared.data.md §RLS + §n8n_worker grants + §Security model.
+-- Spec: docs/specs/game-server/_shared.data.md §RLS + §n8n_worker grants + §Security model.
 
 begin;
 

@@ -1,5 +1,5 @@
 // zitadel-seed — idempotent dev seeding of the ZITADEL instance (stage 1 of
-// .claude/specs/future-auth/zitadel-login-pattern.md).
+// docs/specs/future-auth/zitadel-login-pattern.md).
 //
 // Runs once per `docker compose up` (after the zitadel healthcheck), authenticated
 // with the FirstInstance machine-user PAT that ZITADEL writes onto the shared
@@ -28,7 +28,7 @@ const PAT_FILE = requiredEnv('PAT_FILE') // written by ZITADEL FirstInstance Pat
 const SEED_FILE = requiredEnv('SEED_FILE') // { issuer, clientId } handoff for auth-app
 const BRAND_ASSETS_DIR = process.env.BRAND_ASSETS_DIR ?? '/brand-assets' // mounted handoff logos/icons (plan 0500)
 
-// SEED_MODE=prod (deployment spec .claude/specs/deployment/production-runtime.md §6): register the
+// SEED_MODE=prod (deployment spec docs/specs/deployment/production-runtime.md §6): register the
 // app against the https origin with devMode OFF and seed NO dev users — the console admin comes from
 // ZITADEL FirstInstance, and password complexity is left at ZITADEL defaults by NOT relaxing it in
 // the prod compose. Unset (or anything else) = the dev behavior below, byte-for-byte.

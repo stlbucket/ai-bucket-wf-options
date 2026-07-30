@@ -1,4 +1,4 @@
-// URN vocabulary for the res.resource registry (.claude/specs/urn-registry/).
+// URN vocabulary for the res.resource registry (docs/specs/urn-registry/).
 // Grammar (frozen): urn:fnb:{tenant_id}:{module}:{type}:{id} — mirrors res_fn.build_urn.
 // These helpers are the spec-authorized runtime exception to fnb-types' type-only rule:
 // pure functions, zero dependencies.

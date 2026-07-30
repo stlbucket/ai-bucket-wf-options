@@ -1,5 +1,5 @@
 // The battleship two-board wrapper — turns engine calls into the ordered actions list
-// (.claude/specs/game-server/game-event.workflow.data.md §referee). One engine board per
+// (docs/specs/game-server/game-event.workflow.data.md §referee). One engine board per
 // seat: seats["1"] is seat 1's OWN hidden fleet; a shot by seat 1 is applyMove on
 // seats["2"]. A board reaching status 'won' means its OWNER lost. Turn order: one seat,
 // round-robin ascending, skipping resigned (2 seats ⇒ strict alternation). Every applying

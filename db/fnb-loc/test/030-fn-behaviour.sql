@@ -1,6 +1,6 @@
 -- loc_fn.create_location behaviour: inserts a location owned by the resident's tenant, stamps
 -- resident_urn + generated urn, registers a res.resource, and rejects a bad resident.
--- Spec: .claude/specs/db-testing/fn-behaviour-tests.md. Run as owner (resident_id passed explicitly).
+-- Spec: docs/specs/db-testing/fn-behaviour-tests.md. Run as owner (resident_id passed explicitly).
 \set t_a   '11111111-1111-1111-1111-111111111111'
 \set res_a '55555555-5555-5555-5555-555555555555'
 

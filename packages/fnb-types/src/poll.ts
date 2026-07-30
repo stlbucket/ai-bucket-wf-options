@@ -1,5 +1,5 @@
 // Plain flat shapes for the poll module. Enum unions mirror the GraphQL enums (UPPERCASE) so
-// mappers pass enum values straight through. See .claude/specs/tenant-app/tools/poll/_shared.data.md.
+// mappers pass enum values straight through. See docs/specs/tenant-app/tools/poll/_shared.data.md.
 import type { Urn } from '@/urn'
 
 export type PollStatus = 'DRAFT' | 'OPEN' | 'CLOSED'

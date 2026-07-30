@@ -3,7 +3,7 @@
 The dev `docker compose up` stack runs on macOS, Linux (amd64 + arm64), and Windows (WSL2). The
 only host-specific knob is **`FNB_PLATFORM`** — everything else is identical across hosts.
 
-> Spec: `.claude/specs/cross-platform-compose/README.md`. Scope is the **dev** `docker-compose.yml`;
+> Spec: `docs/specs/cross-platform-compose/README.md`. Scope is the **dev** `docker-compose.yml`;
 > `infra/compose/docker-compose.prod.yml` is Linux-target and unaffected.
 
 ## Prerequisites (all OSes)

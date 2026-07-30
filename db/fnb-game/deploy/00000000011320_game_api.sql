@@ -1,5 +1,5 @@
 -- Deploy fnb-game:00000000011320_game_api to pg
--- Spec: .claude/specs/game-server/_shared.data.md §game_api. SECURITY INVOKER surface for
+-- Spec: docs/specs/game-server/_shared.data.md §game_api. SECURITY INVOKER surface for
 -- PostGraphile: gate jwt.enforce_any_permission('{p:app-user,p:app-admin}') first, then
 -- delegate to game_fn, passing jwt values as parameters (house rule). The caller's resident
 -- urn is rebuilt with the app.resident generated-column formula.

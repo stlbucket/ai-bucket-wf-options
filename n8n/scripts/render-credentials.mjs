@@ -1,5 +1,5 @@
 // Renders n8n credential templates for the n8n-import one-shot (infrastructure spec:
-// .claude/specs/n8n-parallel-engine/infrastructure.md). The stock n8n image has no gettext,
+// docs/specs/n8n-parallel-engine/infrastructure.md). The stock n8n image has no gettext,
 // so ${ENV_VAR} substitution runs on the image's own node. Values are JSON-string-escaped so
 // secrets containing quotes/backslashes cannot break the rendered JSON. Rendered files land
 // outside the repo mount and are never committed.

@@ -1,6 +1,6 @@
 // The single-board battleship engine — authored fresh (user decision 2026-07-19 at the
 // implementation go/no-go; the originally referenced user-supplied battleship.ts was never
-// added to the repo). Contract per .claude/specs/game-server/: createInitialGameState() +
+// added to the repo). Contract per docs/specs/game-server/: createInitialGameState() +
 // applyMove(), PlacedShip.hits as Set<string>, board status 'won' when every ship on it is
 // sunk (the board's OWNER has lost — the wrapper maps this to seat outcomes).
 //

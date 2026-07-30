@@ -1,6 +1,6 @@
 -----------------------------------------------
 -- script  poll schema
--- Tenant polls — URN-registered entity (spec .claude/specs/tenant-app/tools/poll/).
+-- Tenant polls — URN-registered entity (spec docs/specs/tenant-app/tools/poll/).
 -- Only poll.poll is registered in res.resource; questions/options/response/answer are child
 -- rows. Every child table denormalizes poll_id + tenant_id so RLS is a simple join to poll.
 -----------------------------------------------

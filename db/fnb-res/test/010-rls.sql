@@ -1,7 +1,7 @@
 -- res.resource RLS: resource_select — a registry row is visible if the caller is super-admin, OR
 -- the row's module maps (res.module_permission) to a permission the caller holds for the row's
 -- tenant, OR (null-key module) the caller is a member of the row's tenant. Seeded module map:
--- todo→p:todo, loc→NULL. Spec: .claude/specs/db-testing/rls-tests.md.
+-- todo→p:todo, loc→NULL. Spec: docs/specs/db-testing/rls-tests.md.
 \set t_a    '11111111-1111-1111-1111-111111111111'
 \set t_b    '22222222-2222-2222-2222-222222222222'
 \set r_todo 'a0000000-0000-0000-0000-00000000a001'

@@ -1,6 +1,6 @@
 #!/bin/sh
 # n8n-db-init one-shot: create the n8n_engine database + owner login role in the existing
-# postgis cluster (spec: .claude/specs/n8n-parallel-engine/infrastructure.md). Idempotent on
+# postgis cluster (spec: docs/specs/n8n-parallel-engine/infrastructure.md). Idempotent on
 # every boot — strictly more robust than a fresh-volume-only /docker-entrypoint-initdb.d
 # script. sqitch and PostGraphile never see n8n_engine; the n8n_worker role in
 # function_bucket is NOT created here (it belongs to the db/fnb-n8n sqitch package).

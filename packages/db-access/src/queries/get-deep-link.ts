@@ -16,7 +16,7 @@ export interface DeepLinkPublic {
 // Pre-claims root of trust (R5 carve-out): the OTP landing page (/auth/go/[id]) reads a deep link
 // before any session exists. app_fn.get_deep_link returns only masked, non-sensitive fields; an
 // unknown/expired/revoked id comes back with the flags set so the page renders a dead-link state.
-// Spec: .claude/specs/otp-login/.
+// Spec: docs/specs/otp-login/.
 export async function getDeepLink(id: string): Promise<DeepLinkPublic> {
   const rows = await query<Record<string, unknown>>(`select * from app_fn.get_deep_link($1::uuid)`, [
     id,

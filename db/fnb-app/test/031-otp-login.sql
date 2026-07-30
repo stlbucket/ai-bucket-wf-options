@@ -1,7 +1,7 @@
 -- OTP login surface (db/fnb-app/…010295_otp_login.sql): schema shape + session auth_method.
 -- Behavioral OTP-flow tests (deep_link → code → verify → residency activation) need the notify +
 -- tenant/resident fixtures and are exercised end-to-end in the plan's Phase 5. Spec:
--- .claude/specs/otp-login/. Run as owner (SECURITY DEFINER pre-claims fns).
+-- docs/specs/otp-login/. Run as owner (SECURITY DEFINER pre-claims fns).
 \set prof '44444444-4444-4444-4444-444444444444'
 
 begin;

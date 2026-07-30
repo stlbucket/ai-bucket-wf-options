@@ -1,5 +1,5 @@
 # Dev-only Postgres image: PostGIS + pgTAP.
-# pgTAP is the DB unit-test framework (spec .claude/specs/db-testing/). Only the OS package is
+# pgTAP is the DB unit-test framework (spec docs/specs/db-testing/). Only the OS package is
 # installed here; the EXTENSION itself is created on demand by scripts/db-test.ts (its setup runs
 # `CREATE EXTENSION IF NOT EXISTS pgtap SCHEMA tap`), so pgTAP's ~1000 functions never exist in the
 # DB unless you actually run the DB tests. Production uses MANAGED Postgres

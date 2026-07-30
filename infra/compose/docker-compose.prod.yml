@@ -1,7 +1,7 @@
 name: fnb-prod
 
 # Production Compose — the SAME stack on DigitalOcean (droplet) and AWS (EC2).
-# Ports docker-compose.yml (dev) to production posture (spec .claude/specs/deployment/
+# Ports docker-compose.yml (dev) to production posture (spec docs/specs/deployment/
 # production-runtime.md §2). Differences from dev:
 #   • App services run PRE-BUILT images from the registry — no build:, no bind mounts, no
 #     node_modules_* volumes, no pnpm-install / packages-watch.
@@ -178,7 +178,7 @@ services:
     volumes:
       - zitadel-seed:/zitadel-seed
       - ../../docker/zitadel/seed.mjs:/seed.mjs:ro   # repo seed.mjs (prod branch is additive)
-      # shipped by deploy.sh from .claude/design-implementations/design_handoff_fn_bucket_brand/assets
+      # shipped by deploy.sh from docker/brand-assets
       - ../../brand-assets:/brand-assets:ro
     command: ["node", "/seed.mjs"]
     restart: "no"

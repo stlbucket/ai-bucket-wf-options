@@ -1,4 +1,4 @@
-// Pre-claims root of trust — raw pg. See .claude/issues/identified/db-types-conversion.md.
+// Pre-claims root of trust — raw pg. See docs/issues/identified/db-types-conversion.md.
 // Barrel must list every module: a missing export crashes the Node ESM loader at startup
 // (not at build), pointing at dist/index.js.
 
@@ -19,7 +19,7 @@ export { createSession } from '@/mutations/create-session'
 export { claimsForSession } from '@/mutations/claims-for-session'
 export { revokeSession } from '@/mutations/revoke-session'
 
-// OTP login (spec .claude/specs/otp-login/): pre-claims deep-link read + code request/verify +
+// OTP login (spec docs/specs/otp-login/): pre-claims deep-link read + code request/verify +
 // session-info for the temporary-session banner. All raw pg, called by auth-app's /auth/api/otp/*
 // routes before any session exists.
 export { getDeepLink } from '@/queries/get-deep-link'

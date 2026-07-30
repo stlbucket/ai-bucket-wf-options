@@ -118,7 +118,7 @@ async function handleUnpin() {
 const { shareToLink } = useDeepLink()
 const authAppUrl = useRuntimeConfig().public.authAppUrl as string
 
-// OTP quick-login share (spec .claude/specs/otp-login/, D13): copy a TENANT-SCOPED link that lets any
+// OTP quick-login share (spec docs/specs/otp-login/, D13): copy a TENANT-SCOPED link that lets any
 // resident of this workspace log in with a code (SMS/email) and land straight on this todo. No
 // assignee required — the opener self-identifies on the landing page.
 async function handleCopyLink() {

@@ -1,5 +1,5 @@
 // Embeds the built engine bundle into the game-event workflow's Code nodes
-// (.claude/specs/game-server/infrastructure.md §1). Deliberately dumb: esbuild-bundle the
+// (docs/specs/game-server/infrastructure.md §1). Deliberately dumb: esbuild-bundle the
 // library as a self-contained IIFE (the n8n Code-node sandbox has no require of repo
 // code), append the per-node glue, JSON-parse n8n/workflows/game-event.json, replace the
 // jsCode of the nodes named `referee` and `parse-agent-move`, write back. Fails loudly if

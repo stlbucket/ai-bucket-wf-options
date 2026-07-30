@@ -1,6 +1,6 @@
 begin;
 
--- Stage-5 cutover of .claude/specs/future-auth/zitadel-login-pattern.md: ZITADEL owns
+-- Stage-5 cutover of docs/specs/future-auth/zitadel-login-pattern.md: ZITADEL owns
 -- authentication (passwords, verification, recovery, MFA). The local password/identity
 -- machinery is removed. The `session` cookie now always carries an app.profile id minted
 -- by the OIDC callback (app_fn.provision_idp_user); nothing joins auth.user anymore.

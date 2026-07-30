@@ -1,5 +1,5 @@
 -- Deploy fnb-app:00000000010295_otp_login to pg
--- Link-driven, short-lived, app-owned OTP login (spec .claude/specs/otp-login/). A TENANT-SCOPED
+-- Link-driven, short-lived, app-owned OTP login (spec docs/specs/otp-login/). A TENANT-SCOPED
 -- auth.deep_link addresses a URN element (D13 — no assigned recipient; the link works for any
 -- resident of the URN's tenant). The opener self-identifies with their own phone/email at request
 -- time; the server matches it to a resident of the link's tenant and delivers the code there.

@@ -1,4 +1,4 @@
--- res_api + computed hub fields (.claude/specs/urn-registry/_shared.data.md §4.4, §4.7)
+-- res_api + computed hub fields (docs/specs/urn-registry/_shared.data.md §4.4, §4.7)
 
 ------------------------------------------------------------------------ resolve_urn
 -- SECURITY INVOKER + STABLE ⇒ RLS applies; PostGraphile exposes it as a query field.

@@ -2,7 +2,7 @@
 -- broad-grant pattern, execute is REVOKED from public/anon/authenticated and re-granted only for
 -- the four player-path fns; engine_context + record_referee_result are the n8n referee's surface
 -- ONLY (n8n_worker). This is the anti-grant-bypass boundary (issue 0020) — assert it holds.
--- Spec: .claude/specs/db-testing/api-permission-tests.md.
+-- Spec: docs/specs/db-testing/api-permission-tests.md.
 \set t_a  '11111111-1111-1111-1111-111111111111'
 \set prof '33333333-3333-3333-3333-333333333333'
 

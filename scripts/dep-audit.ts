@@ -4,7 +4,7 @@ import { join, resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
 // Workspace dependency integrity gate (global-rules R24 —
-// .claude/specs/workspace-dependency-integrity-pattern.md → Enforcement).
+// docs/specs/workspace-dependency-integrity-pattern.md → Enforcement).
 // Walks apps/* + packages/*, extracts bare import specifiers from source, and diffs them against
 // each package's declared dependencies. Exits non-zero on MISSING declarations only; the
 // unused-declaration report is informational (config-consumed deps — modules:/extends:/CSS/

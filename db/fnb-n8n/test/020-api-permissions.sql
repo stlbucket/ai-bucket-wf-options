@@ -1,5 +1,5 @@
 -- n8n_api gate: workflow_runs() enforces p:app-admin-super (db/fnb-n8n/…011220_n8n_api.sql).
--- Spec: .claude/specs/db-testing/api-permission-tests.md.
+-- Spec: docs/specs/db-testing/api-permission-tests.md.
 \set t_a  '11111111-1111-1111-1111-111111111111'
 \set prof '33333333-3333-3333-3333-333333333333'
 

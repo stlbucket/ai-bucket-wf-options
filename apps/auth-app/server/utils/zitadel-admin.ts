@@ -1,4 +1,4 @@
-// ZITADEL management-API client for first-run setup (spec: .claude/specs/first-run-setup/).
+// ZITADEL management-API client for first-run setup (spec: docs/specs/first-run-setup/).
 //
 // Runtime analog of docker/zitadel/seed.mjs's user seeding: creates the FIRST human user from
 // the /auth/setup form on a virgin env. Reuses the same transport the OIDC client uses
@@ -163,7 +163,7 @@ export async function createHumanUser(input: {
   throw new Error(`zitadel-admin: create human user failed (${res.status}): ${messageOf(res)}`)
 }
 
-// ── Invitation onboarding ceremony (spec: .claude/specs/user-invitation/) ────────────────────
+// ── Invitation onboarding ceremony (spec: docs/specs/user-invitation/) ────────────────────
 // The auth-app onboard routes (verify-email / request-password / set-password) call these. The
 // invite itself (create human user + email #1) is done by the n8n `invite-user` workflow, not
 // here. Contract confirmed against v4.15.3 (2026-07-22) — see zitadel-admin-client.md:
@@ -235,7 +235,7 @@ export async function setPassword(
   throw new Error(`zitadel-admin: set password failed (${res.status}): ${messageOf(res)}`)
 }
 
-// ── Self-service change password (spec: .claude/specs/password-self-service/) ─────────────────
+// ── Self-service change password (spec: docs/specs/password-self-service/) ─────────────────
 // Set a new password after ZITADEL verifies the CURRENT one (call D). Confirmed live v4.15.3
 // (2026-07-22 probe): correct current → 200; wrong current → 400 with a typed
 // `zitadel.v1.CredentialsCheckError` detail; a policy/complexity fail → 400 with a different

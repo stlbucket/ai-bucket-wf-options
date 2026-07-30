@@ -12,7 +12,7 @@ export interface SendDeepLinkInput {
   authAppUrl: string // the caller passes runtimeConfig.public.authAppUrl (builds ${…}/go/<id>)
 }
 
-// Create a TENANT-SCOPED OTP quick-login deep link to a URN element (spec .claude/specs/otp-login/
+// Create a TENANT-SCOPED OTP quick-login deep link to a URN element (spec docs/specs/otp-login/
 // share-link.data.md, D13). No recipient — the link works for any resident of the URN's tenant, who
 // self-identifies on the landing page. Returns the new auth.deep_link id; the caller (the tenant-app
 // "Copy quick-login link" action) builds `${authAppUrl}/go/<id>`. The DB gate

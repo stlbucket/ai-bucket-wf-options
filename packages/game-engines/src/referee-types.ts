@@ -1,5 +1,5 @@
 // The referee I/O contract — mirrors game_fn.engine_context (input) and
-// game_fn.record_referee_result (output). Spec: .claude/specs/game-server/_shared.data.md.
+// game_fn.record_referee_result (output). Spec: docs/specs/game-server/_shared.data.md.
 // Values use the DB's lowercase vocabulary (this code runs against jsonb, not GraphQL).
 
 export type DbPlayerKind = 'human' | 'machine_algorithm' | 'machine_agent'

@@ -6,7 +6,7 @@ import { computed } from 'vue'
 // Presentational residency tree (R2 — no API calls, no switch logic), extracted from
 // WorkspaceSwitcher.vue so the sidebar modal and the home-app landing cards share one
 // implementation. Emits `select` only for enterable nodes; the consumer owns the switch call.
-// Spec: .claude/specs/home-app/index.ui.md.
+// Spec: docs/specs/home-app/index.ui.md.
 
 const props = defineProps<{
   nodes: ResidencySwitchNode[]

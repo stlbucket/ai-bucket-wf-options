@@ -1,6 +1,6 @@
 import type { BreweryType } from '@function-bucket/fnb-types'
 
-// type badge color map — .claude/specs/tenant-app/datasets/breweries/index.ui.md
+// type badge color map — docs/specs/tenant-app/datasets/breweries/index.ui.md
 const BREWERY_TYPE_COLORS: Record<
   BreweryType,
   'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral'

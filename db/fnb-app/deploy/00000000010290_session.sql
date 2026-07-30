@@ -1,6 +1,6 @@
 begin;
 
--- Server-side sessions (spec: .claude/specs/future-auth/session-refresh-pattern.md; issues
+-- Server-side sessions (spec: docs/specs/future-auth/session-refresh-pattern.md; issues
 -- 0185 + 0180-merged). The sealed `session` cookie grows to { id, sid }; validity is decided
 -- by this row, not the seal's maxAge. The `auth` schema survives the ZITADEL cutover and is
 -- the right domain; the change lives in fnb-app because it references app.profile + app_fn
@@ -13,7 +13,7 @@ create table auth.session (
   last_seen_at  timestamptz not null default now(),
   revoked_at    timestamptz,
   -- auth_method distinguishes the ZITADEL login ceremony from a link-driven OTP quick session
-  -- (spec: .claude/specs/otp-login/). It drives per-method lifetimes in claims_for_session below;
+  -- (spec: docs/specs/otp-login/). It drives per-method lifetimes in claims_for_session below;
   -- it is server-side only — never added to request.jwt.claims (nothing in RLS branches on it).
   auth_method   text not null default 'zitadel' check (auth_method in ('zitadel', 'otp'))
 );
@@ -71,7 +71,7 @@ create or replace function app_fn.claims_for_session(_session_id uuid)
     if _session.revoked_at is not null then return null; end if;                    -- revoked
 
     -- Per-method lifetimes. zitadel: idle 24h / absolute 7d (unchanged). otp: sliding 1h idle /
-    -- 8h absolute cap (spec .claude/specs/otp-login/ D2) — "good for an hour unless refreshed
+    -- 8h absolute cap (spec docs/specs/otp-login/ D2) — "good for an hour unless refreshed
     -- [by activity]", the cap forcing a fresh code eventually. Assigned after the select because
     -- they depend on _session.auth_method.
     if _session.auth_method = 'otp' then

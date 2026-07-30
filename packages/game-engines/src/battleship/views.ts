@@ -1,4 +1,4 @@
-// Per-seat redacted view computation (.claude/specs/game-server/_shared.data.md
+// Per-seat redacted view computation (docs/specs/game-server/_shared.data.md
 // §player_views_after). Redaction is game logic, so it lives HERE, not in SQL: a seat sees
 // its own fleet fully, and of the opponent board ONLY its shot results — never unhit ships.
 // Machine seats select moves from these same views (fairness lock).

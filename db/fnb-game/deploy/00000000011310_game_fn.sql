@@ -1,5 +1,5 @@
 -- Deploy fnb-game:00000000011310_game_fn to pg
--- Spec: .claude/specs/game-server/_shared.data.md §game_fn. All functions receive explicit
+-- Spec: docs/specs/game-server/_shared.data.md §game_fn. All functions receive explicit
 -- args (never call jwt.* — that is the _api layer's job) and are SECURITY DEFINER (every
 -- game table is write-locked to this schema; game_event_state is deny-all even for reads).
 -- search_path pinned to pg_catalog, public (citext operators live in public).
@@ -83,7 +83,7 @@ $$;
 -- reply). Contract:
 -- { actions: [ {kind: system|apply|reject|machine, ...} ], expectingSeats, gameStatus,
 --   expectedEventCount, outcomes?, abortReason? } — see
--- .claude/specs/game-server/_shared.data.md. Every applying action carries
+-- docs/specs/game-server/_shared.data.md. Every applying action carries
 -- stateAfter/viewsAfter (its replay snapshot).
 CREATE OR REPLACE FUNCTION game_fn.record_referee_result(_game_id uuid, _result jsonb)
 RETURNS jsonb

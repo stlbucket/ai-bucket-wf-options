@@ -2,7 +2,7 @@
 
 Status: analysis only — no implementation planned. Written 2026-07-08 against the `zitadel`
 branch schema (`db/fnb-auth`, `db/fnb-app`) and current ZITADEL docs (see
-`.claude/skills/zitadel-expert/`).
+`.agents/skills/zitadel-expert/`).
 
 ## 1. What we have today (baseline for comparison)
 

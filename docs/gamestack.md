@@ -4,7 +4,7 @@
 to a ship sinking in the database and back.*
 
 > This is a **narrative companion** to the authoritative specs under
-> [`.claude/specs/game-server/`](../.claude/specs/game-server/). Where this doc and a spec
+> [`docs/specs/game-server/`](specs/game-server/). Where this doc and a spec
 > disagree, the spec wins. Every code reference below links to the real file so you can inspect
 > it directly.
 
@@ -140,7 +140,7 @@ Two consequences drive the whole design:
 1. **The current state is just "the latest snapshot."** No engine runs to *read* a game — you
    `ORDER BY event_number DESC LIMIT 1`. Replay is "give me the snapshot at event N." This makes
    replay immune to engine-version drift (contrast with re-deriving state from a seed, which was
-   [considered and rejected](../.claude/specs/game-server/README.md#L198)).
+   [considered and rejected](specs/game-server/README.md#L198)).
 
 2. **Secrets live only in the snapshot table, which is deny-all.** Ship positions must never be
    visible to the opponent. The `game_event` log is tenant-readable once applied, so it carries
@@ -433,12 +433,12 @@ applySeatMove(w, seat, cell)
 
 n8n runs **one execution per submitted event**. Machine replies happen *inside* that execution
 (the loop above). The alternative — one long-lived execution per game parked on a Wait node —
-was [rejected](../.claude/specs/game-server/README.md#L206): it would require storing signed
+was [rejected](specs/game-server/README.md#L206): it would require storing signed
 per-execution resume URLs in the DB and POSTing them on every move. Per-move executions are
 simpler and match the "respond immediately" webhook invariant. The one limitation: the current
 graph makes **at most one agent HTTP call per execution**, which is sufficient for every 2-seat
 game. Consecutive agent seats in a future N-player game would need an n8n loop around the HTTP
-branch (a [documented open item](../.claude/specs/game-server/README.md#L164)).
+branch (a [documented open item](specs/game-server/README.md#L164)).
 
 ---
 
@@ -607,7 +607,7 @@ the bundle hash to what's embedded, so stale inline JS fails CI. **Never hand-ed
 ## 12. Deep dive: the n8n referee workflow (`game-event`)
 
 Definition: [`n8n/workflows/game-event.json`](../n8n/workflows/game-event.json) (imported
-**active** at boot). Spec: [`game-event.workflow.data.md`](../.claude/specs/game-server/game-event.workflow.data.md).
+**active** at boot). Spec: [`game-event.workflow.data.md`](specs/game-server/game-event.workflow.data.md).
 
 ### Node graph
 
@@ -628,7 +628,7 @@ Webhook (respond immediately)
 - The workflow's error settings point at the shared **`error-handler`** workflow, which records
   a terminal `n8n.workflow_run` error row. Pending events stay `pending` and can be retried.
 - Every run is bracketed by `begin_run`/`complete_run` against the `n8n.workflow_run` log (the
-  parallel n8n engine's run ledger — see [`n8n-parallel-engine`](../.claude/specs/n8n-parallel-engine/)).
+  parallel n8n engine's run ledger — see [`n8n-parallel-engine`](specs/n8n-parallel-engine/)).
 
 ### Failure & recovery matrix
 
@@ -782,7 +782,7 @@ view.
 ### Abusable — real vectors, mostly cost & griefing
 
 - **Burn the tenant's Anthropic budget.** Every human move in a vs-agent game is a live Claude
-  call with **no rate or spend cap** ([gap](../.claude/specs/game-server/README.md#L171)). Worse,
+  call with **no rate or spend cap** ([gap](specs/game-server/README.md#L171)). Worse,
   in the window between your move and the agent's reply landing, concurrent `op:'event'` triggers
   each read "agent move pending" and each fire the HTTP call **before** the version guard rejects
   the losing writes — so deliberate spam-triggering amplifies cost beyond one-call-per-move. It's
@@ -819,7 +819,7 @@ deferred product scope rather than defended (see [§18](#18-evaluation--shortcom
 
 Because the DB is agnostic and rules are data, adding a game type is a well-worn path with
 **zero DDL** (this is exactly how Checkers was added — see
-[`checkers/`](../.claude/specs/game-server/checkers)):
+[`checkers/`](specs/game-server/checkers)):
 
 1. **Registry**: flip/insert a `game.game_type` seed row (`status = 'live'`, seat bounds,
    supported kinds, `default_config`).
@@ -848,7 +848,7 @@ isolation, fairness) are well-defended and live-verified. The gaps below are rea
   concurrency). But no human-driven click-through (two-client live WS update, the New Game modal,
   the scrubber UI, nav gating) was completed — the session's browser tool couldn't reach the
   Docker network. This is the single most important open item
-  ([README Known Gaps](../.claude/specs/game-server/README.md#L156)).
+  ([README Known Gaps](specs/game-server/README.md#L156)).
 - **The trigger is unauthenticated fire-and-forget from the client's perspective.** Any app user
   can POST `triggerWorkflow('game-event', …)` for any game id in their tenant. This is *safe* by
   construction (the referee no-ops without pending work; the advisory-lock + version guard makes
@@ -911,7 +911,7 @@ isolation, fairness) are well-defended and live-verified. The gaps below are rea
 ---
 
 *Generated from the live codebase and the specs under
-[`.claude/specs/game-server/`](../.claude/specs/game-server/) and
-[`.claude/specs/n8n-parallel-engine/`](../.claude/specs/n8n-parallel-engine/). For the
+[`docs/specs/game-server/`](specs/game-server/) and
+[`docs/specs/n8n-parallel-engine/`](specs/n8n-parallel-engine/). For the
 authoritative, decision-by-decision record, start at the
-[game-server README](../.claude/specs/game-server/README.md).*
+[game-server README](specs/game-server/README.md).*

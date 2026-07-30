@@ -5,7 +5,7 @@ packages:
 # Default catalog — one version per external package, repo-wide.
 # Entries are caret ranges pinned at the pnpm-lock.yaml-resolved version at migration
 # time (2026-07-09). Never add a named `catalogs:` block — divergence is a spec change
-# (.claude/specs/workspace-dependency-integrity-pattern.md → Version alignment).
+# (docs/specs/workspace-dependency-integrity-pattern.md → Version alignment).
 # h3 is additionally force-pinned via root package.json → pnpm.overrides (transitive
 # copies); bump the override and this entry together.
 catalog:

@@ -1,6 +1,6 @@
 -- fnb-app RLS smoke (subset — app has 14 RLS tables; this covers the core shapes). profile:
 -- view_self / manage_all_super_admin. reference catalogs (permission, …): view_all_users. tenant:
--- own-tenant visibility. Spec: .claude/specs/db-testing/rls-tests.md. Fuller app coverage (resident
+-- own-tenant visibility. Spec: docs/specs/db-testing/rls-tests.md. Fuller app coverage (resident
 -- multi-policy, licenses, support tickets, auth.session deny-all) is future work per the README.
 \set t_a    '11111111-1111-1111-1111-111111111111'
 \set prof_a '33333333-3333-3333-3333-333333333333'

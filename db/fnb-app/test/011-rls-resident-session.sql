@@ -1,7 +1,7 @@
 -- fnb-app RLS (part 2): resident visibility/mutation + auth.session deny-all. resident's dominant
 -- SELECT policy is view_all_for_tenant (any tenant member sees all its residents); UPDATE requires
 -- own-profile (update_own_resident) or tenant-admin (manage_own_tenant_residencies).
--- Spec: .claude/specs/db-testing/rls-tests.md. (license/support_ticket need the tenant_subscription
+-- Spec: docs/specs/db-testing/rls-tests.md. (license/support_ticket need the tenant_subscription
 -- chain — future work per the README.)
 \set t_a     '11111111-1111-1111-1111-111111111111'
 \set t_b     '22222222-2222-2222-2222-222222222222'

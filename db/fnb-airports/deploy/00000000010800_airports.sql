@@ -6,7 +6,7 @@ create schema airports;
 create schema if not exists airports_fn;
 create schema if not exists airports_api;
 
--- OurAirports vocabularies verified against live data 2026-07-09 (.claude/skills/airports-expert).
+-- OurAirports vocabularies verified against live data 2026-07-09 (.agents/skills/airports-expert).
 -- All enums are OPEN: 'unknown' is the coercion sentinel for upstream drift (the data dictionary
 -- already disagrees with the data — it documents 'closed_airport'; the live value is 'closed').
 create type airports.airport_type as enum (

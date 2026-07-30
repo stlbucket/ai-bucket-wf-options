@@ -1,6 +1,6 @@
 // The checkers board engine — English/American draughts (user decision 2026-07-20). 8×8,
 // 12 men per side on dark squares; forced capture + chained multi-jumps live in legal-moves.ts.
-// Contract per .claude/specs/game-server/checkers/. State is JSON-native (no Set), so the
+// Contract per docs/specs/game-server/checkers/. State is JSON-native (no Set), so the
 // serialize adapter is identity — the board is stored and viewed as-is.
 //
 // Pure and deterministic — no I/O, no Date, no ambient randomness. Seat 1 = red, starts on

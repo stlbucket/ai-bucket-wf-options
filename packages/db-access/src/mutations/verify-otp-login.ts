@@ -5,7 +5,7 @@ import { query } from '@/pool'
 // { sid, profileId } which the route seals into the cookie. A bad/expired/attempts-exhausted code
 // comes back as a null row → null here (route → 401). A no-residency condition RAISES inside the fn
 // (message NO_RESIDENCY_IN_TENANT) and propagates as a pg error (route → 403).
-// Spec: .claude/specs/otp-login/.
+// Spec: docs/specs/otp-login/.
 export async function verifyOtpLogin(
   deepLinkId: string,
   code: string,

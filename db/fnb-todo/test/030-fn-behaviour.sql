@@ -1,5 +1,5 @@
 -- Behaviour of todo_fn.* (db/fnb-todo/deploy/00000000010470_todo_fn.sql).
--- Spec: .claude/specs/db-testing/fn-behaviour-tests.md. Run as authenticated with a valid
+-- Spec: docs/specs/db-testing/fn-behaviour-tests.md. Run as authenticated with a valid
 -- tenant+resident; every assertion is inside one BEGIN…ROLLBACK, so all rows + res.resource
 -- registrations vanish.
 \set t_a    '11111111-1111-1111-1111-111111111111'

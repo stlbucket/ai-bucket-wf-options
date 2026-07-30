@@ -1,5 +1,5 @@
 -- Deploy fnb-game:00000000011300_game to pg
--- Spec: .claude/specs/game-server/_shared.data.md (event-sourced N-seat game platform)
+-- Spec: docs/specs/game-server/_shared.data.md (event-sourced N-seat game platform)
 
 begin;
 

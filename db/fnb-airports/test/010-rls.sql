@@ -1,6 +1,6 @@
 -- Public read-only catalog: every airports.* table has RLS enabled with a single permissive
 -- SELECT policy (view_all USING true) and NO write policy — writes happen only inside airports_fn.*
--- (SECURITY DEFINER) from the sync worker. Spec: .claude/specs/db-testing/rls-tests.md.
+-- (SECURITY DEFINER) from the sync worker. Spec: docs/specs/db-testing/rls-tests.md.
 -- Structural assertions (pg_class/pg_policies) — no seeding needed for a public catalog.
 begin;
 set search_path to tap, public;

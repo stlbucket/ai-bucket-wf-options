@@ -1,7 +1,7 @@
 -- storage.asset RLS: manage_all_for_tenant (FOR ALL, jwt.has_permission('p:app-user'|'p:app-admin',
 -- tenant_id)) + manage_all_super_admin (p:app-admin-super). anon is DELIBERATELY not granted SELECT
 -- (grant-level lockout, distinct from RLS). resident_urn is NOT NULL → seed a registered resident.
--- Spec: .claude/specs/db-testing/rls-tests.md.
+-- Spec: docs/specs/db-testing/rls-tests.md.
 \set t_a    '11111111-1111-1111-1111-111111111111'
 \set t_b    '22222222-2222-2222-2222-222222222222'
 \set res_a  '55555555-5555-5555-5555-555555555555'

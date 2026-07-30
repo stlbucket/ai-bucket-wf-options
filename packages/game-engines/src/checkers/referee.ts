@@ -1,5 +1,5 @@
 // The checkers referee — turns engine calls into the platform's ordered actions list
-// (.claude/specs/game-server/checkers/engine-workflow.data.md). One shared board; seats
+// (docs/specs/game-server/checkers/engine-workflow.data.md). One shared board; seats
 // alternate (round-robin ascending, skipping resigned — 2 seats ⇒ strict alternation). One
 // event = one COMPLETE move ({from, path}); the referee validates it against the enumerated
 // legal moves and applies it atomically, then checks the opponent for a loss (0 pieces or no

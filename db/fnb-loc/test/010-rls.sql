@@ -1,6 +1,6 @@
 -- loc.location RLS: tenant-scoped manage (manage_all_for_tenant, FOR ALL, jwt.tenant_id() =
 -- tenant_id) PLUS a public overlay (view_public, FOR SELECT, is_public = true). resident_urn is
--- nullable (010340), so no resident seeding is needed here. Spec: .claude/specs/db-testing/rls-tests.md.
+-- nullable (010340), so no resident seeding is needed here. Spec: docs/specs/db-testing/rls-tests.md.
 \set t_a    '11111111-1111-1111-1111-111111111111'
 \set t_b    '22222222-2222-2222-2222-222222222222'
 \set l_a    'aa000000-0000-0000-0000-000000000001'

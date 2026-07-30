@@ -1,5 +1,5 @@
 // Plain flat shapes for storage.asset. Enum unions mirror the GraphQL enums (UPPERCASE) so
-// mappers pass enum values straight through. See .claude/specs/asset-storage/_shared.data.md.
+// mappers pass enum values straight through. See docs/specs/asset-storage/_shared.data.md.
 
 export type ScanStatus = 'PENDING' | 'CLEAN' | 'INFECTED' | 'ERROR'
 export type AssetStatus = 'ACTIVE' | 'DELETED'

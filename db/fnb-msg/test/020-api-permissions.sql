@@ -1,6 +1,6 @@
 -- msg_api permission gate (db/fnb-msg/deploy/00000000010410_msg_fn.sql): upsert_topic /
 -- upsert_message / upsert_subscriber / deactivate_subscriber all enforce_permission('p:discussions').
--- Spec: .claude/specs/db-testing/api-permission-tests.md. GAP: msg_fn is broadly granted (house
+-- Spec: docs/specs/db-testing/api-permission-tests.md. GAP: msg_fn is broadly granted (house
 -- default) — the split is organizational, not a privilege boundary.
 \set t_a    '11111111-1111-1111-1111-111111111111'
 \set prof_a '33333333-3333-3333-3333-333333333333'

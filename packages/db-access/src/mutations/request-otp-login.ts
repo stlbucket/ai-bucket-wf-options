@@ -17,7 +17,7 @@ export interface OtpLoginDispatch {
 // Pre-claims root of trust: given the opener's own phone/email (`identifier`), match it to a resident
 // of the link's tenant and mint + persist an OTP code (bcrypt-hashed), returning the plaintext to the
 // auth-app server for delivery. No match → `{ matched: false }` (send nothing). Raises a pg error on
-// a dead link / resend cooldown — the route maps those to 429/400. Spec: .claude/specs/otp-login/.
+// a dead link / resend cooldown — the route maps those to 429/400. Spec: docs/specs/otp-login/.
 export async function requestOtpLogin(
   deepLinkId: string,
   identifier: string,

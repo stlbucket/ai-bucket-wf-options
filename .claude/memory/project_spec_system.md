@@ -5,7 +5,7 @@ metadata:
   type: project
 ---
 
-A spec system lives at `.claude/specs/` with top-level pattern files and per-app page-level specs.
+A spec system lives at `docs/specs/` with top-level pattern files and per-app page-level specs.
 
 **Why:** Separating UI concerns from data concerns lets the data layer change (e.g. transport, query strategy) without touching UI specs. Also enables clear invocation prompts that tell Claude exactly what to read before implementing.
 
@@ -40,4 +40,4 @@ tenant-app: admin, msg, site-admin, support, loc, tools — Implemented (GraphQL
 Also: auth-app, msg-app, home-app, graphql-api-app (+ workflow), asset-storage (forward-looking).
 
 ## Invocation pattern for implementation
-> "Read `.claude/specs/<app>/{module}/{page}.ui.md` and `.data.md` and `_shared.data.md` in full. Also read `global-rules.md` and `graphql-api-pattern.md`. Ask about anything marked [FILL IN] before writing code."
+> "Read `docs/specs/<app>/{module}/{page}.ui.md` and `.data.md` and `_shared.data.md` in full. Also read `global-rules.md` and `graphql-api-pattern.md`. Ask about anything marked [FILL IN] before writing code."

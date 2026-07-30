@@ -8,7 +8,7 @@ metadata:
 > **RETIRED (as of the file-upload branch migration).** `packages/db-types` (Kysely/Kanel codegen)
 > no longer exists. It was replaced by `packages/db-access` (raw pg root-of-trust + hand-written
 > types) and `packages/graphql-client-api` (GraphQL codegen → `src/generated/fnb-graphql-api.ts`).
-> There is no `pnpm db-generate` / kanel pass anymore — see `.claude/specs/graphql-api-pattern.md`
+> There is no `pnpm db-generate` / kanel pass anymore — see `docs/specs/graphql-api-pattern.md`
 > and `package-layers-pattern.md`. The one lesson below that still applies (generalized): a missing
 > barrel export in `db-access/src/index.ts` OR `graphql-client-api/src/index.ts` crashes the Node
 > ESM loader at app startup (`does not provide an export named 'X'` at `dist/index.js`) — not a

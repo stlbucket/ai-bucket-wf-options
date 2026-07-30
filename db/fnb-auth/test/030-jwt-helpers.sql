@@ -1,7 +1,7 @@
 -- jwt.* helpers (db/fnb-auth/deploy/00000000010150_jwt.sql) — the security core every RLS policy
 -- and _api gate reads. auth.user is dropped (fnb-app …010280), so fnb-auth's behavioural surface
 -- IS these helpers. No seeding: they read the request.jwt.claims GUC that test._login sets.
--- Spec: .claude/specs/db-testing/fn-behaviour-tests.md.
+-- Spec: docs/specs/db-testing/fn-behaviour-tests.md.
 \set t_a  '11111111-1111-1111-1111-111111111111'
 \set prof '33333333-3333-3333-3333-333333333333'
 \set res  '55555555-5555-5555-5555-555555555555'

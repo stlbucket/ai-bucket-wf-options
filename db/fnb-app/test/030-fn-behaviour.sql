@@ -1,6 +1,6 @@
 -- Server-side session lifecycle (db/fnb-app/…010290_session.sql): create_session, revoke_session,
 -- revoke_my_sessions, and claims_for_session's fail-closed cases (revoked / unknown → null).
--- Spec: .claude/specs/db-testing/fn-behaviour-tests.md. Run as owner (SECURITY DEFINER pre-claims fns).
+-- Spec: docs/specs/db-testing/fn-behaviour-tests.md. Run as owner (SECURITY DEFINER pre-claims fns).
 \set prof '33333333-3333-3333-3333-333333333333'
 
 begin;

@@ -1,5 +1,5 @@
 -- Permission gate + grant shape on todo_api (db/fnb-todo/deploy/00000000010470_todo_fn.sql,
--- ..010480_todo_policies.sql). Spec: .claude/specs/db-testing/api-permission-tests.md.
+-- ..010480_todo_policies.sql). Spec: docs/specs/db-testing/api-permission-tests.md.
 --
 -- KNOWN GAPS this suite documents (asserted as CURRENT reality, not the idealized model):
 --   * Only todo_api.create_todo gates on jwt.has_permission('p:todo'); update/delete/pin/… are

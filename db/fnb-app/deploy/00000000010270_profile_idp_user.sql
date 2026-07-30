@@ -1,7 +1,7 @@
 begin;
 
 -- ZITADEL `sub` (numeric-string snowflake — NOT a uuid) ↔ app.profile mapping.
--- Spec: .claude/specs/future-auth/zitadel-login-pattern.md → Identity mapping.
+-- Spec: docs/specs/future-auth/zitadel-login-pattern.md → Identity mapping.
 alter table app.profile add column idp_user_id text unique;
 
 -- Pre-claims root of trust (global-rules R5 carve-out): called by auth-app's OIDC

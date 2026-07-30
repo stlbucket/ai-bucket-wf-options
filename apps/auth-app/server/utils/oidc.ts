@@ -1,4 +1,4 @@
-// ZITADEL OIDC client (stage 3 of .claude/specs/future-auth/zitadel-login-pattern.md).
+// ZITADEL OIDC client (stage 3 of docs/specs/future-auth/zitadel-login-pattern.md).
 //
 // Decisions (a) — split-horizon issuer: the browser reaches ZITADEL at the external issuer
 // (NUXT_ZITADEL_ISSUER, http://localhost:8200), but this container cannot. Server-side calls

@@ -5,7 +5,7 @@ import { resolveUrnRoute } from '#shared/utils/urn-route'
 // Unauthenticated (pre-claims) OTP verify. On success app_fn.verify_otp_login has already switched
 // the workspace to the URN's tenant and minted an OTP auth.session — we seal { id, sid } into the
 // cookie (identical to the OIDC callback tail) and return the URN's in-app route. A bad/expired/
-// exhausted code → 401; a no-residency condition → 403. Spec: .claude/specs/otp-login/ (go.data.md).
+// exhausted code → 401; a no-residency condition → 403. Spec: docs/specs/otp-login/ (go.data.md).
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ id?: string; code?: string }>(event)
   const id = body?.id?.trim()

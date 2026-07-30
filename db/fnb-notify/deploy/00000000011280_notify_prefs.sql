@@ -5,7 +5,7 @@ begin;
 -- User-owned notification preferences (D12) + the non-auth phone-verification OTP store (D13).
 -- Unlike notify.notification (the outbox — writes only via notify_fn over the n8n_worker
 -- connection), these are the USER's own rows: a public two-layer notify_api surface writes them,
--- RLS-scoped to jwt.profile_id(). Spec: .claude/specs/notifications/_shared.data.md (SMS additions).
+-- RLS-scoped to jwt.profile_id(). Spec: docs/specs/notifications/_shared.data.md (SMS additions).
 
 -- One row per (profile, channel). `enabled` = the user picked this method; `verified_at` gates SMS
 -- (email is implicitly verified — ZITADEL owns identity). `destination` is the resolved target

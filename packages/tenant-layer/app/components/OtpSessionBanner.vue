@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRuntimeConfig } from 'nuxt/app'
 
-// Temporary-session banner (spec .claude/specs/otp-login/ _shared.data.md §8). OTP quick-login
+// Temporary-session banner (spec docs/specs/otp-login/ _shared.data.md §8). OTP quick-login
 // sessions are short-lived (sliding 1h idle / 8h cap). The sid lives in the sealed cookie, not the
 // claims, so auth_method + expiry come from the auth-app pre-claims route /auth/api/session-info
 // (same-origin; the httpOnly cookie rides along), NOT GraphQL. Renders only for auth_method='otp'.

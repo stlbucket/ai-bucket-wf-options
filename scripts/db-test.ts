@@ -1,4 +1,4 @@
-// pgTAP test runner (spec .claude/specs/db-testing/). Style A: each db/<pkg>/test/*.sql is one
+// pgTAP test runner (spec docs/specs/db-testing/). Style A: each db/<pkg>/test/*.sql is one
 // `BEGIN … plan() … finish() … ROLLBACK` transaction. Mirrors scripts/db-exec.ts — a `docker run`
 // psql client on fnb-network, connecting via PG_URL. pgTAP + the `test` helper schema are created
 // once (db/_test/setup.sql) outside the per-file txns and dropped after (db/_test/teardown.sql);
@@ -108,7 +108,7 @@ if (setup.status !== 0) {
       '\n✗ pgTAP is not available in the db image.\n' +
         '  Rebuild the dev db image (bakes in the pgtap OS package), then retry:\n' +
         '    docker compose build db && docker compose up -d db\n' +
-        '  See .claude/specs/db-testing/harness.md §1.',
+        '  See docs/specs/db-testing/harness.md §1.',
     )
   }
   process.exit(1)

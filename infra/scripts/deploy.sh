@@ -58,7 +58,7 @@ rsync -az --delete -e "ssh $SSH_OPTS" \
 # Brand assets for the zitadel-seed label-policy uploads (mounted at /brand-assets in prod
 # compose; the repo source lives under .claude/, which is deliberately not shipped wholesale).
 rsync -az --delete -e "ssh $SSH_OPTS" \
-  "$ROOT/.claude/design-implementations/design_handoff_fn_bucket_brand/assets/" \
+  "$ROOT/docker/brand-assets/" \
   "$TARGET:$REMOTE_DIR/brand-assets/"
 # shellcheck disable=SC2086
 scp $SSH_OPTS "$ENV_FILE" "$TARGET:$REMOTE_DIR/infra/compose/.env"

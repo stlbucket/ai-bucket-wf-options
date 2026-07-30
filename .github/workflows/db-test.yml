@@ -1,4 +1,4 @@
-# pgTAP DB test gate (spec .claude/specs/db-testing/, plan 0267 Phase 3d / harness.md §4).
+# pgTAP DB test gate (spec docs/specs/db-testing/, plan 0267 Phase 3d / harness.md §4).
 # Runs the db/<pkg>/test/*.sql suite against a DISPOSABLE Postgres: build the dev db image
 # (PostGIS + pgTAP, docker/db.Dockerfile) → deploy every sqitch package + seed → `pnpm db-test`.
 # Hermetic and prod-safe: pgTAP is created on demand into the `tap` schema, on a throwaway DB that

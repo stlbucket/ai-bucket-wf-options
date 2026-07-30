@@ -1,5 +1,5 @@
 // Notification (fnb-notify) shared vocabulary (R3). Enum values mirror the GraphQL enums verbatim
-// (UPPERCASE); timestamps are Date. Spec: .claude/specs/notifications/_shared.data.md.
+// (UPPERCASE); timestamps are Date. Spec: docs/specs/notifications/_shared.data.md.
 
 export type NotificationChannel = 'EMAIL' | 'SMS'
 

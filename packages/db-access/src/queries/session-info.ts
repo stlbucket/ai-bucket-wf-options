@@ -12,7 +12,7 @@ export interface SessionInfo {
 
 // Pre-claims root of trust: the sid lives in the sealed session cookie (not claims), so the banner
 // reads session metadata via an auth-app route, not GraphQL. Revoked/unknown → null.
-// Spec: .claude/specs/otp-login/.
+// Spec: docs/specs/otp-login/.
 export async function sessionInfo(sessionId: string): Promise<SessionInfo | null> {
   const rows = await query<{ info: Record<string, unknown> | null }>(
     `select app_fn.session_info($1::uuid) as info`,

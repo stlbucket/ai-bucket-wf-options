@@ -1,6 +1,6 @@
 -- msg.topic RLS: view_all_for_tenant (FOR SELECT, jwt.has_permission('p:discussions', tenant_id))
 -- + create_for_tenant (FOR INSERT, WITH CHECK same). NO update/delete policy → those are denied.
--- topic has no resident column, so seeding is just tenant + name. Spec: .claude/specs/db-testing/rls-tests.md.
+-- topic has no resident column, so seeding is just tenant + name. Spec: docs/specs/db-testing/rls-tests.md.
 \set t_a    '11111111-1111-1111-1111-111111111111'
 \set t_b    '22222222-2222-2222-2222-222222222222'
 \set top_a  'aa000000-0000-0000-0000-0000000000a1'

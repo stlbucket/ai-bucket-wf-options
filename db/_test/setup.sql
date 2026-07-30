@@ -1,12 +1,12 @@
 -- pgTAP test harness setup — run ONCE per `pnpm db-test` invocation by scripts/db-test.ts,
 -- OUTSIDE the per-file transactions, so the `tap` extension + `test` helper schema persist for
 -- the whole run. Idempotent (safe to re-run after a crashed run). Teardown drops `test`.
--- Spec: .claude/specs/db-testing/ (_shared.md = the helper contract).
+-- Spec: docs/specs/db-testing/ (_shared.md = the helper contract).
 
 -- ── pgTAP itself ────────────────────────────────────────────────────────────────────────────
 -- Created on demand (dev only). Requires the pgtap OS package baked into the dev db image
 -- (docker/db.Dockerfile). If this line errors, rebuild: `docker compose build db && docker
--- compose up -d db` — see .claude/specs/db-testing/harness.md §1.
+-- compose up -d db` — see docs/specs/db-testing/harness.md §1.
 create schema if not exists tap;
 create extension if not exists pgtap schema tap;
 -- assertions run while the session role is `authenticated` (test._login switches role), so the

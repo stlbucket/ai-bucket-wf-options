@@ -1,6 +1,6 @@
 import type { AirportType } from '@function-bucket/fnb-types'
 
-// type badge color map — .claude/specs/tenant-app/datasets/airports/index.ui.md
+// type badge color map — docs/specs/tenant-app/datasets/airports/index.ui.md
 const AIRPORT_TYPE_COLORS: Record<
   AirportType,
   'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'neutral'

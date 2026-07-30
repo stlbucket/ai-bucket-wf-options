@@ -2,7 +2,7 @@
 
 Quick operator steps for shipping the current code to `function-bucket.com` via GitHub Actions.
 This is the short version — the full runbook (secrets checklist, laptop fallback, first-boot
-expectations, teardown) is `infra/README.md`; the reasoning lives in `.claude/specs/deployment/`
+expectations, teardown) is `infra/README.md`; the reasoning lives in `docs/specs/deployment/`
 (tag auto-deploy: `tag-auto-deploy.md`, D15–D18).
 
 **The pipeline in one line:** `pnpm do-pre-deploy` stamps the release (version true-up + commit +

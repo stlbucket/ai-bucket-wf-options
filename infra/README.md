@@ -3,7 +3,7 @@
 Deployment artifacts for the fnb stack. Like `db/`, this directory stands apart from the pnpm
 workspace. The dev stack (root `docker-compose.yml`, `docker/`) is unchanged — this is additive.
 
-> **Spec (single source of truth):** `.claude/specs/deployment/` — read `production-runtime.md`
+> **Spec (single source of truth):** `docs/specs/deployment/` — read `production-runtime.md`
 > first (the cloud-agnostic contract), then `environment-digitalocean.md` / `environment-aws.md`
 > and `terraform-and-cicd.md`. This README is the operator runbook; the specs hold the reasoning.
 
@@ -144,7 +144,7 @@ at health-verify — bootstrap-identities is a `do-env-build` (operator) step.
 ### DB rebuild — `pnpm do-db-rebuild` (user-run only)
 
 Resets the **fnb DB only** to a clean, bootstrapped state — the prod counterpart of dev
-`pnpm db-rebuild`; spec: `.claude/specs/deployment/prod-db-rebuild.md`. Typed confirmation
+`pnpm db-rebuild`; spec: `docs/specs/deployment/prod-db-rebuild.md`. Typed confirmation
 (`rebuild do-prod fnb`); `BACKUP=1` takes a `pg_dump -Fc` to `/opt/fnb/backups/` on the box
 first (a failed dump aborts the run). **Destroys** all app data AND empties the assets bucket
 (orphan objects are never left behind). **Survives**: ZITADEL identities, the n8n engine DB

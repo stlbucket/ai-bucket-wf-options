@@ -1,7 +1,7 @@
 -- Public read-only dataset: location_datasets.brewery has RLS enabled, one permissive SELECT
 -- policy (view_all USING true), and NO write policy — writes only via
 -- location_datasets_fn.upsert_breweries (SECURITY DEFINER) from the worker.
--- Spec: .claude/specs/db-testing/rls-tests.md.
+-- Spec: docs/specs/db-testing/rls-tests.md.
 begin;
 set search_path to tap, public;
 select plan(4);

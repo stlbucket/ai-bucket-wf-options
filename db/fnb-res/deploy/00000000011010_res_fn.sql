@@ -1,4 +1,4 @@
--- res_fn functions (.claude/specs/urn-registry/_shared.data.md §4.3).
+-- res_fn functions (docs/specs/urn-registry/_shared.data.md §4.3).
 -- build_urn ships with 00000000011000_res (res.resource.urn is generated from it).
 
 ------------------------------------------------------------------------ uuid_generate_v7

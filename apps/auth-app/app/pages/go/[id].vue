@@ -4,7 +4,7 @@ import { parseUrn } from '@function-bucket/fnb-types'
 import { resolveUrnRoute } from '#shared/utils/urn-route'
 import { assumeResidency } from '~/composables/useLoginFlow'
 
-// OTP login deep-link landing / responder (spec .claude/specs/otp-login/ go.ui.md). A tenant-scoped
+// OTP login deep-link landing / responder (spec docs/specs/otp-login/ go.ui.md). A tenant-scoped
 // link to a URN element (Todo in v1) lands here (D13 — no assigned recipient). If they're logged in
 // we switch to the item's workspace and go; otherwise we offer normal ZITADEL login OR "log in with a
 // code": the opener enters their OWN phone/email and, if it belongs to a resident of the link's

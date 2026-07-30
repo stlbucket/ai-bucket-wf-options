@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # do-db-rebuild — reset the do-prod fnb DATABASE to a clean, bootstrapped state
-# (`pnpm do-db-rebuild`). Spec: .claude/specs/deployment/prod-db-rebuild.md (DR1–DR7).
+# (`pnpm do-db-rebuild`). Spec: docs/specs/deployment/prod-db-rebuild.md (DR1–DR7).
 #
 # USER-RUN ONLY — the assistant never executes this. The prod counterpart of dev `pnpm db-rebuild`:
 #

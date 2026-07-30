@@ -6,14 +6,14 @@ metadata:
 ---
 
 The fnb data-stack architecture is described in exactly three places, and they must never drift:
-`.claude/specs/global-rules.md`, the affected pattern file
+`docs/specs/global-rules.md`, the affected pattern file
 (`graphql-api-pattern.md` / `package-layers-pattern.md` / `sockets-pattern.md` /
 `monorepo-bootstrap-pattern.md`), and the two skills (`fnb-stack-spec`, `fnb-stack-implementor`).
 The skills **reference** the pattern files — they must not re-describe `withClaims`, the layer
 stack, or package internals inline.
 
 **Why:** The last big migration (Kysely/`db-types`/Nitro-REST → PostGraphile 5 + urql +
-raw-`pg` `db-access`) was recorded only in `.claude/issues/` and never propagated to the specs or
+raw-`pg` `db-access`) was recorded only in `docs/issues/` and never propagated to the specs or
 skills, which then described an abandoned stack in three independently-drifting places. Root cause
 was a DRY violation.
 
@@ -23,4 +23,4 @@ pattern file + both skills **in the same change** — this is codified as **R21*
 spec text. Default data path = urql GraphQL → PostGraphile; `withClaims(claims, fn)` is 2-arg and
 only a carve-out; the pre-claims trio stays raw pg in `db-access`; `*.ui.md` files are never
 touched by a data-layer change. See [[feedback_architecture_docs]] (all docs under
-`.claude/specs/`) and [[project_spec_system]].
+`docs/specs/`) and [[project_spec_system]].

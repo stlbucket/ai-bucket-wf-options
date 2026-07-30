@@ -1,4 +1,4 @@
--- URN registry (.claude/specs/urn-registry/_shared.data.md §4.1–4.3)
+-- URN registry (docs/specs/urn-registry/_shared.data.md §4.1–4.3)
 create schema res;
 create schema res_fn;
 create schema res_api;

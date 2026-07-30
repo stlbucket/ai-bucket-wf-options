@@ -9,7 +9,7 @@ import { computed, ref, watch } from 'vue'
 // Self-contained (owns trigger + modal state — the WorkspaceCreateModal precedent). Renders the
 // residency tree purely from localStorage claims via the shared ResidencyTree component; the
 // on-open refreshClaims() is the only fetch. The switch call stays here (R2).
-// Spec: .claude/specs/workspace-switcher/switcher.ui.md.
+// Spec: docs/specs/workspace-switcher/switcher.ui.md.
 
 defineProps<{ collapsed?: boolean }>()
 

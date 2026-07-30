@@ -1,5 +1,5 @@
 -- RLS, direct on todo.todo — the tenant-only `manage_all_for_tenant` policy
--- (db/fnb-todo/deploy/00000000010480_todo_policies.sql). Spec: .claude/specs/db-testing/rls-tests.md.
+-- (db/fnb-todo/deploy/00000000010480_todo_policies.sql). Spec: docs/specs/db-testing/rls-tests.md.
 -- NOTE the policy is TENANT-ONLY: no permission predicate, no super-admin bypass. Cross-tenant
 -- writes fail WITH CHECK (42501); cross-tenant reads/updates are silent no-ops.
 \set t_a      '11111111-1111-1111-1111-111111111111'

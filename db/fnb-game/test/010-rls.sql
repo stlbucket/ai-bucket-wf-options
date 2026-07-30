@@ -1,7 +1,7 @@
 -- game.* RLS: game_type is public (view_all true); game/game_player/game_event are tenant-scoped
 -- (p:app-user|p:app-admin); game_event is EXTRA-redacted — a PENDING event is visible only to its
 -- own seat (no held-submission leak); game_event_state is DENY-ALL (RLS + revoke). Human seats
--- need a registered resident (resident_urn FK). Spec: .claude/specs/db-testing/rls-tests.md.
+-- need a registered resident (resident_urn FK). Spec: docs/specs/db-testing/rls-tests.md.
 \set t_a     '11111111-1111-1111-1111-111111111111'
 \set t_b     '22222222-2222-2222-2222-222222222222'
 \set res_a   '55555555-5555-5555-5555-555555555555'

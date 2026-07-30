@@ -1,5 +1,5 @@
 # Caddy — the DEV proxy. Plain-HTTP sibling of infra/docker/Caddyfile (the prod TLS front door).
-# Replaces docker/nginx.conf (spec .claude/specs/deployment/dev-caddy-migration/README.md).
+# Replaces docker/nginx.conf (spec docs/specs/deployment/dev-caddy-migration/README.md).
 #
 # Two differences from prod: (1) NO TLS — dev has no domain/ACME, so this binds plain HTTP on :80
 # with auto_https off, exactly as nginx did; (2) NO id./n8n. subdomains — dev runs ZITADEL/n8n on

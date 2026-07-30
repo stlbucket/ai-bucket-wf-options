@@ -1,6 +1,6 @@
 // The machine move-selection algorithm (canonical source — embedded into the game-event
 // workflow's Code nodes by scripts/embed.mjs). Full contract:
-// .claude/specs/game-server/game-event.workflow.data.md §Algorithm. Operates ONLY on the
+// docs/specs/game-server/game-event.workflow.data.md §Algorithm. Operates ONLY on the
 // acting machine seat's redacted view (fairness — locked decision).
 
 import type { BattleshipPlayerView } from '@function-bucket/fnb-types'

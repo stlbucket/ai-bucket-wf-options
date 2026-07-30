@@ -1,6 +1,6 @@
 -- game_fn.create_game behaviour: builds a lobby with the creator at seat 1 (human) + the roster
 -- from _players, registers the game resource, and enforces game-type availability + seat bounds.
--- Spec: .claude/specs/db-testing/fn-behaviour-tests.md. Run as owner (create_game is SECURITY DEFINER).
+-- Spec: docs/specs/db-testing/fn-behaviour-tests.md. Run as owner (create_game is SECURITY DEFINER).
 \set t_a   '11111111-1111-1111-1111-111111111111'
 \set res_a '55555555-5555-5555-5555-555555555555'
 

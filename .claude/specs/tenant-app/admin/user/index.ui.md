@@ -14,8 +14,11 @@ See `README.md` + `_shared.data.md`.
 ## Layout
 - Title: "Residents" (`PageHeader`, subtitle = **people count**, e.g. `12 people across 4 tenants`
   — tenant count = distinct `tenantId`s in the loaded rows; omit the suffix when it is 1)
-- `#actions`: `InviteUserModal` (shown when `canInvite`), and `WorkspaceResidentsModal` (shown
-  when `canInvite && claims.tenantType ∈ {WORKSPACE, CLIENT, ORGANIZATION}`)
+- `#actions` (stacked column, right-aligned): `InviteUserModal` (shown when `canInvite`), and
+  `WorkspaceResidentsModal` (shown when `canInvite && claims.tenantType ∈ {WORKSPACE, CLIENT,
+  ORGANIZATION}`); below the buttons, a **color legend** — one sample `UBadge` per color —
+  `Active / Supporting` (success), `Invited` (warning), `Blocked` (error),
+  `Declined / Inactive` (neutral). Mirrors the shared resident color map (UC1).
 - **`SubtreeResidentList.vue` table (replaces `ResidentList.vue` on this page)**
 
 ## Component: `SubtreeResidentList.vue` — NEW (roll-up)
@@ -27,7 +30,7 @@ Props: `users: SubtreeUserView[]` (see `_shared.data.md`)
     has no residency in the current tenant
   - **Tenants** — one `UBadge` per tenancy (label = `tenantName`, current tenant first;
     badge color = that tenancy's status color; `variant="subtle"`); flex-wrap
-- No emits — navigation only
+- No emits — navigation only (the color legend lives in the page header actions, not here)
 
 ## NEW — Manage Residents (workspace tenants only)
 

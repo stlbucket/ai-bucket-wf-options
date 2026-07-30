@@ -86,7 +86,8 @@ commit;
 --     types are behaviorally identical; the workspace license pack applies to all three).
 --   * the tenant admin (large-tenant-NN-admin@) creates EVERY node
 --     → admin residency in the root and every nested node of their tenant
---   * 4-7 root-level users per tenant (large-tenant-NN-user-MM@), root residency only
+--   * 4-7 root-level users per tenant (large-tenant-NN-user-MM@), home residency in the root;
+--     1-4 of them (randomly picked per node) are also invited into EVERY nested node as guests
 --   * per tenant, ONE floater user (large-tenant-NN-floater@) invited into 5 random
 --     nodes and NOT into the root — a nested-only user with ghost ancestors
 --   * per tenant, 2 random nodes get a guest who is a ROOT USER OF THE OTHER tenant
@@ -130,6 +131,7 @@ declare
   u int;
   d int;         -- workspace depth for this tenant (2..4)
   n_users int;   -- root users for this tenant (4..7)
+  n_pick int;    -- root users invited into a given nested node (1..4)
   n_children int;
   seq int;       -- per-tenant workspace counter (unique names without sibling collisions)
   total int;
@@ -251,6 +253,21 @@ begin
         ,format('large-tenant-%s-user-%s@example.com', nn, lpad(u::text, 2, '0'))::citext
         ,'user'
       );
+    end loop;
+
+    -- 1-4 randomly-picked root users also join EVERY nested node — guest residencies
+    -- (invite_user sees their existing root residency and types these 'guest'; home stays root)
+    for wsrec in select ws_id from seed_ws where tenant_idx = t loop
+      n_pick := 1 + floor(random() * 4)::int; -- 1..4
+      for u in
+        select s from generate_series(1, n_users) s order by random() limit n_pick
+      loop
+        perform app_fn.invite_user(
+          wsrec.ws_id
+          ,format('large-tenant-%s-user-%s@example.com', nn, lpad(u::text, 2, '0'))::citext
+          ,'user'
+        );
+      end loop;
     end loop;
 
     -- the floater: 5 random nodes, never the root — their home residency IS a nested node

@@ -7,7 +7,7 @@ const { user } = useAuth()
 const { users, executeQuery: refetchResidents } = useSubtreeResidents(() => user.value?.tenantId ?? null)
 
 const tenantCount = computed(
-  () => new Set(users.value.flatMap((u) => u.tenancies.map((t) => t.tenantId))).size
+  () => new Set(users.value.flatMap(u => u.tenancies.map(t => t.tenantId))).size
 )
 const subtitle = computed(() => {
   const people = `${users.value.length} ${users.value.length === 1 ? 'person' : 'people'}`
@@ -22,6 +22,14 @@ const canInvite = computed(() => user.value?.permissions?.includes('p:app-admin'
 const NESTABLE_TYPES = ['WORKSPACE', 'CLIENT', 'ORGANIZATION']
 const isNested = computed(() => NESTABLE_TYPES.includes(user.value?.tenantType ?? ''))
 
+// Mirrors the resident map in auth-layer app/utils/status.ts (UC1) — collapsed to one entry per color.
+const legend: { label: string, color: StatusColor }[] = [
+  { label: 'Active / Supporting', color: 'success' },
+  { label: 'Invited', color: 'warning' },
+  { label: 'Blocked', color: 'error' },
+  { label: 'Declined / Inactive', color: 'neutral' }
+]
+
 function onRosterChanged() {
   refetchResidents({ requestPolicy: 'network-only' })
 }
@@ -29,17 +37,33 @@ function onRosterChanged() {
 
 <template>
   <div class="space-y-5 p-6 sm:p-9">
-    <PageHeader title="Residents" :subtitle="subtitle">
-      <template
-        v-if="canInvite"
-        #actions
-      >
-        <div class="flex flex-wrap items-center gap-2">
-          <WorkspaceResidentsModal
-            v-if="isNested"
-            @changed="onRosterChanged"
-          />
-          <InviteUserModal />
+    <PageHeader
+      title="Residents"
+      :subtitle="subtitle"
+    >
+      <template #actions>
+        <div class="flex flex-col items-end gap-2">
+          <div
+            v-if="canInvite"
+            class="flex flex-wrap items-center gap-2"
+          >
+            <WorkspaceResidentsModal
+              v-if="isNested"
+              @changed="onRosterChanged"
+            />
+            <InviteUserModal />
+          </div>
+          <div class="flex flex-wrap items-center justify-end gap-1.5">
+            <UBadge
+              v-for="entry in legend"
+              :key="entry.label"
+              :color="entry.color"
+              variant="subtle"
+              size="sm"
+            >
+              {{ entry.label }}
+            </UBadge>
+          </div>
         </div>
       </template>
     </PageHeader>

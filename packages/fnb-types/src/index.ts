@@ -22,7 +22,7 @@ export type { Tenant, TenantStatus, TenantType } from '@/tenant'
 export type { ResidencyTreeNode } from '@/residency-tree'
 export type { Profile } from '@/profile'
 export type { Application, Module, Tool } from '@/application'
-export type { Todo, TodoStatus, TodoType } from '@/todo'
+export type { Todo, TodoAssignee, TodoStatus, TodoType } from '@/todo'
 export type {
   Poll,
   PollStatus,

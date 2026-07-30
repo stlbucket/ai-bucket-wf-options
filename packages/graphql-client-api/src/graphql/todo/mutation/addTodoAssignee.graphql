@@ -1,0 +1,15 @@
+mutation AddTodoAssignee(
+  $todoId: UUID!
+  $residentUrn: String!
+) {
+  addTodoAssignee(input: {
+    _todoId: $todoId
+    _residentUrn: $residentUrn
+  }) {
+    todoAssignee {
+      id
+      todoId
+      residentUrn
+    }
+  }
+}

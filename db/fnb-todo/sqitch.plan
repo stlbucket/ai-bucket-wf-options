@@ -5,3 +5,6 @@
 00000000010460_todo_fn_types [00000000010450_todo] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create todo function types
 00000000010470_todo_fn [00000000010460_todo_fn_types] 2026-04-11T00:00:00Z Developer <dev@example.com> # Create todo API and utility functions
 00000000010480_todo_policies [00000000010470_todo_fn] 2026-04-11T00:00:00Z Developer <dev@example.com> # Todo schema grants and RLS policies
+00000000010490_todo_assignee [00000000010480_todo_policies fnb-res:00000000011000_res] 2026-07-30T00:00:00Z Developer <dev@example.com> # Todo assignee join table (multi-assignee refactor)
+00000000010495_todo_assignee_fn [00000000010490_todo_assignee] 2026-07-30T00:00:00Z Developer <dev@example.com> # Multi-assignee add/remove functions, search filter, data migration; drop todo.resident_urn
+00000000010497_todo_deep_copy_fix [00000000010495_todo_assignee_fn] 2026-07-30T00:00:00Z Developer <dev@example.com> # Fix deep_copy_todo create_todo_options row arity (latent bug exposed by pgTAP)

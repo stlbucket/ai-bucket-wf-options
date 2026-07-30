@@ -124,9 +124,11 @@ then verify read-only in GraphiQL: `todoAssigneesList` on `Todo`, `addTodoAssign
 ### Phase 3 — tenant-app UI (`apps/tenant-app`)
 
 - `components/todo/TodoDetailAssign.vue` rewrite per `[id].ui.md` §Assignees: chip group
-  (initials avatar + displayName + `i-lucide-x` remove), `i-lucide-plus` → `UPopover` +
-  `USelectMenu` excluding current assignees, emits `add-assignee` / `remove-assignee`; hidden
-  when `isTemplate`. (Verify `i-lucide-plus` / `i-lucide-x` exist — UC11.)
+  (initials avatar + displayName + `i-lucide-x` remove), `i-lucide-plus` → `UPopover` hosting a
+  **multi-select** `USelectMenu` (`multiple`, full tenant resident list, model seeded with
+  current assignee urns — user decision 2026-07-30); on apply, diff selection vs current and
+  emit one `add-assignee` / `remove-assignee` per delta; hidden when `isTemplate`.
+  (Verify `i-lucide-plus` / `i-lucide-x` exist — UC11.)
 - `TodoDetail.vue` / `TodoDetailSmall.vue`: pass `assignees` down, re-emit both events;
   `pages/tools/todo/[id].vue`: replace `handleAssignResident` (`[id].vue:83`) with
   add/remove handlers + toasts (UC7).

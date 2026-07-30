@@ -1,7 +1,6 @@
 fragment Todo on Todo {
   id
   tenantId
-  residentUrn
   name
   description
   type

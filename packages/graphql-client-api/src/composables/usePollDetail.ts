@@ -4,7 +4,7 @@ import {
   usePollByIdQuery,
   usePollResultsQuery,
   usePollAttributedResponsesQuery,
-  useActiveTenantResidentsQuery,
+  useResidentPickerQuery,
   useUpdatePollMutation,
   useSetPollOptionsMutation,
   useSetPollStatusMutation,
@@ -136,7 +136,7 @@ export function usePollDetail(pollId: string, myUrn: MaybeRefOrGetter<string>) {
     variables: { pollId },
   })
   // Feeds ShareModal's resident picker (OTP deep-link share) — same source as useTodoDetail.
-  const { data: residentsData } = useActiveTenantResidentsQuery()
+  const { data: residentsData } = useResidentPickerQuery()
 
   const { executeMutation: execUpdate } = useUpdatePollMutation()
   const { executeMutation: execSetOptions } = useSetPollOptionsMutation()
@@ -171,6 +171,8 @@ export function usePollDetail(pollId: string, myUrn: MaybeRefOrGetter<string>) {
   const residents = computed(() =>
     (residentsData.value?.residentsList ?? [])
       .filter((r): r is NonNullable<typeof r> => r != null)
+      // poll share picker stays active-only (the pre-TenantResidents behavior)
+      .filter((r) => r.status === 'ACTIVE')
       .map((r) => ({ residentId: r.id, urn: String(r.urn), displayName: r.displayName ?? '', tenantId: r.tenantId })),
   )
 

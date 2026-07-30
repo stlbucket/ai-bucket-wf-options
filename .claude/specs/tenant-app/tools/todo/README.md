@@ -6,8 +6,11 @@
 
 ## Status
 Base module **Implemented — GraphQL** (list + detail + templates + attachments + discussion).
-**Multi-assignee refactor: Draft — specced 2026-07-28, not yet implemented.** The task list
-below covers only the refactor; the base module's history is in the page specs.
+**Multi-assignee refactor: Implemented 2026-07-30** (plan
+`0610__app_______todo-multi-assignee`; sqitch changes `00000000010490_todo_assignee` +
+`00000000010495_todo_assignee_fn` + `00000000010497_todo_deep_copy_fix` — the last fixes a
+latent `deep_copy_todo` options-row arity bug the new pgTAP suite exposed; Make/Clone Template
+had been broken at runtime). The task list below is retro-checked.
 
 ## Purpose
 Tenant-scoped hierarchical todos (tasks/milestones, 4-level UI nesting, templates,
@@ -23,6 +26,7 @@ assignee filter on search.
 | Table name | `todo.todo_assignee` (singular) | House convention — `todo.todo`, `app.resident`, `game.game_player` are all singular |
 | Creator auto-assignment | **Start unassigned** — `create_todo` writes no assignee row | Cleanest zero-to-many semantics; the creator is preserved independently in `res.resource.created_by_resident_id` (user decision 2026-07-28) |
 | API shape | Granular `add_todo_assignee` / `remove_todo_assignee`, both idempotent | Maps 1:1 to chip add/remove UI clicks (user decision 2026-07-28) |
+| Add-assignee UI | **Multi-select** `USelectMenu` (in the `+` popover) seeded with current assignees; selection deltas fire one granular add/remove each; chips keep the `i-lucide-x` remove | User decision 2026-07-30 (replaces the single-pick popover); no API change — the granular mutations absorb multi-pick as a client-side diff |
 | Copy/template semantics | Assignees **never** copy through `deep_copy_todo`; templates cannot hold assignees (guard in `add_todo_assignee`) | Least surprising; a template with assignees is meaningless (user decision 2026-07-28) |
 | Assignee search filter | **In scope** — `assigned_to_resident_urn` in `search_todos_options` + "Assigned to me" toggle on the list page | The usual payoff of multi-assignee (user decision 2026-07-28) |
 | Registry status | `todo_assignee` is **not** URN-registered | It is a relationship row, not a business object — no `urn` column, no `register_resource` |
@@ -68,30 +72,30 @@ of leaving it here.
 ## Implementation Task List — multi-assignee refactor
 
 ### Phase 1 — DB (`db/fnb-todo`, sqitch mechanics per `sqitch-expert`)
-- [ ] New change: `todo.todo_assignee` table (incl. `assigned_by_resident_urn` provenance) + indexes + RLS policy (contract in `_shared.data.md`)
-- [ ] Rework/change: `add_todo_assignee` + `remove_todo_assignee` (`_api` + `_fn`, `p:todo` gate, idempotent, template guard, provenance from `jwt.resident_id()`); drop `assign_todo`
-- [ ] Rework: `search_todos_options` + `assigned_to_resident_urn`; `search_todos` EXISTS predicate
-- [ ] Rework: `create_todo` stops writing `resident_urn`
-- [ ] Same change: data migration (non-template `resident_urn` → assignee rows), then drop `idx_todo_todo_resident_urn` + the column
-- [ ] pgTAP: `010-rls` (todo_assignee tenant isolation), `020-api-permissions` (`p:todo` gates), `030-fn-behaviour` (idempotent add/remove, template guard, cascade on delete, deep-copy carries no assignees, search filter)
+- [x] New change: `todo.todo_assignee` table (incl. `assigned_by_resident_urn` provenance) + indexes + RLS policy (contract in `_shared.data.md`)
+- [x] Rework/change: `add_todo_assignee` + `remove_todo_assignee` (`_api` + `_fn`, `p:todo` gate, idempotent, template guard, provenance from `jwt.resident_id()`); drop `assign_todo`
+- [x] Rework: `search_todos_options` + `assigned_to_resident_urn`; `search_todos` EXISTS predicate
+- [x] Rework: `create_todo` stops writing `resident_urn`
+- [x] Same change: data migration (non-template `resident_urn` → assignee rows), then drop `idx_todo_todo_resident_urn` + the column
+- [x] pgTAP: `010-rls` (todo_assignee tenant isolation), `020-api-permissions` (`p:todo` gates), `030-fn-behaviour` (idempotent add/remove, template guard, cascade on delete, deep-copy carries no assignees, search filter)
 
 ### Phase 2 — GraphQL client (`packages/graphql-client-api`, `packages/fnb-types`)
-- [ ] Fragment `Todo`: drop `residentUrn`; `TodoById` (all 4 levels) + `SearchTodos`: `owner:`/`residentResource:` → `assignees: todoAssigneesList { … }`
-- [ ] New `mutation/addTodoAssignee.graphql` + `mutation/removeTodoAssignee.graphql`; delete misfiled `query/assignTodo.graphql`; re-run codegen
-- [ ] fnb-types: `Todo` drops `residentUrn`; add `TodoAssignee` (R3)
-- [ ] Mappers: `toTodo` / `toTodoNode` (owner → assignees)
-- [ ] `useTodoDetail`: `assignResident` → `addAssignee(urn)` / `removeAssignee(urn)`; `TodoNode.assignees: TodoAssigneeView[]`
-- [ ] `useTodoList`: `assignedToResidentUrn` variable + `filterAssignedTo(urn | null)`
+- [x] Fragment `Todo`: drop `residentUrn`; `TodoById` (all 4 levels) + `SearchTodos`: `owner:`/`residentResource:` → `assignees: todoAssigneesList { … }`
+- [x] New `mutation/addTodoAssignee.graphql` + `mutation/removeTodoAssignee.graphql`; delete misfiled `query/assignTodo.graphql`; re-run codegen
+- [x] fnb-types: `Todo` drops `residentUrn`; add `TodoAssignee` (R3)
+- [x] Mappers: `toTodo` / `toTodoNode` (owner → assignees)
+- [x] `useTodoDetail`: `assignResident` → `addAssignee(urn)` / `removeAssignee(urn)`; `TodoNode.assignees: TodoAssigneeView[]`
+- [x] `useTodoList`: `assignedToResidentUrn` variable + `filterAssignedTo(urn | null)`
 
 ### Phase 3 — UI (`apps/tenant-app`)
-- [ ] `TodoDetailAssign.vue` rewrite: avatar-group + chips with remove, add-popover excluding current assignees (`[id].ui.md`)
-- [ ] `TodoDetail` / `TodoDetailSmall`: pass `assignees`, re-emit `add-assignee` / `remove-assignee`; `[id].vue` wires the composable
-- [ ] `TodoList` / `TodoListSmall`: assignee cell → avatar group / "—"
-- [ ] `index.vue`: "Assigned to me" toggle (resolves own resident urn client-side)
-- [ ] `pnpm build` gate (repo-wide lint is known-broken)
+- [x] `TodoDetailAssign.vue` rewrite: avatar-group + chips with remove, `+` popover with a multi-select `USelectMenu` seeded with current assignees (2026-07-30 locked decision; `[id].ui.md`)
+- [x] `TodoDetail` / `TodoDetailSmall`: pass `assignees`, re-emit `add-assignee` / `remove-assignee`; `[id].vue` wires the composable
+- [x] `TodoList` / `TodoListSmall`: assignee cell → avatar group / "—"
+- [x] `index.vue`: "Assigned to me" toggle (resolves own resident urn client-side)
+- [x] `pnpm build` gate (repo-wide lint is known-broken)
 
 ### Phase 4 — Spec truing
-- [ ] Flip statuses in all five data/ui files + this README to Implemented; retro-check boxes
+- [x] Flip statuses in all five data/ui files + this README to Implemented; retro-check boxes
 
 ## Remaining Open Questions
 - [ ] Should assignment emit a `fnb-notify` notification to the assignee? (Deferred — would

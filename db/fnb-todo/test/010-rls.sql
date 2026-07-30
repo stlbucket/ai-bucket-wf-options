@@ -8,10 +8,12 @@
 \set td_b     'bb222222-2222-2222-2222-222222222222'
 \set prof_a   '33333333-3333-3333-3333-333333333333'
 \set prof_adm '44444444-4444-4444-4444-444444444444'
+\set res_a    '55555555-5555-5555-5555-555555555555'
+\set res_b    '66666666-6666-6666-6666-666666666666'
 
 begin;
 set search_path to tap, public;
-select plan(7);
+select plan(10);
 
 -- seed as owner (postgres bypasses RLS)
 select test._seed_tenant(:'t_a'::uuid, 'tenant-a');
@@ -19,6 +21,14 @@ select test._seed_tenant(:'t_b'::uuid, 'tenant-b');
 insert into todo.todo (id, tenant_id, root_todo_id, name, ordinal) values
   (:'td_a'::uuid, :'t_a'::uuid, :'td_a'::uuid, 'a-todo', 0),
   (:'td_b'::uuid, :'t_b'::uuid, :'td_b'::uuid, 'b-todo', 0);
+-- residents (registered in res.resource, so their urns exist) + one assignee row per tenant
+select test._seed_resident(:'res_a'::uuid, :'t_a'::uuid);
+select test._seed_resident(:'res_b'::uuid, :'t_b'::uuid);
+select urn as res_a_urn from app.resident where id = :'res_a'::uuid \gset
+select urn as res_b_urn from app.resident where id = :'res_b'::uuid \gset
+insert into todo.todo_assignee (todo_id, tenant_id, resident_urn) values
+  (:'td_a'::uuid, :'t_a'::uuid, :'res_a_urn'),
+  (:'td_b'::uuid, :'t_b'::uuid, :'res_b_urn');
 
 -- (1) RLS is actually enabled on the table
 select is(
@@ -66,6 +76,28 @@ select set_eq(
 select test._logout();
 set local role anon;
 select is_empty('select 1 from todo.todo', 'anon sees no rows');
+
+-- ── todo.todo_assignee (multi-assignee refactor) — same tenant-only policy shape ──
+select test._logout();
+
+-- (8) RLS is enabled on todo_assignee
+select is(
+  (select relrowsecurity from pg_class where oid = 'todo.todo_assignee'::regclass),
+  true, 'RLS is enabled on todo.todo_assignee');
+
+-- (9) tenant A sees only its own assignee rows
+select test._login(:'prof_a'::uuid, :'t_a'::uuid, array['p:todo']);
+select set_eq(
+  'select resident_urn::text from todo.todo_assignee',
+  array[:'res_a_urn'::text],
+  'tenant A sees only tenant A assignee rows');
+
+-- (10) cross-tenant INSERT denied by WITH CHECK
+select throws_ok(
+  format($$ insert into todo.todo_assignee (todo_id, tenant_id, resident_urn)
+            values (%L, %L, %L) $$, :'td_b', :'t_b', :'res_b_urn'),
+  '42501', null,
+  'tenant A cannot INSERT a tenant B assignee row (WITH CHECK)');
 
 select * from finish();
 rollback;

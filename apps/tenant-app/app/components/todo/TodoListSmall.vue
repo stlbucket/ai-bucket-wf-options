@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import type { TodoAssigneeView } from '~/composables/useTodoDetail'
+
 type TodoListItem = {
   id: any
   name: string
@@ -6,6 +8,7 @@ type TodoListItem = {
   status: string
   pinned: boolean
   updatedAt: any
+  assignees: TodoAssigneeView[]
 }
 
 const props = defineProps<{
@@ -16,6 +19,16 @@ const emit = defineEmits<{
   (e: 'pin', todoId: string): void
   (e: 'unpin', todoId: string): void
 }>()
+
+function initialsFor(name: string | null): string {
+  const trimmed = name?.trim()
+  if (!trimmed) return '?'
+  return trimmed
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(w => w.charAt(0).toUpperCase())
+    .join('')
+}
 </script>
 
 <template>
@@ -51,6 +64,23 @@ const emit = defineEmits<{
             </UBadge>
           </div>
         </div>
+      </div>
+      <div
+        v-if="todo.assignees.length"
+        class="flex items-center -space-x-1 shrink-0 ml-2"
+      >
+        <span
+          v-for="assignee in todo.assignees.slice(0, 3)"
+          :key="assignee.residentUrn"
+          class="flex size-[20px] shrink-0 items-center justify-center rounded-full bg-primary/10 text-[9px] font-semibold text-primary ring-1 ring-default"
+          :title="assignee.displayName ?? undefined"
+        >
+          {{ initialsFor(assignee.displayName) }}
+        </span>
+        <span
+          v-if="todo.assignees.length > 3"
+          class="pl-2 text-[10px] text-muted"
+        >+{{ todo.assignees.length - 3 }}</span>
       </div>
       <div class="flex items-center gap-1 shrink-0 ml-2">
         <UButton

@@ -8,15 +8,16 @@
 > and topics have their own ids/registry rows. Authoritative contract:
 > `.claude/specs/urn-registry/stacking-v2.data.md`. `context`/id-sharing mentions below are historical.
 
-> **Multi-assignee refactor (2026-07-28, Draft):** `todo.todo.resident_urn` is replaced by the
-> zero-to-many `todo.todo_assignee` table (`README.md` + `_shared.data.md` own the contract).
-> The **Assignees** sections below are the target; single-owner mentions are historical.
+> **Multi-assignee refactor (implemented 2026-07-30):** `todo.todo.resident_urn` is replaced by
+> the zero-to-many `todo.todo_assignee` table (`README.md` + `_shared.data.md` own the contract).
+> Single-owner mentions below are historical.
 
 ## Status
-Implemented — GraphQL, **except the multi-assignee sections (Draft, 2026-07-28)** — the
-deployed code is still single-slot `AssignTodo`. The **Attachments** section (spec'd +
-implemented 2026-07-09, issue 0480) is live: issue 0330 delivered `useEntityAssets` + the
-tenant-app ⟶ storage-layer wiring, and the todo detail page now consumes them.
+Implemented — GraphQL, **including the multi-assignee sections (2026-07-30)** —
+`AddTodoAssignee`/`RemoveTodoAssignee` replace the single-slot `AssignTodo`. The
+**Attachments** section (spec'd + implemented 2026-07-09, issue 0480) is live: issue 0330
+delivered `useEntityAssets` + the tenant-app ⟶ storage-layer wiring, and the todo detail page
+now consumes them.
 
 ## Route
 `/tenant/tools/todo/[id]` — see `[id].ui.md` for UI details

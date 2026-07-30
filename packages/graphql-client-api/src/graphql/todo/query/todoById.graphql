@@ -3,10 +3,14 @@ query TodoById(
 ) {
   todo(id: $id) {
     ...Todo
-    owner: resourceByResidentUrn {
-      resident {
-        id
-        displayName
+    assignees: todoAssigneesList {
+      id
+      residentUrn
+      resourceByResidentUrn {
+        resident {
+          id
+          displayName
+        }
       }
     }
     parentTodo {
@@ -43,26 +47,38 @@ query TodoById(
     }
     children: todosByParentTodoIdList {
       ...Todo
-      owner: resourceByResidentUrn {
-        resident {
-          id
-          displayName
-        }
-      }
-      children: todosByParentTodoIdList {
-        ...Todo
-        owner: resourceByResidentUrn {
+      assignees: todoAssigneesList {
+        id
+        residentUrn
+        resourceByResidentUrn {
           resident {
             id
             displayName
           }
         }
-        children: todosByParentTodoIdList {
-          ...Todo
-          owner: resourceByResidentUrn {
+      }
+      children: todosByParentTodoIdList {
+        ...Todo
+        assignees: todoAssigneesList {
+          id
+          residentUrn
+          resourceByResidentUrn {
             resident {
               id
               displayName
+            }
+          }
+        }
+        children: todosByParentTodoIdList {
+          ...Todo
+          assignees: todoAssigneesList {
+            id
+            residentUrn
+            resourceByResidentUrn {
+              resident {
+                id
+                displayName
+              }
             }
           }
           hiddenChildren: todosByParentTodoId {

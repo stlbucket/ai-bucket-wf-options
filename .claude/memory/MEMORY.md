@@ -7,6 +7,7 @@
 - [fnb-msg full stack status](project_msg_stack.md) — architecture, cross-app fetch pattern, WebSocket setup, DB types status, pending verification steps
 - [h3 WebSocket publish broken](feedback_h3_websocket_publish.md) — h3 1.15.11 has no publish method; use direct peer.send() via Map registry
 - [Spec system](project_spec_system.md) — `.claude/specs/` with global-rules.md (R1–R21), graphql-api-pattern.md, sockets-pattern.md + per-page `.ui.md`/`.data.md` pairs; skill: `/fnb-stack-spec`
+- [Resident pickers: pin to the exact tenant](project_resident_picker_exact_tenant.md) — app.resident RLS spans the workspace tree; pickers must filter client-side on the subject's own tenant_id (shared query is `ResidentPicker`, all statuses, consumers filter)
 - [JWT schema](project_jwt_schema.md) — JWT accessor functions live in `jwt` schema (not `auth`); grants for authenticated/anon in auth_policies.sql
 - [db-types generation — RETIRED](project_db_types_generation.md) — db-types (Kysely/Kanel) is gone; replaced by db-access + graphql-client-api. Only the barrel-export ESM-crash lesson still applies
 - [Architecture is single-sourced](feedback_architecture_single_source.md) — stack described once in pattern files; any architecture change updates specs + both skills in the same change (global-rules R21). Default = urql GraphQL → PostGraphile; 2-arg withClaims is a carve-out

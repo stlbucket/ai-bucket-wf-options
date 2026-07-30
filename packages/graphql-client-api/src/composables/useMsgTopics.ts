@@ -1,7 +1,7 @@
 import { computed, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 import {
-  useActiveTenantResidentsQuery,
+  useResidentPickerQuery,
   useMySubscribedTopicsQuery,
   useUpsertTopicMutation,
 } from '../generated/fnb-graphql-api'
@@ -86,10 +86,12 @@ export function useMsgTopics(currentResidentId?: MaybeRef<string | undefined>) {
 }
 
 export function useMsgResidents() {
-  const { data, fetching, error } = useActiveTenantResidentsQuery()
+  const { data, fetching, error } = useResidentPickerQuery()
   const residents = computed<MsgResidentItem[]>(() =>
     (data.value?.residentsList ?? [])
       .filter((r): r is NonNullable<typeof r> => r != null)
+      // msg participants stay active-only (the pre-TenantResidents behavior)
+      .filter((r) => r.status === 'ACTIVE')
       .map((r) => ({
         residentId: String(r.id),
         urn: String(r.urn),

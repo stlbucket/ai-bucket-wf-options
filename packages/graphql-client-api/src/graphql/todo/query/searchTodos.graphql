@@ -3,6 +3,7 @@ query SearchTodos(
   $todoType: TodoType
   $rootsOnly: Boolean
   $isTemplate: Boolean
+  $assignedToResidentUrn: String
 ) {
    searchTodos (
     _options: {
@@ -10,14 +11,19 @@ query SearchTodos(
       todoType: $todoType
       rootsOnly: $rootsOnly
       isTemplate: $isTemplate
+      assignedToResidentUrn: $assignedToResidentUrn
   	}
   ){
     nodes {
       ...Todo
-      residentResource: resourceByResidentUrn {
-        resident {
-          id
-          displayName
+      assignees: todoAssigneesList {
+        id
+        residentUrn
+        resourceByResidentUrn {
+          resident {
+            id
+            displayName
+          }
         }
       }
       parentTodo {

@@ -1,5 +1,12 @@
 # tools — Shared Data Types & Permissions (Todo)
 
+> **Superseded for the todo schema/API contract (2026-07-30):** the authoritative todo data
+> contract now lives in `tools/todo/_shared.data.md` (created for the multi-assignee refactor —
+> `todo.todo_assignee`, `add/remove_todo_assignee`, the `assigned_to_resident_urn` search
+> filter; `todo.todo.resident_urn` and `assign_todo` are **dropped**). This file remains for
+> the nav registration and historical notes only — where it disagrees with
+> `tools/todo/_shared.data.md`, that file wins.
+
 > **URN-registry migration (2026-07-10):** the `<module>_tenant`/`<module>_resident` mirror
 > tables, `ensure_<module>_resident`, and the `handle_update_profile` triggers described below
 > are **removed**. Resident references are now URN columns (`posted_by_resident_urn`,

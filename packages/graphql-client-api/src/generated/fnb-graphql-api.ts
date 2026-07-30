@@ -125,6 +125,46 @@ export type ActivateWorkspacePayloadTenantEdgeArgs = {
   orderBy?: Array<TenantsOrderBy>;
 };
 
+/** All input for the `addTodoAssignee` mutation. */
+export type AddTodoAssigneeInput = {
+  _residentUrn?: InputMaybe<Scalars['String']['input']>;
+  _todoId?: InputMaybe<Scalars['UUID']['input']>;
+  /**
+   * An arbitrary string value with no semantic meaning. Will be included in the
+   * payload verbatim. May be used to track mutations by the client.
+   */
+  clientMutationId?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** The output of our `addTodoAssignee` mutation. */
+export type AddTodoAssigneePayload = {
+  __typename: 'AddTodoAssigneePayload';
+  /**
+   * The exact same `clientMutationId` that was provided in the mutation input,
+   * unchanged and unused. May be used by a client to track mutations.
+   */
+  clientMutationId?: Maybe<Scalars['String']['output']>;
+  /** Our root query field type. Allows us to run any query from our mutation payload. */
+  query?: Maybe<Query>;
+  /** Reads a single `Resource` that is related to this `TodoAssignee`. */
+  resourceByAssignedByResidentUrn?: Maybe<Resource>;
+  /** Reads a single `Resource` that is related to this `TodoAssignee`. */
+  resourceByResidentUrn?: Maybe<Resource>;
+  /** Reads a single `Tenant` that is related to this `TodoAssignee`. */
+  tenant?: Maybe<Tenant>;
+  /** Reads a single `Todo` that is related to this `TodoAssignee`. */
+  todo?: Maybe<Todo>;
+  todoAssignee?: Maybe<TodoAssignee>;
+  /** An edge for our `TodoAssignee`. May be used by Relay 1. */
+  todoAssigneeEdge?: Maybe<TodoAssigneesEdge>;
+};
+
+
+/** The output of our `addTodoAssignee` mutation. */
+export type AddTodoAssigneePayloadTodoAssigneeEdgeArgs = {
+  orderBy?: Array<TodoAssigneesOrderBy>;
+};
+
 export type Airport = Node & {
   __typename: 'Airport';
   /** Reads and enables pagination through a set of `AirportFrequency`. */
@@ -964,48 +1004,6 @@ export enum AssetsOrderBy {
   WfIdDesc = 'WF_ID_DESC'
 }
 
-/** All input for the `assignTodo` mutation. */
-export type AssignTodoInput = {
-  _residentUrn?: InputMaybe<Scalars['String']['input']>;
-  _todoId?: InputMaybe<Scalars['UUID']['input']>;
-  /**
-   * An arbitrary string value with no semantic meaning. Will be included in the
-   * payload verbatim. May be used to track mutations by the client.
-   */
-  clientMutationId?: InputMaybe<Scalars['String']['input']>;
-};
-
-/** The output of our `assignTodo` mutation. */
-export type AssignTodoPayload = {
-  __typename: 'AssignTodoPayload';
-  /**
-   * The exact same `clientMutationId` that was provided in the mutation input,
-   * unchanged and unused. May be used by a client to track mutations.
-   */
-  clientMutationId?: Maybe<Scalars['String']['output']>;
-  /** Reads a single `Todo` that is related to this `Todo`. */
-  parentTodo?: Maybe<Todo>;
-  /** Our root query field type. Allows us to run any query from our mutation payload. */
-  query?: Maybe<Query>;
-  /** Reads a single `Resource` that is related to this `Todo`. */
-  resource?: Maybe<Resource>;
-  /** Reads a single `Resource` that is related to this `Todo`. */
-  resourceByResidentUrn?: Maybe<Resource>;
-  /** Reads a single `Todo` that is related to this `Todo`. */
-  rootTodo?: Maybe<Todo>;
-  /** Reads a single `Tenant` that is related to this `Todo`. */
-  tenant?: Maybe<Tenant>;
-  todo?: Maybe<Todo>;
-  /** An edge for our `Todo`. May be used by Relay 1. */
-  todoEdge?: Maybe<TodosEdge>;
-};
-
-
-/** The output of our `assignTodo` mutation. */
-export type AssignTodoPayloadTodoEdgeArgs = {
-  orderBy?: Array<TodosOrderBy>;
-};
-
 /** All input for the `assumeResidency` mutation. */
 export type AssumeResidencyInput = {
   _residentId?: InputMaybe<Scalars['UUID']['input']>;
@@ -1701,8 +1699,6 @@ export type CreateTodoPayload = {
   query?: Maybe<Query>;
   /** Reads a single `Resource` that is related to this `Todo`. */
   resource?: Maybe<Resource>;
-  /** Reads a single `Resource` that is related to this `Todo`. */
-  resourceByResidentUrn?: Maybe<Resource>;
   /** Reads a single `Todo` that is related to this `Todo`. */
   rootTodo?: Maybe<Todo>;
   /** Reads a single `Tenant` that is related to this `Todo`. */
@@ -3505,8 +3501,6 @@ export type MakeTemplateFromTodoPayload = {
   query?: Maybe<Query>;
   /** Reads a single `Resource` that is related to this `Todo`. */
   resource?: Maybe<Resource>;
-  /** Reads a single `Resource` that is related to this `Todo`. */
-  resourceByResidentUrn?: Maybe<Resource>;
   /** Reads a single `Todo` that is related to this `Todo`. */
   rootTodo?: Maybe<Todo>;
   /** Reads a single `Tenant` that is related to this `Todo`. */
@@ -3546,8 +3540,6 @@ export type MakeTodoFromTemplatePayload = {
   query?: Maybe<Query>;
   /** Reads a single `Resource` that is related to this `Todo`. */
   resource?: Maybe<Resource>;
-  /** Reads a single `Resource` that is related to this `Todo`. */
-  resourceByResidentUrn?: Maybe<Resource>;
   /** Reads a single `Todo` that is related to this `Todo`. */
   rootTodo?: Maybe<Todo>;
   /** Reads a single `Tenant` that is related to this `Todo`. */
@@ -3806,7 +3798,7 @@ export type Mutation = {
   __typename: 'Mutation';
   activateTenant?: Maybe<ActivateTenantPayload>;
   activateWorkspace?: Maybe<ActivateWorkspacePayload>;
-  assignTodo?: Maybe<AssignTodoPayload>;
+  addTodoAssignee?: Maybe<AddTodoAssigneePayload>;
   assumeResidency?: Maybe<AssumeResidencyPayload>;
   becomeSupport?: Maybe<BecomeSupportPayload>;
   blockResident?: Maybe<BlockResidentPayload>;
@@ -3841,6 +3833,7 @@ export type Mutation = {
   parkSupportTicket?: Maybe<ParkSupportTicketPayload>;
   pinTodo?: Maybe<PinTodoPayload>;
   reactivateTenantSubscription?: Maybe<ReactivateTenantSubscriptionPayload>;
+  removeTodoAssignee?: Maybe<RemoveTodoAssigneePayload>;
   reopenSupportTicket?: Maybe<ReopenSupportTicketPayload>;
   resignGame?: Maybe<ResignGamePayload>;
   revokeMySessions?: Maybe<RevokeMySessionsPayload>;
@@ -3892,8 +3885,8 @@ export type MutationActivateWorkspaceArgs = {
 
 
 /** The root mutation type which contains root level fields which mutate data. */
-export type MutationAssignTodoArgs = {
-  input: AssignTodoInput;
+export type MutationAddTodoAssigneeArgs = {
+  input: AddTodoAssigneeInput;
 };
 
 
@@ -4098,6 +4091,12 @@ export type MutationPinTodoArgs = {
 /** The root mutation type which contains root level fields which mutate data. */
 export type MutationReactivateTenantSubscriptionArgs = {
   input: ReactivateTenantSubscriptionInput;
+};
+
+
+/** The root mutation type which contains root level fields which mutate data. */
+export type MutationRemoveTodoAssigneeArgs = {
+  input: RemoveTodoAssigneeInput;
 };
 
 
@@ -5012,8 +5011,6 @@ export type PinTodoPayload = {
   query?: Maybe<Query>;
   /** Reads a single `Resource` that is related to this `Todo`. */
   resource?: Maybe<Resource>;
-  /** Reads a single `Resource` that is related to this `Todo`. */
-  resourceByResidentUrn?: Maybe<Resource>;
   /** Reads a single `Todo` that is related to this `Todo`. */
   rootTodo?: Maybe<Todo>;
   /** Reads a single `Tenant` that is related to this `Todo`. */
@@ -5902,6 +5899,16 @@ export type Query = Node & {
   throwError?: Maybe<Scalars['Boolean']['output']>;
   /** Get a single `Todo`. */
   todo?: Maybe<Todo>;
+  /** Get a single `TodoAssignee`. */
+  todoAssignee?: Maybe<TodoAssignee>;
+  /** Reads a single `TodoAssignee` using its globally unique `ID`. */
+  todoAssigneeByNodeId?: Maybe<TodoAssignee>;
+  /** Get a single `TodoAssignee`. */
+  todoAssigneeByTodoIdAndResidentUrn?: Maybe<TodoAssignee>;
+  /** Reads and enables pagination through a set of `TodoAssignee`. */
+  todoAssignees?: Maybe<TodoAssigneesConnection>;
+  /** Reads a set of `TodoAssignee`. */
+  todoAssigneesList?: Maybe<Array<TodoAssignee>>;
   /** Reads a single `Todo` using its globally unique `ID`. */
   todoByNodeId?: Maybe<Todo>;
   /** Get a single `Todo`. */
@@ -7676,6 +7683,46 @@ export type QueryTodoArgs = {
 
 
 /** The root query type which gives access points into the data universe. */
+export type QueryTodoAssigneeArgs = {
+  id: Scalars['UUID']['input'];
+};
+
+
+/** The root query type which gives access points into the data universe. */
+export type QueryTodoAssigneeByNodeIdArgs = {
+  nodeId: Scalars['ID']['input'];
+};
+
+
+/** The root query type which gives access points into the data universe. */
+export type QueryTodoAssigneeByTodoIdAndResidentUrnArgs = {
+  residentUrn: Scalars['String']['input'];
+  todoId: Scalars['UUID']['input'];
+};
+
+
+/** The root query type which gives access points into the data universe. */
+export type QueryTodoAssigneesArgs = {
+  after?: InputMaybe<Scalars['Cursor']['input']>;
+  before?: InputMaybe<Scalars['Cursor']['input']>;
+  condition?: InputMaybe<TodoAssigneeCondition>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Array<TodoAssigneesOrderBy>>;
+};
+
+
+/** The root query type which gives access points into the data universe. */
+export type QueryTodoAssigneesListArgs = {
+  condition?: InputMaybe<TodoAssigneeCondition>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Array<TodoAssigneesOrderBy>>;
+};
+
+
+/** The root query type which gives access points into the data universe. */
 export type QueryTodoByNodeIdArgs = {
   nodeId: Scalars['ID']['input'];
 };
@@ -8137,6 +8184,30 @@ export enum RegionsOrderBy {
   WikipediaLinkDesc = 'WIKIPEDIA_LINK_DESC'
 }
 
+/** All input for the `removeTodoAssignee` mutation. */
+export type RemoveTodoAssigneeInput = {
+  _residentUrn?: InputMaybe<Scalars['String']['input']>;
+  _todoId?: InputMaybe<Scalars['UUID']['input']>;
+  /**
+   * An arbitrary string value with no semantic meaning. Will be included in the
+   * payload verbatim. May be used to track mutations by the client.
+   */
+  clientMutationId?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** The output of our `removeTodoAssignee` mutation. */
+export type RemoveTodoAssigneePayload = {
+  __typename: 'RemoveTodoAssigneePayload';
+  boolean?: Maybe<Scalars['Boolean']['output']>;
+  /**
+   * The exact same `clientMutationId` that was provided in the mutation input,
+   * unchanged and unused. May be used by a client to track mutations.
+   */
+  clientMutationId?: Maybe<Scalars['String']['output']>;
+  /** Our root query field type. Allows us to run any query from our mutation payload. */
+  query?: Maybe<Query>;
+};
+
 /** All input for the `reopenSupportTicket` mutation. */
 export type ReopenSupportTicketInput = {
   _ticketId?: InputMaybe<Scalars['UUID']['input']>;
@@ -8532,10 +8603,14 @@ export type Resource = Node & {
   tenantId: Scalars['UUID']['output'];
   /** Reads a single `Todo` that is related to this `Resource`. */
   todo?: Maybe<Todo>;
-  /** Reads and enables pagination through a set of `Todo`. */
-  todosByResidentUrn: TodosConnection;
-  /** Reads and enables pagination through a set of `Todo`. */
-  todosByResidentUrnList: Array<Todo>;
+  /** Reads and enables pagination through a set of `TodoAssignee`. */
+  todoAssigneesByAssignedByResidentUrn: TodoAssigneesConnection;
+  /** Reads and enables pagination through a set of `TodoAssignee`. */
+  todoAssigneesByAssignedByResidentUrnList: Array<TodoAssignee>;
+  /** Reads and enables pagination through a set of `TodoAssignee`. */
+  todoAssigneesByResidentUrn: TodoAssigneesConnection;
+  /** Reads and enables pagination through a set of `TodoAssignee`. */
+  todoAssigneesByResidentUrnList: Array<TodoAssignee>;
   /** Reads a single `Topic` that is related to this `Resource`. */
   topic?: Maybe<Topic>;
   /** Reads and enables pagination through a set of `Topic`. */
@@ -8717,22 +8792,41 @@ export type ResourceSubscribersByResidentUrnListArgs = {
 };
 
 
-export type ResourceTodosByResidentUrnArgs = {
+export type ResourceTodoAssigneesByAssignedByResidentUrnArgs = {
   after?: InputMaybe<Scalars['Cursor']['input']>;
   before?: InputMaybe<Scalars['Cursor']['input']>;
-  condition?: InputMaybe<TodoCondition>;
+  condition?: InputMaybe<TodoAssigneeCondition>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<Array<TodosOrderBy>>;
+  orderBy?: InputMaybe<Array<TodoAssigneesOrderBy>>;
 };
 
 
-export type ResourceTodosByResidentUrnListArgs = {
-  condition?: InputMaybe<TodoCondition>;
+export type ResourceTodoAssigneesByAssignedByResidentUrnListArgs = {
+  condition?: InputMaybe<TodoAssigneeCondition>;
   first?: InputMaybe<Scalars['Int']['input']>;
   offset?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<Array<TodosOrderBy>>;
+  orderBy?: InputMaybe<Array<TodoAssigneesOrderBy>>;
+};
+
+
+export type ResourceTodoAssigneesByResidentUrnArgs = {
+  after?: InputMaybe<Scalars['Cursor']['input']>;
+  before?: InputMaybe<Scalars['Cursor']['input']>;
+  condition?: InputMaybe<TodoAssigneeCondition>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Array<TodoAssigneesOrderBy>>;
+};
+
+
+export type ResourceTodoAssigneesByResidentUrnListArgs = {
+  condition?: InputMaybe<TodoAssigneeCondition>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Array<TodoAssigneesOrderBy>>;
 };
 
 
@@ -9227,6 +9321,7 @@ export type SearchTenantsOptionInput = {
 
 /** An input for mutations affecting `SearchTodosOption` */
 export type SearchTodosOptionInput = {
+  assignedToResidentUrn?: InputMaybe<Scalars['String']['input']>;
   isTemplate?: InputMaybe<Scalars['Boolean']['input']>;
   pagingOptions?: InputMaybe<PagingOptionInput>;
   rootsOnly?: InputMaybe<Scalars['Boolean']['input']>;
@@ -10097,6 +10192,10 @@ export type Tenant = Node & {
   tenantSubscriptions: TenantSubscriptionsConnection;
   /** Reads and enables pagination through a set of `TenantSubscription`. */
   tenantSubscriptionsList: Array<TenantSubscription>;
+  /** Reads and enables pagination through a set of `TodoAssignee`. */
+  todoAssignees: TodoAssigneesConnection;
+  /** Reads and enables pagination through a set of `TodoAssignee`. */
+  todoAssigneesList: Array<TodoAssignee>;
   /** Reads and enables pagination through a set of `Todo`. */
   todos: TodosConnection;
   /** Reads and enables pagination through a set of `Todo`. */
@@ -10491,6 +10590,25 @@ export type TenantTenantSubscriptionsListArgs = {
 };
 
 
+export type TenantTodoAssigneesArgs = {
+  after?: InputMaybe<Scalars['Cursor']['input']>;
+  before?: InputMaybe<Scalars['Cursor']['input']>;
+  condition?: InputMaybe<TodoAssigneeCondition>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Array<TodoAssigneesOrderBy>>;
+};
+
+
+export type TenantTodoAssigneesListArgs = {
+  condition?: InputMaybe<TodoAssigneeCondition>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Array<TodoAssigneesOrderBy>>;
+};
+
+
 export type TenantTodosArgs = {
   after?: InputMaybe<Scalars['Cursor']['input']>;
   before?: InputMaybe<Scalars['Cursor']['input']>;
@@ -10755,11 +10873,8 @@ export type Todo = Node & {
   parentTodo?: Maybe<Todo>;
   parentTodoId?: Maybe<Scalars['UUID']['output']>;
   pinned: Scalars['Boolean']['output'];
-  residentUrn?: Maybe<Scalars['String']['output']>;
   /** Reads a single `Resource` that is related to this `Todo`. */
   resource?: Maybe<Resource>;
-  /** Reads a single `Resource` that is related to this `Todo`. */
-  resourceByResidentUrn?: Maybe<Resource>;
   /** Reads a single `Todo` that is related to this `Todo`. */
   rootTodo?: Maybe<Todo>;
   rootTodoId: Scalars['UUID']['output'];
@@ -10768,6 +10883,10 @@ export type Todo = Node & {
   /** Reads a single `Tenant` that is related to this `Todo`. */
   tenant?: Maybe<Tenant>;
   tenantId: Scalars['UUID']['output'];
+  /** Reads and enables pagination through a set of `TodoAssignee`. */
+  todoAssignees: TodoAssigneesConnection;
+  /** Reads and enables pagination through a set of `TodoAssignee`. */
+  todoAssigneesList: Array<TodoAssignee>;
   /** Reads and enables pagination through a set of `Todo`. */
   todosByParentTodoId: TodosConnection;
   /** Reads and enables pagination through a set of `Todo`. */
@@ -10779,6 +10898,25 @@ export type Todo = Node & {
   type: TodoType;
   updatedAt: Scalars['Datetime']['output'];
   urn: Scalars['String']['output'];
+};
+
+
+export type TodoTodoAssigneesArgs = {
+  after?: InputMaybe<Scalars['Cursor']['input']>;
+  before?: InputMaybe<Scalars['Cursor']['input']>;
+  condition?: InputMaybe<TodoAssigneeCondition>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Array<TodoAssigneesOrderBy>>;
+};
+
+
+export type TodoTodoAssigneesListArgs = {
+  condition?: InputMaybe<TodoAssigneeCondition>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Array<TodoAssigneesOrderBy>>;
 };
 
 
@@ -10819,6 +10957,86 @@ export type TodoTodosByRootTodoIdListArgs = {
   orderBy?: InputMaybe<Array<TodosOrderBy>>;
 };
 
+export type TodoAssignee = Node & {
+  __typename: 'TodoAssignee';
+  assignedByResidentUrn?: Maybe<Scalars['String']['output']>;
+  createdAt: Scalars['Datetime']['output'];
+  id: Scalars['UUID']['output'];
+  /** A globally unique identifier. Can be used in various places throughout the system to identify this single value. */
+  nodeId: Scalars['ID']['output'];
+  residentUrn: Scalars['String']['output'];
+  /** Reads a single `Resource` that is related to this `TodoAssignee`. */
+  resourceByAssignedByResidentUrn?: Maybe<Resource>;
+  /** Reads a single `Resource` that is related to this `TodoAssignee`. */
+  resourceByResidentUrn?: Maybe<Resource>;
+  /** Reads a single `Tenant` that is related to this `TodoAssignee`. */
+  tenant?: Maybe<Tenant>;
+  tenantId: Scalars['UUID']['output'];
+  /** Reads a single `Todo` that is related to this `TodoAssignee`. */
+  todo?: Maybe<Todo>;
+  todoId: Scalars['UUID']['output'];
+};
+
+/**
+ * A condition to be used against `TodoAssignee` object types. All fields are
+ * tested for equality and combined with a logical ‘and.’
+ */
+export type TodoAssigneeCondition = {
+  /** Checks for equality with the object’s `assignedByResidentUrn` field. */
+  assignedByResidentUrn?: InputMaybe<Scalars['String']['input']>;
+  /** Checks for equality with the object’s `createdAt` field. */
+  createdAt?: InputMaybe<Scalars['Datetime']['input']>;
+  /** Checks for equality with the object’s `id` field. */
+  id?: InputMaybe<Scalars['UUID']['input']>;
+  /** Checks for equality with the object’s `residentUrn` field. */
+  residentUrn?: InputMaybe<Scalars['String']['input']>;
+  /** Checks for equality with the object’s `tenantId` field. */
+  tenantId?: InputMaybe<Scalars['UUID']['input']>;
+  /** Checks for equality with the object’s `todoId` field. */
+  todoId?: InputMaybe<Scalars['UUID']['input']>;
+};
+
+/** A connection to a list of `TodoAssignee` values. */
+export type TodoAssigneesConnection = {
+  __typename: 'TodoAssigneesConnection';
+  /** A list of edges which contains the `TodoAssignee` and cursor to aid in pagination. */
+  edges: Array<Maybe<TodoAssigneesEdge>>;
+  /** A list of `TodoAssignee` objects. */
+  nodes: Array<Maybe<TodoAssignee>>;
+  /** Information to aid in pagination. */
+  pageInfo: PageInfo;
+  /** The count of *all* `TodoAssignee` you could get from the connection. */
+  totalCount: Scalars['Int']['output'];
+};
+
+/** A `TodoAssignee` edge in the connection. */
+export type TodoAssigneesEdge = {
+  __typename: 'TodoAssigneesEdge';
+  /** A cursor for use in pagination. */
+  cursor?: Maybe<Scalars['Cursor']['output']>;
+  /** The `TodoAssignee` at the end of the edge. */
+  node?: Maybe<TodoAssignee>;
+};
+
+/** Methods to use when ordering `TodoAssignee`. */
+export enum TodoAssigneesOrderBy {
+  AssignedByResidentUrnAsc = 'ASSIGNED_BY_RESIDENT_URN_ASC',
+  AssignedByResidentUrnDesc = 'ASSIGNED_BY_RESIDENT_URN_DESC',
+  CreatedAtAsc = 'CREATED_AT_ASC',
+  CreatedAtDesc = 'CREATED_AT_DESC',
+  IdAsc = 'ID_ASC',
+  IdDesc = 'ID_DESC',
+  Natural = 'NATURAL',
+  PrimaryKeyAsc = 'PRIMARY_KEY_ASC',
+  PrimaryKeyDesc = 'PRIMARY_KEY_DESC',
+  ResidentUrnAsc = 'RESIDENT_URN_ASC',
+  ResidentUrnDesc = 'RESIDENT_URN_DESC',
+  TenantIdAsc = 'TENANT_ID_ASC',
+  TenantIdDesc = 'TENANT_ID_DESC',
+  TodoIdAsc = 'TODO_ID_ASC',
+  TodoIdDesc = 'TODO_ID_DESC'
+}
+
 /** A condition to be used against `Todo` object types. All fields are tested for equality and combined with a logical ‘and.’ */
 export type TodoCondition = {
   /** Checks for equality with the object’s `createdAt` field. */
@@ -10837,8 +11055,6 @@ export type TodoCondition = {
   parentTodoId?: InputMaybe<Scalars['UUID']['input']>;
   /** Checks for equality with the object’s `pinned` field. */
   pinned?: InputMaybe<Scalars['Boolean']['input']>;
-  /** Checks for equality with the object’s `residentUrn` field. */
-  residentUrn?: InputMaybe<Scalars['String']['input']>;
   /** Checks for equality with the object’s `rootTodoId` field. */
   rootTodoId?: InputMaybe<Scalars['UUID']['input']>;
   /** Checks for equality with the object’s `status` field. */
@@ -10910,8 +11126,6 @@ export enum TodosOrderBy {
   PinnedDesc = 'PINNED_DESC',
   PrimaryKeyAsc = 'PRIMARY_KEY_ASC',
   PrimaryKeyDesc = 'PRIMARY_KEY_DESC',
-  ResidentUrnAsc = 'RESIDENT_URN_ASC',
-  ResidentUrnDesc = 'RESIDENT_URN_DESC',
   RootTodoIdAsc = 'ROOT_TODO_ID_ASC',
   RootTodoIdDesc = 'ROOT_TODO_ID_DESC',
   StatusAsc = 'STATUS_ASC',
@@ -11231,8 +11445,6 @@ export type UnpinTodoPayload = {
   query?: Maybe<Query>;
   /** Reads a single `Resource` that is related to this `Todo`. */
   resource?: Maybe<Resource>;
-  /** Reads a single `Resource` that is related to this `Todo`. */
-  resourceByResidentUrn?: Maybe<Resource>;
   /** Reads a single `Todo` that is related to this `Todo`. */
   rootTodo?: Maybe<Todo>;
   /** Reads a single `Tenant` that is related to this `Todo`. */
@@ -11536,8 +11748,6 @@ export type UpdateTodoPayload = {
   query?: Maybe<Query>;
   /** Reads a single `Resource` that is related to this `Todo`. */
   resource?: Maybe<Resource>;
-  /** Reads a single `Resource` that is related to this `Todo`. */
-  resourceByResidentUrn?: Maybe<Resource>;
   /** Reads a single `Todo` that is related to this `Todo`. */
   rootTodo?: Maybe<Todo>;
   /** Reads a single `Tenant` that is related to this `Todo`. */
@@ -11578,8 +11788,6 @@ export type UpdateTodoStatusPayload = {
   query?: Maybe<Query>;
   /** Reads a single `Resource` that is related to this `Todo`. */
   resource?: Maybe<Resource>;
-  /** Reads a single `Resource` that is related to this `Todo`. */
-  resourceByResidentUrn?: Maybe<Resource>;
   /** Reads a single `Todo` that is related to this `Todo`. */
   rootTodo?: Maybe<Todo>;
   /** Reads a single `Tenant` that is related to this `Todo`. */
@@ -12276,10 +12484,10 @@ export type ResidentByIdQueryVariables = Exact<{
 
 export type ResidentByIdQuery = { __typename: 'Query', resident?: { __typename: 'Resident', id: any, profileId?: any | null, invitedByProfileId?: any | null, invitedByDisplayName?: string | null, tenantId: any, tenantName: string, status: ResidentStatus, displayName?: string | null, email: string, type: ResidentType, createdAt: any, updatedAt: any, urn: string, licenses: Array<{ __typename: 'License', id: any, tenantId: any, residentId: any, profileId?: any | null, tenantSubscriptionId: any, licenseTypeKey: string, status: LicenseStatus, createdAt: any, updatedAt: any, expiresAt?: any | null }> } | null };
 
-export type ActiveTenantResidentsQueryVariables = Exact<{ [key: string]: never; }>;
+export type ResidentPickerQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type ActiveTenantResidentsQuery = { __typename: 'Query', residentsList?: Array<{ __typename: 'Resident', id: any, urn: string, displayName?: string | null, tenantId: any }> | null };
+export type ResidentPickerQuery = { __typename: 'Query', residentsList?: Array<{ __typename: 'Resident', id: any, urn: string, displayName?: string | null, tenantId: any, status: ResidentStatus }> | null };
 
 export type SearchProfilesQueryVariables = Exact<{
   searchTerm?: InputMaybe<Scalars['String']['input']>;
@@ -12770,7 +12978,15 @@ export type SupportTicketByIdQueryVariables = Exact<{
 
 export type SupportTicketByIdQuery = { __typename: 'Query', supportTicket?: { __typename: 'SupportTicket', nodeId: string, id: any, createdAt: any, updatedAt: any, tenantId: any, tenantSubscriptionId: any, residentId: any, title: string, description: string, status: SupportTicketStatus, urn: string, resident?: { __typename: 'Resident', id: any, profileId?: any | null, displayName?: string | null, email: string, status: ResidentStatus, type: ResidentType } | null, tenant?: { __typename: 'Tenant', id: any, name: string, status: TenantStatus, type: TenantType } | null, supportTicketCommentsList: Array<{ __typename: 'SupportTicketComment', nodeId: string, id: any, createdAt: any, updatedAt: any, supportTicketId: any, residentId: any, body: string, resident?: { __typename: 'Resident', id: any, displayName?: string | null, email: string } | null }> } | null };
 
-export type TodoFragment = { __typename: 'Todo', id: any, tenantId: any, residentUrn?: string | null, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string };
+export type TodoFragment = { __typename: 'Todo', id: any, tenantId: any, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string };
+
+export type AddTodoAssigneeMutationVariables = Exact<{
+  todoId: Scalars['UUID']['input'];
+  residentUrn: Scalars['String']['input'];
+}>;
+
+
+export type AddTodoAssigneeMutation = { __typename: 'Mutation', addTodoAssignee?: { __typename: 'AddTodoAssigneePayload', todoAssignee?: { __typename: 'TodoAssignee', id: any, todoId: any, residentUrn: string } | null } | null };
 
 export type CreateTodoMutationVariables = Exact<{
   name: Scalars['String']['input'];
@@ -12807,14 +13023,22 @@ export type PinTodoMutationVariables = Exact<{
 }>;
 
 
-export type PinTodoMutation = { __typename: 'Mutation', pinTodo?: { __typename: 'PinTodoPayload', todo?: { __typename: 'Todo', id: any, tenantId: any, residentUrn?: string | null, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string } | null } | null };
+export type PinTodoMutation = { __typename: 'Mutation', pinTodo?: { __typename: 'PinTodoPayload', todo?: { __typename: 'Todo', id: any, tenantId: any, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string } | null } | null };
+
+export type RemoveTodoAssigneeMutationVariables = Exact<{
+  todoId: Scalars['UUID']['input'];
+  residentUrn: Scalars['String']['input'];
+}>;
+
+
+export type RemoveTodoAssigneeMutation = { __typename: 'Mutation', removeTodoAssignee?: { __typename: 'RemoveTodoAssigneePayload', boolean?: boolean | null } | null };
 
 export type UnpinTodoMutationVariables = Exact<{
   todoId: Scalars['UUID']['input'];
 }>;
 
 
-export type UnpinTodoMutation = { __typename: 'Mutation', unpinTodo?: { __typename: 'UnpinTodoPayload', todo?: { __typename: 'Todo', id: any, tenantId: any, residentUrn?: string | null, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string } | null } | null };
+export type UnpinTodoMutation = { __typename: 'Mutation', unpinTodo?: { __typename: 'UnpinTodoPayload', todo?: { __typename: 'Todo', id: any, tenantId: any, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string } | null } | null };
 
 export type UpdateTodoMutationVariables = Exact<{
   todoId: Scalars['UUID']['input'];
@@ -12833,30 +13057,23 @@ export type UpdateTodoStatusMutationVariables = Exact<{
 
 export type UpdateTodoStatusMutation = { __typename: 'Mutation', updateTodoStatus?: { __typename: 'UpdateTodoStatusPayload', todo?: { __typename: 'Todo', id: any, status: TodoStatus, parentTodo?: { __typename: 'Todo', id: any, status: TodoStatus, parentTodo?: { __typename: 'Todo', id: any, status: TodoStatus, parentTodo?: { __typename: 'Todo', id: any, status: TodoStatus, parentTodo?: { __typename: 'Todo', id: any, status: TodoStatus, parentTodo?: { __typename: 'Todo', id: any, status: TodoStatus, parentTodo?: { __typename: 'Todo', id: any, status: TodoStatus, parentTodo?: { __typename: 'Todo', id: any, status: TodoStatus, parentTodo?: { __typename: 'Todo', id: any, status: TodoStatus, parentTodo?: { __typename: 'Todo', id: any, status: TodoStatus, parentTodo?: { __typename: 'Todo', id: any, status: TodoStatus, parentTodo?: { __typename: 'Todo', id: any, status: TodoStatus } | null } | null } | null } | null } | null } | null } | null } | null } | null } | null } | null } | null } | null };
 
-export type AssignTodoMutationVariables = Exact<{
-  todoId: Scalars['UUID']['input'];
-  residentUrn: Scalars['String']['input'];
-}>;
-
-
-export type AssignTodoMutation = { __typename: 'Mutation', assignTodo?: { __typename: 'AssignTodoPayload', todo?: { __typename: 'Todo', id: any, tenantId: any, residentUrn?: string | null, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string, owner?: { __typename: 'Resource', resident?: { __typename: 'Resident', id: any, displayName?: string | null } | null } | null } | null } | null };
-
 export type SearchTodosQueryVariables = Exact<{
   searchTerm?: InputMaybe<Scalars['String']['input']>;
   todoType?: InputMaybe<TodoType>;
   rootsOnly?: InputMaybe<Scalars['Boolean']['input']>;
   isTemplate?: InputMaybe<Scalars['Boolean']['input']>;
+  assignedToResidentUrn?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type SearchTodosQuery = { __typename: 'Query', searchTodos?: { __typename: 'TodosConnection', nodes: Array<{ __typename: 'Todo', id: any, tenantId: any, residentUrn?: string | null, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string, residentResource?: { __typename: 'Resource', resident?: { __typename: 'Resident', id: any, displayName?: string | null } | null } | null, parentTodo?: { __typename: 'Todo', id: any, tenantId: any, residentUrn?: string | null, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string } | null, tenant?: { __typename: 'Tenant', id: any, name: string } | null } | null> } | null };
+export type SearchTodosQuery = { __typename: 'Query', searchTodos?: { __typename: 'TodosConnection', nodes: Array<{ __typename: 'Todo', id: any, tenantId: any, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string, assignees: Array<{ __typename: 'TodoAssignee', id: any, residentUrn: string, resourceByResidentUrn?: { __typename: 'Resource', resident?: { __typename: 'Resident', id: any, displayName?: string | null } | null } | null }>, parentTodo?: { __typename: 'Todo', id: any, tenantId: any, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string } | null, tenant?: { __typename: 'Tenant', id: any, name: string } | null } | null> } | null };
 
 export type TodoByIdQueryVariables = Exact<{
   id: Scalars['UUID']['input'];
 }>;
 
 
-export type TodoByIdQuery = { __typename: 'Query', todo?: { __typename: 'Todo', id: any, tenantId: any, residentUrn?: string | null, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string, owner?: { __typename: 'Resource', resident?: { __typename: 'Resident', id: any, displayName?: string | null } | null } | null, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string } | null } | null } | null } | null } | null } | null } | null } | null, children: Array<{ __typename: 'Todo', id: any, tenantId: any, residentUrn?: string | null, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string, owner?: { __typename: 'Resource', resident?: { __typename: 'Resident', id: any, displayName?: string | null } | null } | null, children: Array<{ __typename: 'Todo', id: any, tenantId: any, residentUrn?: string | null, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string, owner?: { __typename: 'Resource', resident?: { __typename: 'Resident', id: any, displayName?: string | null } | null } | null, children: Array<{ __typename: 'Todo', id: any, tenantId: any, residentUrn?: string | null, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string, owner?: { __typename: 'Resource', resident?: { __typename: 'Resident', id: any, displayName?: string | null } | null } | null, hiddenChildren: { __typename: 'TodosConnection', totalCount: number } }> }> }> } | null };
+export type TodoByIdQuery = { __typename: 'Query', todo?: { __typename: 'Todo', id: any, tenantId: any, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string, assignees: Array<{ __typename: 'TodoAssignee', id: any, residentUrn: string, resourceByResidentUrn?: { __typename: 'Resource', resident?: { __typename: 'Resident', id: any, displayName?: string | null } | null } | null }>, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string, parentTodo?: { __typename: 'Todo', id: any, name: string } | null } | null } | null } | null } | null } | null } | null } | null, children: Array<{ __typename: 'Todo', id: any, tenantId: any, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string, assignees: Array<{ __typename: 'TodoAssignee', id: any, residentUrn: string, resourceByResidentUrn?: { __typename: 'Resource', resident?: { __typename: 'Resident', id: any, displayName?: string | null } | null } | null }>, children: Array<{ __typename: 'Todo', id: any, tenantId: any, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string, assignees: Array<{ __typename: 'TodoAssignee', id: any, residentUrn: string, resourceByResidentUrn?: { __typename: 'Resource', resident?: { __typename: 'Resident', id: any, displayName?: string | null } | null } | null }>, children: Array<{ __typename: 'Todo', id: any, tenantId: any, name: string, description?: string | null, type: TodoType, status: TodoStatus, ordinal: number, pinned: boolean, tags: Array<string | null>, createdAt: any, updatedAt: any, parentTodoId?: any | null, rootTodoId: any, isTemplate: boolean, urn: string, assignees: Array<{ __typename: 'TodoAssignee', id: any, residentUrn: string, resourceByResidentUrn?: { __typename: 'Resource', resident?: { __typename: 'Resident', id: any, displayName?: string | null } | null } | null }>, hiddenChildren: { __typename: 'TodosConnection', totalCount: number } }> }> }> } | null };
 
 export type TodoByIdForRefreshQueryVariables = Exact<{
   id: Scalars['UUID']['input'];
@@ -13330,7 +13547,6 @@ export const TodoFragmentDoc = gql`
     fragment Todo on Todo {
   id
   tenantId
-  residentUrn
   name
   description
   type
@@ -14166,19 +14382,20 @@ ${LicenseFragmentDoc}`;
 export function useResidentByIdQuery(options?: Omit<Urql.UseQueryArgs<never, ResidentByIdQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<ResidentByIdQuery, ResidentByIdQueryVariables | undefined>({ query: ResidentByIdDocument, variables: undefined, ...options });
 };
-export const ActiveTenantResidentsDocument = gql`
-    query ActiveTenantResidents {
-  residentsList(condition: {status: ACTIVE}) {
+export const ResidentPickerDocument = gql`
+    query ResidentPicker {
+  residentsList {
     id
     urn
     displayName
     tenantId
+    status
   }
 }
     `;
 
-export function useActiveTenantResidentsQuery(options?: Omit<Urql.UseQueryArgs<never, ActiveTenantResidentsQueryVariables | undefined>, 'query'>) {
-  return Urql.useQuery<ActiveTenantResidentsQuery, ActiveTenantResidentsQueryVariables | undefined>({ query: ActiveTenantResidentsDocument, variables: undefined, ...options });
+export function useResidentPickerQuery(options?: Omit<Urql.UseQueryArgs<never, ResidentPickerQueryVariables | undefined>, 'query'>) {
+  return Urql.useQuery<ResidentPickerQuery, ResidentPickerQueryVariables | undefined>({ query: ResidentPickerDocument, variables: undefined, ...options });
 };
 export const SearchProfilesDocument = gql`
     query SearchProfiles($searchTerm: String, $limit: Int, $offset: Int) {
@@ -15240,6 +15457,21 @@ ${SupportTicketCommentFragmentDoc}`;
 export function useSupportTicketByIdQuery(options?: Omit<Urql.UseQueryArgs<never, SupportTicketByIdQueryVariables | undefined>, 'query'>) {
   return Urql.useQuery<SupportTicketByIdQuery, SupportTicketByIdQueryVariables | undefined>({ query: SupportTicketByIdDocument, variables: undefined, ...options });
 };
+export const AddTodoAssigneeDocument = gql`
+    mutation AddTodoAssignee($todoId: UUID!, $residentUrn: String!) {
+  addTodoAssignee(input: {_todoId: $todoId, _residentUrn: $residentUrn}) {
+    todoAssignee {
+      id
+      todoId
+      residentUrn
+    }
+  }
+}
+    `;
+
+export function useAddTodoAssigneeMutation() {
+  return Urql.useMutation<AddTodoAssigneeMutation, AddTodoAssigneeMutationVariables>(AddTodoAssigneeDocument);
+};
 export const CreateTodoDocument = gql`
     mutation CreateTodo($name: String!, $description: String, $parentTodoId: UUID) {
   createTodo(
@@ -15314,6 +15546,17 @@ export const PinTodoDocument = gql`
 
 export function usePinTodoMutation() {
   return Urql.useMutation<PinTodoMutation, PinTodoMutationVariables>(PinTodoDocument);
+};
+export const RemoveTodoAssigneeDocument = gql`
+    mutation RemoveTodoAssignee($todoId: UUID!, $residentUrn: String!) {
+  removeTodoAssignee(input: {_todoId: $todoId, _residentUrn: $residentUrn}) {
+    boolean
+  }
+}
+    `;
+
+export function useRemoveTodoAssigneeMutation() {
+  return Urql.useMutation<RemoveTodoAssigneeMutation, RemoveTodoAssigneeMutationVariables>(RemoveTodoAssigneeDocument);
 };
 export const UnpinTodoDocument = gql`
     mutation UnpinTodo($todoId: UUID!) {
@@ -15406,36 +15649,21 @@ export const UpdateTodoStatusDocument = gql`
 export function useUpdateTodoStatusMutation() {
   return Urql.useMutation<UpdateTodoStatusMutation, UpdateTodoStatusMutationVariables>(UpdateTodoStatusDocument);
 };
-export const AssignTodoDocument = gql`
-    mutation AssignTodo($todoId: UUID!, $residentUrn: String!) {
-  assignTodo(input: {_todoId: $todoId, _residentUrn: $residentUrn}) {
-    todo {
-      ...Todo
-      owner: resourceByResidentUrn {
-        resident {
-          id
-          displayName
-        }
-      }
-    }
-  }
-}
-    ${TodoFragmentDoc}`;
-
-export function useAssignTodoMutation() {
-  return Urql.useMutation<AssignTodoMutation, AssignTodoMutationVariables>(AssignTodoDocument);
-};
 export const SearchTodosDocument = gql`
-    query SearchTodos($searchTerm: String, $todoType: TodoType, $rootsOnly: Boolean, $isTemplate: Boolean) {
+    query SearchTodos($searchTerm: String, $todoType: TodoType, $rootsOnly: Boolean, $isTemplate: Boolean, $assignedToResidentUrn: String) {
   searchTodos(
-    _options: {searchTerm: $searchTerm, todoType: $todoType, rootsOnly: $rootsOnly, isTemplate: $isTemplate}
+    _options: {searchTerm: $searchTerm, todoType: $todoType, rootsOnly: $rootsOnly, isTemplate: $isTemplate, assignedToResidentUrn: $assignedToResidentUrn}
   ) {
     nodes {
       ...Todo
-      residentResource: resourceByResidentUrn {
-        resident {
-          id
-          displayName
+      assignees: todoAssigneesList {
+        id
+        residentUrn
+        resourceByResidentUrn {
+          resident {
+            id
+            displayName
+          }
         }
       }
       parentTodo {
@@ -15457,10 +15685,14 @@ export const TodoByIdDocument = gql`
     query TodoById($id: UUID!) {
   todo(id: $id) {
     ...Todo
-    owner: resourceByResidentUrn {
-      resident {
-        id
-        displayName
+    assignees: todoAssigneesList {
+      id
+      residentUrn
+      resourceByResidentUrn {
+        resident {
+          id
+          displayName
+        }
       }
     }
     parentTodo {
@@ -15497,26 +15729,38 @@ export const TodoByIdDocument = gql`
     }
     children: todosByParentTodoIdList {
       ...Todo
-      owner: resourceByResidentUrn {
-        resident {
-          id
-          displayName
-        }
-      }
-      children: todosByParentTodoIdList {
-        ...Todo
-        owner: resourceByResidentUrn {
+      assignees: todoAssigneesList {
+        id
+        residentUrn
+        resourceByResidentUrn {
           resident {
             id
             displayName
           }
         }
-        children: todosByParentTodoIdList {
-          ...Todo
-          owner: resourceByResidentUrn {
+      }
+      children: todosByParentTodoIdList {
+        ...Todo
+        assignees: todoAssigneesList {
+          id
+          residentUrn
+          resourceByResidentUrn {
             resident {
               id
               displayName
+            }
+          }
+        }
+        children: todosByParentTodoIdList {
+          ...Todo
+          assignees: todoAssigneesList {
+            id
+            residentUrn
+            resourceByResidentUrn {
+              resident {
+                id
+                displayName
+              }
             }
           }
           hiddenChildren: todosByParentTodoId {

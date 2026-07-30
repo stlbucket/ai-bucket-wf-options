@@ -1,8 +1,5 @@
 <script lang="ts" setup>
-type TodoOwner = {
-  residentId: any
-  displayName: string
-}
+import type { TodoAssigneeView } from '~/composables/useTodoDetail'
 
 type TodoResident = {
   residentId: any
@@ -11,74 +8,107 @@ type TodoResident = {
   tenantId: any
 }
 
+type ResidentOption = { label: string, value: string }
+
 const props = defineProps<{
-  owner?: TodoOwner | null
+  assignees: TodoAssigneeView[]
   residents: TodoResident[]
 }>()
 
 const emit = defineEmits<{
-  (e: 'assign-resident', residentUrn: string): void
+  (e: 'add-assignee', residentUrn: string): void
+  (e: 'remove-assignee', residentUrn: string): void
 }>()
 
-const residentOptions = computed(() =>
+const residentOptions = computed<ResidentOption[]>(() =>
   props.residents.map(r => ({ label: r.displayName, value: r.urn }))
 )
-const selectedResident = ref<string | null>(null)
-const open = ref(false)
 
-const initials = computed(() => {
-  const name = props.owner?.displayName?.trim()
-  if (!name) return '?'
-  return name
+const open = ref(false)
+const selected = ref<ResidentOption[]>([])
+
+// Seed the multi-select with the current assignees each time the popover opens,
+// so deselecting an assigned resident reads as removal.
+watch(open, (isOpen) => {
+  if (isOpen) {
+    selected.value = residentOptions.value.filter(o =>
+      props.assignees.some(a => a.residentUrn === o.value)
+    )
+  }
+})
+
+// Diff the selection against the current assignees — one granular add/remove per delta.
+function apply() {
+  const selectedUrns = new Set(selected.value.map(o => o.value))
+  const currentUrns = new Set(props.assignees.map(a => a.residentUrn))
+  for (const urn of selectedUrns) {
+    if (!currentUrns.has(urn)) emit('add-assignee', urn)
+  }
+  for (const urn of currentUrns) {
+    if (!selectedUrns.has(urn)) emit('remove-assignee', urn)
+  }
+  open.value = false
+}
+
+function initialsFor(name: string | null): string {
+  const trimmed = name?.trim()
+  if (!trimmed) return '?'
+  return trimmed
     .split(/\s+/)
     .slice(0, 2)
     .map(w => w.charAt(0).toUpperCase())
     .join('')
-})
-
-function assignResident() {
-  if (selectedResident.value) {
-    emit('assign-resident', selectedResident.value)
-    selectedResident.value = null
-    open.value = false
-  }
 }
 </script>
 
 <template>
-  <div class="flex items-center gap-2">
+  <div class="flex flex-wrap items-center gap-1.5">
     <span
-      class="flex size-[22px] shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary"
-      :class="!owner ? 'text-muted' : ''"
+      v-if="!assignees.length"
+      class="text-[13px] text-muted"
+    >Unassigned</span>
+    <span
+      v-for="assignee in assignees"
+      :key="assignee.residentUrn"
+      class="flex items-center gap-1 rounded-full bg-primary/10 py-0.5 pl-1 pr-0.5"
     >
-      {{ initials }}
+      <span class="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-primary/20 text-[9px] font-semibold text-primary">
+        {{ initialsFor(assignee.displayName) }}
+      </span>
+      <span class="text-[12px] text-highlighted">{{ assignee.displayName ?? 'Unknown' }}</span>
+      <UButton
+        icon="i-lucide-x"
+        size="xs"
+        color="neutral"
+        variant="ghost"
+        :aria-label="`Remove ${assignee.displayName ?? 'assignee'}`"
+        @click="emit('remove-assignee', assignee.residentUrn)"
+      />
     </span>
-    <span class="text-[13px] text-highlighted">{{ owner?.displayName ?? 'Unassigned' }}</span>
     <UPopover v-model:open="open">
-      <button
-        type="button"
-        class="text-[11px] text-muted underline underline-offset-2 hover:text-default"
-      >
-        change
-      </button>
+      <UButton
+        icon="i-lucide-plus"
+        size="xs"
+        color="neutral"
+        variant="ghost"
+        aria-label="Edit assignees"
+      />
       <template #content>
         <div class="flex flex-col gap-2 p-3">
           <USelectMenu
-            v-model="selectedResident"
+            v-model="selected"
             :items="residentOptions"
-            placeholder="Assign resident…"
+            multiple
+            placeholder="Assign residents…"
             size="sm"
             class="w-56"
-            value-attribute="value"
-            option-attribute="label"
           />
           <UButton
             size="sm"
             block
-            :disabled="!selectedResident"
-            @click="assignResident"
+            @click="apply"
           >
-            Assign
+            Apply
           </UButton>
         </div>
       </template>

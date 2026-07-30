@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import type { Todo } from '@function-bucket/fnb-types'
 import {
   useSearchTodosQuery,
   useCreateTodoMutation,
@@ -6,7 +7,13 @@ import {
   useUnpinTodoMutation,
   type SearchTodosQueryVariables,
 } from '../generated/fnb-graphql-api'
-import { toTodo } from '../mappers/todo'
+import { toTodo, toTodoAssigneeView } from '../mappers/todo'
+import type { TodoAssigneeView } from './useTodoDetail'
+
+// List row view (R4): flat Todo + its assignees for the list avatar cell.
+export interface TodoListItem extends Todo {
+  assignees: TodoAssigneeView[]
+}
 
 export function useTodoList() {
   const variables = ref<SearchTodosQueryVariables>({
@@ -19,10 +26,10 @@ export function useTodoList() {
   const { executeMutation: execPin } = usePinTodoMutation()
   const { executeMutation: execUnpin } = useUnpinTodoMutation()
 
-  const todos = computed(() => {
+  const todos = computed<TodoListItem[]>(() => {
     const nodes = (data.value?.searchTodos?.nodes ?? [])
       .filter((t): t is NonNullable<typeof t> => t != null)
-      .map(toTodo)
+      .map((t) => ({ ...toTodo(t), assignees: (t.assignees ?? []).map(toTodoAssigneeView) }))
     return [...nodes].sort((a, b) => {
       if (a.pinned && !b.pinned) return -1
       if (!a.pinned && b.pinned) return 1
@@ -32,9 +39,17 @@ export function useTodoList() {
 
   function search(searchTerm: string, isTemplate: boolean) {
     variables.value = {
+      ...variables.value,
       rootsOnly: true,
       isTemplate,
       searchTerm: searchTerm || undefined,
+    }
+  }
+
+  function filterAssignedTo(residentUrn: string | null) {
+    variables.value = {
+      ...variables.value,
+      assignedToResidentUrn: residentUrn ?? undefined,
     }
   }
 
@@ -58,5 +73,5 @@ export function useTodoList() {
     executeQuery({ requestPolicy: 'network-only' })
   }
 
-  return { todos, fetching, error, search, createTodo, pinTodo, unpinTodo }
+  return { todos, fetching, error, search, filterAssignedTo, createTodo, pinTodo, unpinTodo }
 }

@@ -14,7 +14,8 @@ const {
   addSubtask,
   makeTemplate,
   cloneTemplate,
-  assignResident,
+  addAssignee,
+  removeAssignee,
   pinTodo,
   unpinTodo
 } = useTodoDetail(todoId)
@@ -80,12 +81,21 @@ async function handleCloneTemplate() {
   }
 }
 
-async function handleAssignResident(residentUrn: string) {
+async function handleAddAssignee(residentUrn: string) {
   try {
-    await assignResident(residentUrn)
-    toast.add({ title: 'Assigned', color: 'success' })
+    await addAssignee(residentUrn)
+    toast.add({ title: 'Assignee added', color: 'success' })
   } catch {
-    toast.add({ title: 'Failed to assign', color: 'error' })
+    toast.add({ title: 'Failed to add assignee', color: 'error' })
+  }
+}
+
+async function handleRemoveAssignee(residentUrn: string) {
+  try {
+    await removeAssignee(residentUrn)
+    toast.add({ title: 'Assignee removed', color: 'success' })
+  } catch {
+    toast.add({ title: 'Failed to remove assignee', color: 'error' })
   }
 }
 
@@ -177,7 +187,8 @@ async function handleDeleteAsset(assetId: string) {
             @add-subtask="handleAddSubtask"
             @make-template="handleMakeTemplate"
             @clone-template="handleCloneTemplate"
-            @assign-resident="handleAssignResident"
+            @add-assignee="handleAddAssignee"
+            @remove-assignee="handleRemoveAssignee"
             @pin="handlePin"
             @unpin="handleUnpin"
             @uploaded="handleUploaded"
@@ -196,7 +207,8 @@ async function handleDeleteAsset(assetId: string) {
             @add-subtask="handleAddSubtask"
             @make-template="handleMakeTemplate"
             @clone-template="handleCloneTemplate"
-            @assign-resident="handleAssignResident"
+            @add-assignee="handleAddAssignee"
+            @remove-assignee="handleRemoveAssignee"
             @pin="handlePin"
             @unpin="handleUnpin"
             @uploaded="handleUploaded"

@@ -9,33 +9,35 @@ import {
   useCreateTodoMutation,
   useMakeTemplateFromTodoMutation,
   useMakeTodoFromTemplateMutation,
-  useAssignTodoMutation,
+  useAddTodoAssigneeMutation,
+  useRemoveTodoAssigneeMutation,
   usePinTodoMutation,
   useUnpinTodoMutation,
   useCreateLocationMutation,
   useUpdateLocationMutation,
-  useActiveTenantResidentsQuery,
+  useResidentPickerQuery,
   type TodoStatus,
   type LocationInfoInput,
 } from '../generated/fnb-graphql-api'
 
-export interface TodoOwner {
+export interface TodoAssigneeView {
+  residentUrn: string
   residentId: string
   displayName: string | null
 }
 
-// Recursive, query-shaped view of a todo subtree (owner + children +
+// Recursive, query-shaped view of a todo subtree (assignees + children +
 // deepest-level hidden-children count). A composable view type (R4), not a
 // flat fnb-types entity.
 export interface TodoNode extends Todo {
-  owner: TodoOwner | null
+  assignees: TodoAssigneeView[]
   children: TodoNode[]
   hiddenChildrenCount: number
 }
 
 export function useTodoDetail(todoId: string) {
   const { data, fetching, error, executeQuery } = useTodoByIdQuery({ variables: { id: todoId } })
-  const { data: residentsData } = useActiveTenantResidentsQuery()
+  const { data: residentsData } = useResidentPickerQuery()
 
   const { executeMutation: execUpdateTodo } = useUpdateTodoMutation()
   const { executeMutation: execUpdateStatus } = useUpdateTodoStatusMutation()
@@ -43,7 +45,8 @@ export function useTodoDetail(todoId: string) {
   const { executeMutation: execCreateTodo } = useCreateTodoMutation()
   const { executeMutation: execMakeTemplate } = useMakeTemplateFromTodoMutation()
   const { executeMutation: execCloneTemplate } = useMakeTodoFromTemplateMutation()
-  const { executeMutation: execAssign } = useAssignTodoMutation()
+  const { executeMutation: execAddAssignee } = useAddTodoAssigneeMutation()
+  const { executeMutation: execRemoveAssignee } = useRemoveTodoAssigneeMutation()
   const { executeMutation: execPin } = usePinTodoMutation()
   const { executeMutation: execUnpin } = useUnpinTodoMutation()
   const { executeMutation: execCreateLocation } = useCreateLocationMutation()
@@ -65,11 +68,18 @@ export function useTodoDetail(todoId: string) {
     return chain
   })
 
-  const residents = computed(() =>
-    (residentsData.value?.residentsList ?? [])
+  // Assignable residents: invited or active residents of the todo's EXACT tenant.
+  // RLS on app.resident spans the workspace tree, so the rows must be pinned to the
+  // todo's own tenant_id here — never the top-level tenant or a sibling workspace.
+  const residents = computed(() => {
+    const todoTenantId = data.value?.todo?.tenantId
+    if (todoTenantId == null) return []
+    return (residentsData.value?.residentsList ?? [])
       .filter((r): r is NonNullable<typeof r> => r != null)
-      .map((r) => ({ residentId: r.id, urn: String(r.urn), displayName: r.displayName ?? '', tenantId: r.tenantId })),
-  )
+      .filter((r) => String(r.tenantId) === String(todoTenantId))
+      .filter((r) => r.status === 'ACTIVE' || r.status === 'INVITED')
+      .map((r) => ({ residentId: r.id, urn: String(r.urn), displayName: r.displayName ?? '', tenantId: r.tenantId }))
+  })
 
   function reload() {
     executeQuery({ requestPolicy: 'network-only' })
@@ -114,8 +124,14 @@ export function useTodoDetail(todoId: string) {
       : null
   }
 
-  async function assignResident(residentUrn: string): Promise<void> {
-    const result = await execAssign({ todoId, residentUrn })
+  async function addAssignee(residentUrn: string): Promise<void> {
+    const result = await execAddAssignee({ todoId, residentUrn })
+    if (result.error) throw result.error
+    reload()
+  }
+
+  async function removeAssignee(residentUrn: string): Promise<void> {
+    const result = await execRemoveAssignee({ todoId, residentUrn })
     if (result.error) throw result.error
     reload()
   }
@@ -156,7 +172,8 @@ export function useTodoDetail(todoId: string) {
     addSubtask,
     makeTemplate,
     cloneTemplate,
-    assignResident,
+    addAssignee,
+    removeAssignee,
     pinTodo,
     unpinTodo,
     addLocation,

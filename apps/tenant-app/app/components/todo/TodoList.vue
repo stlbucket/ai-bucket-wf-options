@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { TableColumn } from '@nuxt/ui'
+import type { TodoAssigneeView } from '~/composables/useTodoDetail'
 
 type TodoListItem = {
   id: any
@@ -8,6 +9,7 @@ type TodoListItem = {
   status: string
   pinned: boolean
   updatedAt: any
+  assignees: TodoAssigneeView[]
 }
 
 const props = defineProps<{
@@ -23,8 +25,19 @@ const columns: TableColumn<TodoListItem>[] = [
   { accessorKey: 'name', header: 'Name' },
   { accessorKey: 'status', header: 'Status' },
   { accessorKey: 'type', header: 'Type' },
+  { id: 'assignees', header: 'Assignees' },
   { id: 'actions' },
 ]
+
+function initialsFor(name: string | null): string {
+  const trimmed = name?.trim()
+  if (!trimmed) return '?'
+  return trimmed
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(w => w.charAt(0).toUpperCase())
+    .join('')
+}
 </script>
 
 <template>
@@ -63,6 +76,30 @@ const columns: TableColumn<TodoListItem>[] = [
           milestone
         </UBadge>
         <span v-else class="text-sm text-muted">task</span>
+      </template>
+
+      <template #assignees-cell="{ row }">
+        <span
+          v-if="!row.original.assignees.length"
+          class="text-sm text-muted"
+        >—</span>
+        <div
+          v-else
+          class="flex items-center -space-x-1"
+        >
+          <span
+            v-for="assignee in row.original.assignees.slice(0, 3)"
+            :key="assignee.residentUrn"
+            class="flex size-[22px] shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary ring-1 ring-default"
+            :title="assignee.displayName ?? undefined"
+          >
+            {{ initialsFor(assignee.displayName) }}
+          </span>
+          <span
+            v-if="row.original.assignees.length > 3"
+            class="pl-2 text-[11px] text-muted"
+          >+{{ row.original.assignees.length - 3 }}</span>
+        </div>
       </template>
 
       <template #actions-cell="{ row }">

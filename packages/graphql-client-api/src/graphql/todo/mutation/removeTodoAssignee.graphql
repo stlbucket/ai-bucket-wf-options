@@ -1,0 +1,11 @@
+mutation RemoveTodoAssignee(
+  $todoId: UUID!
+  $residentUrn: String!
+) {
+  removeTodoAssignee(input: {
+    _todoId: $todoId
+    _residentUrn: $residentUrn
+  }) {
+    boolean
+  }
+}

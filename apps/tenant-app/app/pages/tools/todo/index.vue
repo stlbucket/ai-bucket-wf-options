@@ -1,9 +1,26 @@
 <script setup lang="ts">
+import { formatUrn } from '@function-bucket/fnb-types'
+
 const toast = useToast()
-const { todos, fetching, search, createTodo, pinTodo, unpinTodo } = useTodoList()
+const { todos, fetching, search, filterAssignedTo, createTodo, pinTodo, unpinTodo } = useTodoList()
+const { user } = useAuth()
 
 const showTemplates = ref(false)
 const searchTerm = ref('')
+const assignedToMe = ref(false)
+
+// The caller's own resident urn, resolved client-side from claims (frozen URN grammar —
+// the DB filter stays a plain urn parameter; _fn never calls jwt.*).
+const myResidentUrn = computed(() => {
+  const claims = user.value
+  if (!claims?.tenantId || !claims?.residentId) return null
+  return formatUrn({
+    tenantId: claims.tenantId,
+    module: 'app',
+    resourceType: 'resident',
+    id: claims.residentId,
+  })
+})
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 watch(searchTerm, (val) => {
@@ -15,7 +32,17 @@ watch(searchTerm, (val) => {
 
 function toggleTemplates() {
   showTemplates.value = !showTemplates.value
+  // templates carry no assignees — clear the filter when entering template view
+  if (showTemplates.value && assignedToMe.value) {
+    assignedToMe.value = false
+    filterAssignedTo(null)
+  }
   search(searchTerm.value, showTemplates.value)
+}
+
+function toggleAssignedToMe() {
+  assignedToMe.value = !assignedToMe.value
+  filterAssignedTo(assignedToMe.value ? myResidentUrn.value : null)
 }
 
 async function handleCreate(name: string, description?: string) {
@@ -66,6 +93,16 @@ async function handleUnpin(todoId: string) {
       />
       <UButton variant="outline" color="neutral" size="sm" @click="toggleTemplates">
         {{ showTemplates ? 'Hide Templates' : 'Show Templates' }}
+      </UButton>
+      <UButton
+        v-if="!showTemplates"
+        :variant="assignedToMe ? 'solid' : 'outline'"
+        :color="assignedToMe ? 'primary' : 'neutral'"
+        size="sm"
+        icon="i-lucide-user-check"
+        @click="toggleAssignedToMe"
+      >
+        Assigned to me
       </UButton>
     </div>
 

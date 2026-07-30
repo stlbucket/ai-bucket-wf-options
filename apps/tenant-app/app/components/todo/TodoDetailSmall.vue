@@ -5,6 +5,7 @@ import type { TodoNode } from '~/composables/useTodoDetail'
 
 type TodoResident = {
   residentId: any
+  urn: string
   displayName: string
   tenantId: any
 }
@@ -28,7 +29,8 @@ const emit = defineEmits<{
   (e: 'add-subtask', name: string, parentId: string): void
   (e: 'make-template'): void
   (e: 'clone-template'): void
-  (e: 'assign-resident', residentId: string): void
+  (e: 'add-assignee', residentUrn: string): void
+  (e: 'remove-assignee', residentUrn: string): void
   (e: 'pin'): void
   (e: 'unpin'): void
   (e: 'uploaded', asset: AssetMeta): void
@@ -139,10 +141,13 @@ const discussionOpen = ref(false)
               {{ statusLabel(todoTree.status) }}
             </UButton>
           </UDropdownMenu>
+          <!-- templates cannot hold assignees — the assign UI hides entirely -->
           <TodoDetailAssign
-            :owner="todoTree.owner"
+            v-if="!todoTree.isTemplate"
+            :assignees="todoTree.assignees"
             :residents="residents"
-            @assign-resident="emit('assign-resident', $event)"
+            @add-assignee="emit('add-assignee', $event)"
+            @remove-assignee="emit('remove-assignee', $event)"
           />
           <TodoDetailLocation />
         </div>

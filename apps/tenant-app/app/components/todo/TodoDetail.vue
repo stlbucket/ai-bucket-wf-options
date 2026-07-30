@@ -4,6 +4,7 @@ import type { TodoNode } from '~/composables/useTodoDetail'
 
 type TodoResident = {
   residentId: any
+  urn: string
   displayName: string
   tenantId: any
 }
@@ -27,7 +28,8 @@ const emit = defineEmits<{
   (e: 'add-subtask', name: string, parentId: string): void
   (e: 'make-template'): void
   (e: 'clone-template'): void
-  (e: 'assign-resident', residentId: string): void
+  (e: 'add-assignee', residentUrn: string): void
+  (e: 'remove-assignee', residentUrn: string): void
   (e: 'pin'): void
   (e: 'unpin'): void
   (e: 'uploaded', asset: AssetMeta): void
@@ -97,12 +99,16 @@ watch(railOpen, (v) => localStorage.setItem('todo-detail-rail-open', String(v)))
             :status="todoTree.status"
             @update-status="(todoId, status) => emit('update-status', todoId, status)"
           />
-          <span class="h-[18px] w-px bg-[var(--ui-border)]" />
-          <TodoDetailAssign
-            :owner="todoTree.owner"
-            :residents="residents"
-            @assign-resident="emit('assign-resident', $event)"
-          />
+          <!-- templates cannot hold assignees — the assign UI hides entirely -->
+          <template v-if="!todoTree.isTemplate">
+            <span class="h-[18px] w-px bg-[var(--ui-border)]" />
+            <TodoDetailAssign
+              :assignees="todoTree.assignees"
+              :residents="residents"
+              @add-assignee="emit('add-assignee', $event)"
+              @remove-assignee="emit('remove-assignee', $event)"
+            />
+          </template>
           <span class="h-[18px] w-px bg-[var(--ui-border)]" />
           <TodoDetailLocation />
         </div>

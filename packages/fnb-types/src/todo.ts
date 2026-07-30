@@ -9,7 +9,6 @@ import type { Urn } from '@/urn'
 export interface Todo {
   id: string
   tenantId: string
-  residentUrn: Urn | null
   name: string
   description: string | null
   type: TodoType
@@ -23,4 +22,14 @@ export interface Todo {
   createdAt: Date
   updatedAt: Date
   urn: Urn
+}
+
+// Row shape for todo.todo_assignee (zero-to-many assignment join table).
+export interface TodoAssignee {
+  id: string
+  todoId: string
+  tenantId: string
+  residentUrn: Urn
+  assignedByResidentUrn: Urn | null // null on pre-refactor migration rows
+  createdAt: Date
 }

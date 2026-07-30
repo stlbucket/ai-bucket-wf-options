@@ -1,11 +1,11 @@
 # tools/todo/index — Todo List Data
 
-> **Multi-assignee refactor (2026-07-28, Draft):** `residentUrn` leaves the `Todo` fragment;
-> `SearchTodos` nodes select `assignees: todoAssigneesList { … }` and gain an
+> **Multi-assignee refactor (implemented 2026-07-30):** `residentUrn` left the `Todo` fragment;
+> `SearchTodos` nodes select `assignees: todoAssigneesList { … }` and gained an
 > `assignedToResidentUrn` filter. Contract: `README.md` / `_shared.data.md`.
 
 ## Status
-Implemented — GraphQL (status trued up 2026-07-19 by the recurring spec/code reconciliation; no [FILL IN] markers remained and the pages/composables exist as specified). **Multi-assignee sections: Draft (2026-07-28).**
+Implemented — GraphQL (status trued up 2026-07-19 by the recurring spec/code reconciliation; no [FILL IN] markers remained and the pages/composables exist as specified). **Multi-assignee sections: Implemented 2026-07-30.**
 
 ## Route
 `/tenant/tools/todo` — see `index.ui.md` for UI details
@@ -59,9 +59,10 @@ Multi-assignee (2026-07-28) adds:
 |---|---|---|
 | `filterAssignedTo(residentUrn \| null)` | `(string \| null) => void` | sets/clears `assignedToResidentUrn` in the query variables; fires immediately (no debounce) |
 
-The "Assigned to me" toggle resolves the caller's own resident urn client-side (from claims
-resident id → the shared `residentsList`) — the DB filter stays a plain urn parameter
-(locked decision: `_fn` never calls `jwt.*`).
+The "Assigned to me" toggle resolves the caller's own resident urn client-side via
+`formatUrn({ tenantId, module: 'app', resourceType: 'resident', id: residentId })` from claims
+(`formatUrn` is fnb-types' frozen-grammar runtime helper — no extra residents query needed) —
+the DB filter stays a plain urn parameter (locked decision: `_fn` never calls `jwt.*`).
 
 The composable initializes with `{ rootsOnly: true, isTemplate: false }`.
 The page watches `searchTerm` with a 300ms debounce and calls `search()` on change.

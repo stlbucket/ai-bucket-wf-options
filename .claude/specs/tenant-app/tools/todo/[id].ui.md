@@ -10,14 +10,15 @@
 > (`_shared.data.md` §5–§6). Mirror-table details below are historical.
 
 
-> **Multi-assignee refactor (2026-07-28, Draft):** the single-owner Assignee row becomes a
-> zero-to-many **Assignees** chip group (`TodoDetailAssign.vue` rewrite). Contract:
-> `README.md` / `_shared.data.md`; data: `[id].data.md`. Single-owner mentions below are historical.
+> **Multi-assignee refactor (implemented 2026-07-30):** the single-owner Assignee row became a
+> zero-to-many **Assignees** chip group with a multi-select add UI (`TodoDetailAssign.vue`
+> rewrite). Contract: `README.md` / `_shared.data.md`; data: `[id].data.md`. Single-owner
+> mentions below are historical.
 
 ## Status
-Implemented — GraphQL, **except the Assignees section (Draft, 2026-07-28)** — the deployed
-component is still single-owner. The **Attachments** section (spec'd + implemented 2026-07-09,
-issue 0480) replaced the static `TodoDetailAttachments.vue` placeholder with the real asset stack.
+Implemented — GraphQL, **including the Assignees section (2026-07-30)**. The **Attachments**
+section (spec'd + implemented 2026-07-09, issue 0480) replaced the static
+`TodoDetailAttachments.vue` placeholder with the real asset stack.
 
 ## Route
 `/tenant/tools/todo/[id]` → `apps/tenant-app/app/pages/tenant/tools/todo/[id].vue`
@@ -53,13 +54,17 @@ Display sections:
 - **Header**: todo `name` — click to edit inline (contenteditable or `UInput` swapped in on click); `type` badge; `status` badge; pin/unpin icon button (`i-lucide-pin` / `i-lucide-pin-off`)
 - **Description**: click to edit inline; shows placeholder text when empty
 - **Status actions**: `UButtonGroup` or dropdown to change status (`incomplete`, `complete`, `archived`, `unfinished`)
-- **Assignees** (multi, 2026-07-28 — `TodoDetailAssign.vue` rewrite): zero-to-many chip group.
-  Each assignee renders as an initials avatar + `displayName` chip with an `i-lucide-x` remove
-  button (emit `remove-assignee(residentUrn)`); "Unassigned" muted label when empty. A trailing
-  `i-lucide-plus` button opens a `UPopover` with a `USelectMenu` of tenant residents
-  (shared `ActiveTenantResidents` picker) **excluding current assignees** + an Assign `UButton`
-  (emit `add-assignee(residentUrn)`). Hidden entirely on templates (`isTemplate` — templates
-  cannot hold assignees).
+- **Assignees** (multi, 2026-07-28; add-UI revised to multi-select 2026-07-30 —
+  `TodoDetailAssign.vue` rewrite): zero-to-many chip group. Each assignee renders as an
+  initials avatar + `displayName` chip with an `i-lucide-x` remove button
+  (emit `remove-assignee(residentUrn)`); "Unassigned" muted label when empty. A trailing
+  `i-lucide-plus` button opens a `UPopover` hosting a **multi-select** `USelectMenu`
+  (`multiple`) over the invited + active residents of the todo's **exact tenant** (shared
+  `ResidentPicker` query, pinned client-side to `todo.tenantId` — `_shared.data.md`
+  §Shared queries), whose model is initialized to the current assignee urns. On close/apply the component diffs
+  the selection against the current assignees and emits one `add-assignee(residentUrn)` /
+  `remove-assignee(residentUrn)` per delta — the granular API is unchanged. Hidden entirely on
+  templates (`isTemplate` — templates cannot hold assignees).
 - **Location**: show linked location name if present; "Add Location" / "Edit Location" `UButton` opens a `UModal` with a simple text form (name, address fields, optional lat/lon — no map picker)
 - **Subtasks**: nested list of child todos (up to 4 levels from query); each child shows name + status badge + inline status toggle; "Add subtask" button at each level
 - **Actions bar**: Delete, Make Template / Clone Template (depending on `isTemplate`), back to list link (`← All Todos`)
@@ -99,7 +104,7 @@ Loaded from `TodoById` query on mount.
 | Clone Template | `makeTodoFromTemplate()` → `navigateTo('/tenant/tools/todo/{newId}')` |
 | Add location | Emit `new-location` with LocationInfoInput → `createLocation()` → reload |
 | Edit location | Emit `update-location` with LocationInfoInput → `updateLocation()` → reload |
-| Add assignee | pick in popover → `addAssignee(residentUrn)` → reload |
+| Add/remove via dropdown | toggle residents in the multi-select → one `addAssignee`/`removeAssignee` per delta → reload |
 | Remove assignee | click chip's x → `removeAssignee(residentUrn)` → reload (no confirm — re-adding is one click) |
 
 ## Attachments (right rail)
@@ -170,6 +175,11 @@ Emits (page owns all data calls — R2):
 - **Editing**: inline click-to-edit for name and description (no separate modal)
 - **Pin**: pin/unpin button visible on the detail page header
 - **Location**: UModal with simple text form; no map picker
-- **Residents for assign**: the shared `ActiveTenantResidents` picker, minus current assignees
-  (multi-assignee, 2026-07-28); no remove-confirm dialog — the action is trivially reversible
+- **Residents for assign**: the shared `ResidentPicker` query, pinned to the todo's exact
+  tenant (`r.tenantId === todo.tenantId`) and filtered to `ACTIVE` + `INVITED` (invited
+  residents are assignable, user decision 2026-07-30) in a
+  **multi-select** `USelectMenu` seeded with current assignees; deltas map to the granular
+  add/remove mutations (user decision 2026-07-30, replacing the 2026-07-28 single-pick
+  popover); no remove-confirm dialog — the action is trivially reversible (chips keep their
+  `i-lucide-x`)
 - **Status refresh**: `TodoByIdForRefresh` after status changes; full `TodoById` reload after structural changes (add/delete subtask, assign, location update, name/description edit)

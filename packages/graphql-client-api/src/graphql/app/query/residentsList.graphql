@@ -1,10 +1,14 @@
 # The one resident picker query (urn-registry: replaces msgResidents + todoResidentsList).
-# urn is the reference value modules store (subscriber.residentUrn, todo.residentUrn, ...).
-query ActiveTenantResidents {
-  residentsList(condition: { status: ACTIVE }) {
+# urn is the reference value modules store (subscriber.residentUrn, todo_assignee.residentUrn, ...).
+# Fetches ALL tenant residents (RLS scopes rows to the caller's tenant; condition is
+# equality-only — no connection-filter plugin), selecting status so each consumer filters
+# client-side: msg participants + poll share = ACTIVE; todo assignees = ACTIVE + INVITED.
+query ResidentPicker {
+  residentsList {
     id
     urn
     displayName
     tenantId
+    status
   }
 }

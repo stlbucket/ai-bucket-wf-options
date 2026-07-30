@@ -1,10 +1,10 @@
 # tools/todo/index — Todo List UI
 
-> **Multi-assignee refactor (2026-07-28, Draft):** the assignee column becomes an avatar
-> group and the header gains an "Assigned to me" toggle. Contract: `README.md` / `_shared.data.md`.
+> **Multi-assignee refactor (implemented 2026-07-30):** the assignee column is an avatar
+> group and the header gained an "Assigned to me" toggle. Contract: `README.md` / `_shared.data.md`.
 
 ## Status
-Implemented — GraphQL (status trued up 2026-07-19 by the recurring spec/code reconciliation; no [FILL IN] markers remained and the pages/composables exist as specified). **Multi-assignee sections: Draft (2026-07-28).**
+Implemented — GraphQL (status trued up 2026-07-19 by the recurring spec/code reconciliation; no [FILL IN] markers remained and the pages/composables exist as specified). **Multi-assignee sections: Implemented 2026-07-30.**
 
 ## Route
 `/tenant/tools/todo` → `apps/tenant-app/app/pages/tenant/tools/todo/index.vue`

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { TodoNode, TodoOwner } from '~/composables/useTodoDetail'
+import type { TodoAssigneeView, TodoNode } from '~/composables/useTodoDetail'
 
 const props = defineProps<{
   todoId: any
@@ -16,12 +16,14 @@ function progress(list: WithStatus[]): string {
   return `${done}/${list.length}`
 }
 
-function ownerLabel(owner?: TodoOwner | null): string {
-  const name = owner?.displayName?.trim()
+// First assignee's short name, plus a "+N" overflow marker when there are more.
+function assigneeLabel(assignees: TodoAssigneeView[]): string {
+  const name = assignees[0]?.displayName?.trim()
   if (!name) return ''
   const parts = name.split(/\s+/)
-  if (parts.length === 1) return parts[0]!
-  return `${parts[0]} ${parts[parts.length - 1]!.charAt(0).toUpperCase()}.`
+  const short =
+    parts.length === 1 ? parts[0]! : `${parts[0]} ${parts[parts.length - 1]!.charAt(0).toUpperCase()}.`
+  return assignees.length > 1 ? `${short} +${assignees.length - 1}` : short
 }
 
 const showSubtaskModal = ref(false)
@@ -89,9 +91,9 @@ function saveSubtask() {
             {{ child.name }}
           </NuxtLink>
           <span
-            v-if="child.owner"
+            v-if="child.assignees.length"
             class="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted"
-          >{{ ownerLabel(child.owner) }}</span>
+          >{{ assigneeLabel(child.assignees) }}</span>
           <span class="flex-1" />
           <span
             v-if="child.children.length"
@@ -123,9 +125,9 @@ function saveSubtask() {
                 {{ gc.name }}
               </NuxtLink>
               <span
-                v-if="gc.owner"
+                v-if="gc.assignees.length"
                 class="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted"
-              >{{ ownerLabel(gc.owner) }}</span>
+              >{{ assigneeLabel(gc.assignees) }}</span>
               <span class="flex-1" />
               <span
                 v-if="gc.children.length"
@@ -156,9 +158,9 @@ function saveSubtask() {
                 {{ ggc.name }}
               </NuxtLink>
               <span
-                v-if="ggc.owner"
+                v-if="ggc.assignees.length"
                 class="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted"
-              >{{ ownerLabel(ggc.owner) }}</span>
+              >{{ assigneeLabel(ggc.assignees) }}</span>
               <span class="flex-1" />
               <span
                 v-if="ggc.hiddenChildrenCount > 0"

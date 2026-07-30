@@ -1,9 +1,10 @@
 # tools/todo — Shared Data Contract
 
 ## Status
-Draft (multi-assignee refactor, 2026-07-28) — the base module is Implemented; the
-**multi-assignee** sections below describe the target contract, not the deployed schema.
-The deployed schema still has `todo.todo.resident_urn`. No `[FILL IN]` markers remain.
+Implemented — GraphQL (multi-assignee refactor implemented 2026-07-30; sqitch changes
+`00000000010490_todo_assignee` + `00000000010495_todo_assignee_fn` +
+`00000000010497_todo_deep_copy_fix`). `todo.todo.resident_urn` is dropped; assignment lives
+in `todo.todo_assignee`.
 
 > This file was created as part of the multi-assignee refactor (see `README.md`) — the
 > module predates the `_shared.data.md` requirement and page specs already referenced it.
@@ -101,9 +102,10 @@ todo_api.remove_todo_assignee(_todo_id uuid, _resident_urn text) returns boolean
   assignees** (locked decision; creator lives in the registry).
 - `todo_fn.deep_copy_todo` — copies **never** carry assignees (locked decision); no code
   change needed beyond the column removal, but the pgTAP suite must assert it.
-- `todo_fn.search_todos_options` — new field `assigned_to_resident_urn text`
-  (composite-type change → sqitch rework of `00000000010460_todo_fn_types` + dependents;
-  mechanics per `sqitch-expert`).
+- `todo_fn.search_todos_options` — new field `assigned_to_resident_urn text`. The type lives
+  in `00000000010450_todo.sql` (not `010460`, which holds only `create_todo_options`); since
+  `fnb-todo` has no tags no rework was possible — it shipped as
+  `alter type … add attribute` inside the new change `00000000010495_todo_assignee_fn`.
 - `todo_fn.search_todos` — new predicate:
 
 ```sql
@@ -191,5 +193,11 @@ export interface TodoAssigneeView {
 
 ## Shared queries
 
-- Resident picker: unchanged — the shared `residentsList` query (`ActiveTenantResidents`),
-  already consumed by `useTodoDetail`.
+- Resident picker: the shared `residentsList` query, renamed **`ResidentPicker`** (2026-07-30,
+  formerly `ActiveTenantResidents`). It now fetches **all** tenant residents with `status`
+  (no `condition` — RLS scopes to the tenant; the schema has no connection-filter plugin, so
+  `condition` is equality-only) and each consumer filters client-side:
+  todo assignees = residents of **the todo's exact tenant** (`r.tenantId === todo.tenantId` —
+  RLS spans the workspace tree, so without this pin the picker leaks parent/sibling-workspace
+  residents; user correction 2026-07-30) with status `ACTIVE` + `INVITED` (invited residents
+  are assignable); msg participants + poll share picker = `ACTIVE` (unchanged behavior).

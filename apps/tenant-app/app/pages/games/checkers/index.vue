@@ -22,8 +22,13 @@ const checkersType = computed(() => gameTypes.value.find((g) => g.id === 'checke
 const supportsAlgorithm = computed(() => checkersType.value?.supportedPlayerKinds.includes('MACHINE_ALGORITHM') ?? false)
 const supportsAgent = computed(() => checkersType.value?.supportedPlayerKinds.includes('MACHINE_AGENT') ?? false)
 
+// residentsList is not tenant-scoped (super-admin/child-workspace RLS returns every tenant's
+// residents), so scope opponents to my own tenant — one residency per person there — then sort.
 const opponentOptions = computed(() =>
-  residents.value.filter((r) => r.urn !== myUrn.value).map((r) => ({ label: r.displayName || r.urn, value: r.urn })),
+  residents.value
+    .filter((r) => r.urn !== myUrn.value && r.tenantId === user.value?.tenantId)
+    .map((r) => ({ label: r.displayName || r.urn, value: r.urn }))
+    .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })),
 )
 
 function opponentPlayer(game: GameSummary) {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// D14 "Send to residents" (OTP-login spec, share-link.ui.md). Self-contained action modal (mirrors
+// D14 "Send to residents" (OTP-login spec, share-link.ui.md) — the shared, subject-agnostic share
+// surface (poll spec D17; consumers: todo + poll detail pages). Self-contained action modal (mirrors
 // InviteUserModal): pick residents of this workspace, add a message, choose Email/SMS, and send the
 // TENANT-SCOPED quick-login link. Delivery is fire-and-forget via the send-deep-link n8n workflow
 // (useDeepLink.sendDeepLink → triggerWorkflow); recipients still self-identify with a one-time code

@@ -1,7 +1,11 @@
 # tools/todo/index — Todo List Data
 
+> **Multi-assignee refactor (2026-07-28, Draft):** `residentUrn` leaves the `Todo` fragment;
+> `SearchTodos` nodes select `assignees: todoAssigneesList { … }` and gain an
+> `assignedToResidentUrn` filter. Contract: `README.md` / `_shared.data.md`.
+
 ## Status
-Implemented — GraphQL (status trued up 2026-07-19 by the recurring spec/code reconciliation; no [FILL IN] markers remained and the pages/composables exist as specified).
+Implemented — GraphQL (status trued up 2026-07-19 by the recurring spec/code reconciliation; no [FILL IN] markers remained and the pages/composables exist as specified). **Multi-assignee sections: Draft (2026-07-28).**
 
 ## Route
 `/tenant/tools/todo` — see `index.ui.md` for UI details
@@ -17,7 +21,9 @@ Implemented — GraphQL (status trued up 2026-07-19 by the recurring spec/code r
   - `rootsOnly: Boolean` — `true` on load (show only root todos, not subtasks)
   - `isTemplate: Boolean` — `false` on load; `true` when user shows templates
   - `todoType: TodoType` — not used on index page (show all types)
-- **Returns**: `nodes: TodoSummary[]` — each node includes Todo fragment + resident (displayName) + parentTodo + tenant name
+  - `assignedToResidentUrn: String` — multi-assignee (2026-07-28): only todos with a
+    `todo_assignee` row for this urn (`search_todos_options.assigned_to_resident_urn`); null = no filter
+- **Returns**: `nodes: TodoSummary[]` — each node includes Todo fragment + `assignees` (`todoAssigneesList` with resident displayNames) + parentTodo + tenant name
 - **Auth**: RLS scopes results to current tenant automatically
 
 ### Mutation: Create Todo
@@ -46,6 +52,16 @@ const { todos, fetching, error, search, createTodo, pinTodo, unpinTodo } = useTo
 | `createTodo(name, description?)` | `Promise<{ id: string }>` | executes CreateTodo mutation |
 | `pinTodo(todoId)` | `Promise<void>` | executes PinTodo mutation, re-sorts list |
 | `unpinTodo(todoId)` | `Promise<void>` | executes UnpinTodo mutation, re-sorts list |
+
+Multi-assignee (2026-07-28) adds:
+
+| Export | Shape | Usage |
+|---|---|---|
+| `filterAssignedTo(residentUrn \| null)` | `(string \| null) => void` | sets/clears `assignedToResidentUrn` in the query variables; fires immediately (no debounce) |
+
+The "Assigned to me" toggle resolves the caller's own resident urn client-side (from claims
+resident id → the shared `residentsList`) — the DB filter stays a plain urn parameter
+(locked decision: `_fn` never calls `jwt.*`).
 
 The composable initializes with `{ rootsOnly: true, isTemplate: false }`.
 The page watches `searchTerm` with a 300ms debounce and calls `search()` on change.

@@ -8,10 +8,15 @@
 > and topics have their own ids/registry rows. Authoritative contract:
 > `.claude/specs/urn-registry/stacking-v2.data.md`. `context`/id-sharing mentions below are historical.
 
+> **Multi-assignee refactor (2026-07-28, Draft):** `todo.todo.resident_urn` is replaced by the
+> zero-to-many `todo.todo_assignee` table (`README.md` + `_shared.data.md` own the contract).
+> The **Assignees** sections below are the target; single-owner mentions are historical.
+
 ## Status
-Implemented — GraphQL. The **Attachments** section (spec'd + implemented 2026-07-09, issue 0480)
-is live: issue 0330 delivered `useEntityAssets` + the tenant-app ⟶ storage-layer wiring, and the
-todo detail page now consumes them.
+Implemented — GraphQL, **except the multi-assignee sections (Draft, 2026-07-28)** — the
+deployed code is still single-slot `AssignTodo`. The **Attachments** section (spec'd +
+implemented 2026-07-09, issue 0480) is live: issue 0330 delivered `useEntityAssets` + the
+tenant-app ⟶ storage-layer wiring, and the todo detail page now consumes them.
 
 ## Route
 `/tenant/tools/todo/[id]` — see `[id].ui.md` for UI details
@@ -23,7 +28,7 @@ todo detail page now consumes them.
 - **File**: `packages/graphql-client-api/src/graphql/todo/query/todoById.graphql`
 - **Generated hook**: `useTodoByIdQuery()` in `src/generated/fnb-graphql-api.ts`
 - **Variables**: `id: UUID!` (from `route.params.id`)
-- **Returns**: full `TodoTree` — todo with location, owner (resident), and `children` nested 4 levels deep; each child has location + owner + their own children
+- **Returns**: full `TodoTree` — todo with location, `assignees` (`todoAssigneesList` with resident displayName — selection shape in `_shared.data.md`), and `children` nested 4 levels deep; each child has location + assignees + their own children
 - **404 behavior**: if `data.todo` is null, redirect to `/tenant/tools/todo`
 
 ### Lightweight refresh query
@@ -42,7 +47,8 @@ todo detail page now consumes them.
 | `CreateTodo` | `useCreateTodoMutation()` | `name`, `description`, `parentTodoId` | Reload full `TodoById` on parent |
 | `MakeTemplateFromTodo` | `useMakeTemplateFromTodoMutation()` | `todoId` | `navigateTo('/tenant/tools/todo/{newId}')` |
 | `MakeTodoFromTemplate` | `useMakeTodoFromTemplateMutation()` | `todoId` | `navigateTo('/tenant/tools/todo/{newId}')` |
-| `AssignTodo` | `useAssignTodoMutation()` | `todoId`, `residentId` | Reload full `TodoById` |
+| `AddTodoAssignee` | `useAddTodoAssigneeMutation()` | `todoId`, `residentUrn` | Reload full `TodoById` |
+| `RemoveTodoAssignee` | `useRemoveTodoAssigneeMutation()` | `todoId`, `residentUrn` | Reload full `TodoById` |
 | `PinTodo` | `usePinTodoMutation()` ⚠️ | `todoId` | Reload full `TodoById` |
 | `UnpinTodo` | `useUnpinTodoMutation()` ⚠️ | `todoId` | Reload full `TodoById` |
 
@@ -77,7 +83,8 @@ const {
   addSubtask,
   makeTemplate,
   cloneTemplate,
-  assignResident,
+  addAssignee,
+  removeAssignee,
   pinTodo,
   unpinTodo,
   addLocation,
@@ -95,7 +102,8 @@ const {
 | `addSubtask(name, parentId)` | `Promise<void>` | `CreateTodo({ parentTodoId })` → full `TodoById` reload |
 | `makeTemplate()` | `Promise<void>` | `MakeTemplateFromTodo(currentId)` → `navigateTo('/tenant/tools/todo/{newId}')` |
 | `cloneTemplate()` | `Promise<void>` | `MakeTodoFromTemplate(currentId)` → `navigateTo('/tenant/tools/todo/{newId}')` |
-| `assignResident(residentId)` | `Promise<void>` | `AssignTodo(currentId, residentId)` → full `TodoById` reload |
+| `addAssignee(residentUrn)` | `Promise<void>` | `AddTodoAssignee(currentId, residentUrn)` → full `TodoById` reload |
+| `removeAssignee(residentUrn)` | `Promise<void>` | `RemoveTodoAssignee(currentId, residentUrn)` → full `TodoById` reload |
 | `pinTodo()` | `Promise<void>` | `PinTodo(currentId)` → full `TodoById` reload |
 | `unpinTodo()` | `Promise<void>` | `UnpinTodo(currentId)` → full `TodoById` reload |
 | `addLocation(info)` | `Promise<void>` | `CreateLocation(info)` → full `TodoById` reload |
@@ -167,3 +175,7 @@ See `_shared.data.md` → Todo, TodoStatus, TodoType, TodoResident for the base 
   `useTodoDetail`; list refresh is asset-only (no `TodoById` reload); uploads private-only;
   delete in v1 with confirm; storage REST carve-outs (`useAssetUpload`/`useAssetDelete`) are the
   only non-GraphQL data paths on this page
+- **Multi-assignee** (2026-07-28): granular `addAssignee`/`removeAssignee` (idempotent), no
+  set-based API; `TodoNode.owner: TodoOwner | null` → `assignees: TodoAssigneeView[]`; the
+  resident picker stays on the shared `ActiveTenantResidents` query. Full contract + locked
+  decisions: `README.md` / `_shared.data.md`

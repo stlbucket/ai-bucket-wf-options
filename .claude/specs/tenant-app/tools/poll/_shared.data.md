@@ -4,7 +4,7 @@
 Implemented — GraphQL (2026-07-23; status trued up by the recurring spec/code reconciliation).
 The former open items are resolved: sqitch numbers `00000000011100`–`00000000011130`, nav icon
 `i-lucide-vote` (verified, UC11), and the `question_result` composite shape below matches the
-shipped DDL. See `README.md` for verification + the deferred OTP phase.
+shipped DDL. See `README.md` for verification; OTP deep-link share implemented 2026-07-28 (§9).
 
 **2026-07-23 improvements round — Implemented same day (README Phases 7–9):** adds the
 **`date_yes_no` question type** (a list of dates, yes/no per date, optional per-date note) and a
@@ -224,6 +224,12 @@ create index idx_poll_response_respondent on poll.response(respondent_resident_u
 
 "Across all active members of any tenant": eligibility is *any* active resident of the poll's
 tenant (`p:poll`) — no explicit invite list. One response row per member per poll (unique).
+
+**Audience is exactly the tenant (README D19, user directive 2026-07-29):** the target audience
+of a poll is, by definition, the users in its tenant — every active resident sees and may answer
+it, and no one else. No invite/audience/assignee structures exist at any layer (no DDL, no fn
+params, no UI), and residents of ancestor or descendant tenants are outside the audience — the
+exact-tenant `jwt.tenant_id()` fence in every policy and function is the design, not a gap.
 
 ### 4.5 `poll.answer` — one row per selected value
 
@@ -541,21 +547,36 @@ just points them at the poll's URN.
 
 ## 9. OTP deep-link share (reuse — "same OTP options as todo")
 
-The otp-login spec (`.claude/specs/otp-login/`) owns the machinery; polls plug in:
+**Gate lifted (2026-07-28):** otp-login has shipped in code — `auth.deep_link`/`auth.otp_login`
+(`db/fnb-app` change `00000000010295_otp_login`), the `/auth/go/[id]` landing + `otp/*` endpoints,
+`useDeepLink` (graphql-client-api), the `send-deep-link` n8n workflow, and the live todo share
+surface (`apps/tenant-app/app/pages/tools/todo/[id].vue`). Polls plug in — the shipped contract
+(true to code, supersedes the pre-ship sketch):
 
 1. **URN route map** — add to `apps/auth-app/server/utils/urn-route.ts` `ROUTES`:
    ```ts
    poll: (id) => `/tenant/tools/poll/${id}`,
    ```
-2. **Share surface** — the poll detail page reuses `useDeepLink` (`share-link.data.md`):
-   - "Copy quick-login link" → `shareToLink(poll.urn)`
-   - "Send to residents" modal → `sendDeepLink(poll.urn, residentIds, message, channels)`
-   Same components/composable as the todo detail; only the subject URN changes.
+   (Poll is the second module in the map — the file's own comment defers a shared-resolver
+   promotion until it's needed; the one-line entry is enough here.)
+2. **Share surface** — the poll detail page reuses `useDeepLink()`
+   (`packages/graphql-client-api/src/composables/useDeepLink.ts`, re-exported in tenant-app):
+   - "Copy quick-login link" → `shareToLink(poll.urn, poll.title)` → returns the `auth.deep_link`
+     id; the page builds `${runtimeConfig.public.authAppUrl}/go/<id>` and copies it to the
+     clipboard (todo pattern verbatim).
+   - "Send to residents" → the shared **`ShareModal`** (D17 — `TodoShareModal.vue` promoted to a
+     generic `ShareModal.vue`; props `subjectUrn`, `subjectLabel`, `residents`). It calls
+     `sendDeepLink({ subjectUrn, subjectLabel, residentIds, message, channels, senderName,
+     authAppUrl })` — creates the tenant-scoped link then fires the `send-deep-link` n8n workflow
+     (fire-and-forget; contacts resolved server-side).
+3. **Residents list** — `usePollDetail` grows a `residents` computed
+   (`useActiveTenantResidentsQuery`, exactly as `useTodoDetail` does) to feed `ShareModal`.
 
-**Dependency:** the otp-login spec is currently `Draft` (sequenced behind notifications SMS Phase
-0/1). Polls' Phase (OTP share) is **gated on otp-login shipping** — until then the poll detail page
-omits the share buttons (or they no-op). The URN-route entry is a one-line, safe addition that can
-land with otp-login. See `README.md` task list Phase 6.
+**Visibility (D18):** the share cluster renders for **any member**, but **only once the poll is
+published** (`status === 'OPEN' | 'CLOSED'`) — sharing a draft would invite people to a poll they
+can't answer. The link is tenant-scoped (otp-login D13): any resident of the poll's tenant can
+self-identify on the landing page and OTP-log-in; RLS does the rest. Exactly that tenant (README
+D19): a non-member — including a subtree/descendant-tenant resident — silently no-ops, by design.
 
 ---
 

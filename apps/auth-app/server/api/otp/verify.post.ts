@@ -1,5 +1,6 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { verifyOtpLogin, getDeepLink } from '@function-bucket/fnb-db-access'
+import { resolveUrnRoute } from '#shared/utils/urn-route'
 
 // Unauthenticated (pre-claims) OTP verify. On success app_fn.verify_otp_login has already switched
 // the workspace to the URN's tenant and minted an OTP auth.session — we seal { id, sid } into the

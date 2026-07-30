@@ -1,7 +1,7 @@
 # tools/poll/[id] — Poll Detail UI
 
 ## Status
-Implemented — GraphQL (2026-07-23). See README for verification + the deferred OTP phase.
+Implemented — GraphQL (2026-07-23); OTP deep-link share implemented 2026-07-28 (README Phase 6).
 **2026-07-23 improvements round — Implemented same day:** the sections marked **NEW/CHANGED**
 below — draft mode hides discussion, the published page is a fixed two-column layout with
 per-question inline expandable results, and the editor/answer form carry the `date_yes_no`
@@ -42,8 +42,13 @@ Attachments are out of scope for v1 (Considered & rejected, README).
   - status control: **Open** (draft→open), **Close** (open→closed) `UButton`s.
   - **Settings** button → `PollSettingsModal` (the two admin toggles).
   - **Delete** (confirm `UModal`).
-  - Share cluster (OTP, gated — `_shared.data.md` §9): **Copy quick-login link** + **Send to
-    residents** (omit until otp-login ships).
+- Share cluster (OTP — `_shared.data.md` §9, gate lifted 2026-07-28): **any member**, rendered
+  only when published (`status === 'OPEN' | 'CLOSED'`, D18) — todo `[id].vue` pattern:
+  - **Copy quick-login link** `UButton` (`i-lucide-link`, outline, sm) → `shareToLink` + clipboard
+    + success toast.
+  - **`ShareModal`** (D17 — the promoted, generic `TodoShareModal`; renders its own "Send to
+    residents" trigger button, `i-lucide-send`): props `subject-urn="poll.urn"`,
+    `subject-label="poll.title"`, `:residents`.
 
 ## Mode A — Draft editor (`canAdmin && status === 'DRAFT'`)
 Component: `PollQuestionEditor` (`components/poll/PollQuestionEditor.vue`).
@@ -136,7 +141,8 @@ Status: same as `index.ui.md`. Visibility badge (UC6): `HIDDEN` neutral · `AGGR
 | (member) Submit | `submitResponse(answers)` → toast "Submitted"; lock if configured |
 | (member) Expand/collapse a question's results | local UI state only (collapsed by default) |
 | Start discussion | `PollMsg` → `startDiscussion(...)` (todo pattern; **published polls only**) |
-| (admin) Copy link / Send to residents | `shareToLink` / `sendDeepLink` (OTP, gated) |
+| (member, published) Copy quick-login link | `shareToLink(poll.urn, poll.title)` → clipboard + toast |
+| (member, published) Send to residents | `ShareModal` → `sendDeepLink({...})` → "Sending to N…" toast |
 
 ## Reactive State
 ```ts

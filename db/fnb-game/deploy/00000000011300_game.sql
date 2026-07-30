@@ -139,7 +139,9 @@ CREATE TABLE game.game_event_state (
 
 ------------------------------------------------------------------------ registry visibility
 INSERT INTO res.module_permission (module, permission_key)
-VALUES ('game', 'p:app-user')
+-- tenant membership (null): game policies admit p:app-user OR p:app-admin, and admins hold
+-- app-admin only — a p:app-user key here locked admins out of game registry rows (issue 0620)
+VALUES ('game', null)
 ON CONFLICT (module) DO NOTHING;
 
 ------------------------------------------------------------------------ notify trigger

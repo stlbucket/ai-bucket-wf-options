@@ -1,7 +1,7 @@
 # tools/poll/[id] — Poll Detail Data
 
 ## Status
-Implemented — GraphQL (2026-07-23). See README for verification + the deferred OTP phase.
+Implemented — GraphQL (2026-07-23); OTP deep-link share implemented 2026-07-28 (README Phase 6).
 **2026-07-23 improvements round — Implemented same day:** input-type extensions for
 `date_yes_no` + `allow_note`/`note` (marked NEW below); operation names/hooks and the composable
 surface are unchanged.
@@ -102,10 +102,21 @@ caller's resident URN for the creator check — no extra query.
 `usePollMsg(poll.urn)` — a copy of `useTodoMsg`, queried by the poll's URN. Renders `PollMsg.vue`
 (copy of `TodoMsg.vue`) with `topic.id`. No new `.graphql` files. Requires `p:discussions`.
 
-## OTP deep-link share (reuse — `_shared.data.md` §9)
-`useDeepLink()` (otp-login `share-link.data.md`): `shareToLink(poll.urn)` ("Copy quick-login
-link") and `sendDeepLink(poll.urn, residentIds, message, channels)` ("Send to residents"). **Gated
-on the otp-login spec shipping** — omit the buttons until then. Add `poll:` to
+## OTP deep-link share (reuse — `_shared.data.md` §9; gate lifted 2026-07-28)
+`useDeepLink()` (`packages/graphql-client-api/src/composables/useDeepLink.ts`, tenant-app
+re-export — shipped with otp-login):
+- `shareToLink(subjectUrn, subjectLabel?) → Promise<deepLinkId>` — "Copy quick-login link": the
+  page calls `shareToLink(poll.urn, poll.title)`, builds
+  `${useRuntimeConfig().public.authAppUrl}/go/<id>`, writes it to the clipboard, toasts (todo
+  `[id].vue` pattern verbatim).
+- `sendDeepLink(input: SendDeepLinkInput) → Promise<{ url, count }>` — "Send to residents" via the
+  shared `ShareModal` (D17); input `{ subjectUrn, subjectLabel, residentIds, message, channels:
+  ('email'|'sms')[], senderName, authAppUrl }`. Fire-and-forget through the `send-deep-link` n8n
+  workflow; `count` = residents selected, not a delivered tally.
+
+`usePollDetail` additionally returns `residents` (`useActiveTenantResidentsQuery`, the
+`useTodoDetail` pattern) to feed `ShareModal`. Rendered for any member, published only (D18).
+One-liner elsewhere: add `poll: (id) => \`/tenant/tools/poll/${id}\`` to
 `apps/auth-app/server/utils/urn-route.ts` so an opened poll link lands on this page.
 
 ## Types

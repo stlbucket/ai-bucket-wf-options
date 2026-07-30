@@ -19,6 +19,7 @@ const {
   poll,
   results,
   attributed,
+  residents,
   fetching,
   updatePoll,
   setPollOptions,
@@ -109,6 +110,25 @@ const onSubmit = (answers: AnswerDraft[]) =>
     await submitResponse(answers)
     toast.add({ title: 'Submitted', color: 'success' })
   }, 'Could not submit your answers')
+
+const { shareToLink } = useDeepLink()
+const authAppUrl = useRuntimeConfig().public.authAppUrl as string
+
+// OTP quick-login share (poll spec D17/D18; otp-login D13): tenant-scoped link — any resident of
+// this workspace self-identifies on the landing page and lands on this poll. Any member may share,
+// but only once the poll is published (a draft can't be answered).
+async function onCopyLink() {
+  const p = poll.value
+  if (!p?.urn) return
+  try {
+    const id = await shareToLink(p.urn, p.title)
+    const url = `${authAppUrl}/go/${id}`
+    await navigator.clipboard.writeText(url)
+    toast.add({ title: 'Quick-login link copied', description: url, color: 'success' })
+  } catch {
+    toast.add({ title: 'Could not create link', color: 'error' })
+  }
+}
 </script>
 
 <template>
@@ -138,37 +158,49 @@ const onSubmit = (answers: AnswerDraft[]) =>
             </div>
           </div>
 
-          <div v-if="canAdmin" class="flex flex-wrap items-center gap-2">
-            <UButton v-if="isDraft" icon="i-lucide-play" size="sm" @click="onOpen">Open</UButton>
-            <UButton
-              v-else-if="isOpen"
-              icon="i-lucide-square"
-              size="sm"
-              color="neutral"
-              variant="outline"
-              @click="onClose"
-            >
-              Close
-            </UButton>
-            <UButton
-              v-else-if="isClosed"
-              icon="i-lucide-rotate-ccw"
-              size="sm"
-              color="neutral"
-              variant="outline"
-              @click="onReopen"
-            >
-              Reopen
-            </UButton>
-            <PollSettingsModal :poll="poll" @save="onSaveSettings" />
-            <UButton
-              icon="i-lucide-trash-2"
-              color="error"
-              variant="ghost"
-              size="sm"
-              @click="confirmDelete = true"
-            />
-            <!-- OTP "Copy quick-login link" / "Send to residents" go here once otp-login ships -->
+          <div class="flex flex-wrap items-center justify-end gap-2">
+            <template v-if="canAdmin">
+              <UButton v-if="isDraft" icon="i-lucide-play" size="sm" @click="onOpen">Open</UButton>
+              <UButton
+                v-else-if="isOpen"
+                icon="i-lucide-square"
+                size="sm"
+                color="neutral"
+                variant="outline"
+                @click="onClose"
+              >
+                Close
+              </UButton>
+              <UButton
+                v-else-if="isClosed"
+                icon="i-lucide-rotate-ccw"
+                size="sm"
+                color="neutral"
+                variant="outline"
+                @click="onReopen"
+              >
+                Reopen
+              </UButton>
+              <PollSettingsModal :poll="poll" @save="onSaveSettings" />
+              <UButton
+                icon="i-lucide-trash-2"
+                color="error"
+                variant="ghost"
+                size="sm"
+                @click="confirmDelete = true"
+              />
+            </template>
+            <!-- share cluster: any member, published only (D18) -->
+            <template v-if="isOpen || isClosed">
+              <UButton icon="i-lucide-link" variant="outline" size="sm" @click="onCopyLink">
+                Copy quick-login link
+              </UButton>
+              <ShareModal
+                :subject-urn="poll.urn"
+                :subject-label="poll.title"
+                :residents="residents"
+              />
+            </template>
           </div>
         </div>
 

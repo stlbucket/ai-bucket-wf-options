@@ -4,6 +4,7 @@ import {
   usePollByIdQuery,
   usePollResultsQuery,
   usePollAttributedResponsesQuery,
+  useActiveTenantResidentsQuery,
   useUpdatePollMutation,
   useSetPollOptionsMutation,
   useSetPollStatusMutation,
@@ -134,6 +135,8 @@ export function usePollDetail(pollId: string, myUrn: MaybeRefOrGetter<string>) {
   const { data: attrData, executeQuery: execAttr } = usePollAttributedResponsesQuery({
     variables: { pollId },
   })
+  // Feeds ShareModal's resident picker (OTP deep-link share) — same source as useTodoDetail.
+  const { data: residentsData } = useActiveTenantResidentsQuery()
 
   const { executeMutation: execUpdate } = useUpdatePollMutation()
   const { executeMutation: execSetOptions } = useSetPollOptionsMutation()
@@ -163,6 +166,12 @@ export function usePollDetail(pollId: string, myUrn: MaybeRefOrGetter<string>) {
     (resultsData.value?.getPollResultsList ?? [])
       .filter((r): r is NonNullable<typeof r> => r != null)
       .map(toPollQuestionResult),
+  )
+
+  const residents = computed(() =>
+    (residentsData.value?.residentsList ?? [])
+      .filter((r): r is NonNullable<typeof r> => r != null)
+      .map((r) => ({ residentId: r.id, urn: String(r.urn), displayName: r.displayName ?? '', tenantId: r.tenantId })),
   )
 
   const attributed = computed<AttributedResponseView[]>(() =>
@@ -271,6 +280,7 @@ export function usePollDetail(pollId: string, myUrn: MaybeRefOrGetter<string>) {
     poll,
     results,
     attributed,
+    residents,
     fetching,
     error,
     executeQuery,

@@ -159,7 +159,7 @@ async function handleDeleteAsset(assetId: string) {
           >
             Copy quick-login link
           </UButton>
-          <TodoShareModal
+          <ShareModal
             :subject-urn="todoTree.urn"
             :subject-label="todoTree.name"
             :residents="residents"

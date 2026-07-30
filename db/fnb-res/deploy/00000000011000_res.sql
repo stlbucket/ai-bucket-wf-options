@@ -46,7 +46,9 @@ create table res.module_permission (
 );
 
 insert into res.module_permission (module, permission_key) values
-  ('app',     'p:app-user')      -- support tickets + tenant + resident registry rows
+  ('app',     null)              -- tenant + resident registry rows: tenant membership — admins
+                                 -- hold app-admin only (no p:app-user); mirrors app.resident's
+                                 -- view_all_for_tenant population (issue 0620)
   ,('msg',     'p:discussions')
   ,('todo',    'p:todo')
   ,('poll',    'p:poll')

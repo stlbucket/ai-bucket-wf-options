@@ -9,9 +9,14 @@
 (codegen against the live schema) + tenant-app pages/components are built and **`pnpm build` is
 green (13/13)**. Verified: DB smoke test (create → questions/options → open → submit → results,
 rolled back), GraphQL introspection of all 11 mutations + query fields, read-only post-rebuild DB
-checks. **Phase 6 (OTP deep-link share) is deferred — gated on `.claude/specs/otp-login/`
-shipping** (only the `poll` `resolveUrnRoute` entry + the share buttons remain). This directive
-stays as the entry point for that follow-on.
+checks. **Phase 6 (OTP deep-link share): Implemented 2026-07-28** (D17/D18 below; plan
+`0390__app_______poll-otp-deep-link-share`): the `poll` `resolveUrnRoute` entry, `residents` on
+`usePollDetail`, the `TodoShareModal → ShareModal` promotion, and the share cluster on the detail
+page (any member, published only). Verified end-to-end (copy link → self-identify → OTP via
+Mailpit → land on the poll); `pnpm build` 13/13 green. The once-noted subtree follow-on is
+**closed by design (D19, 2026-07-29)** — a poll's audience is exactly its tenant's members, so
+the exact-tenant fence is the intended model, not a gap. The `0620` issue file this paragraph
+previously pointed at was never actually created and is not needed.
 
 sqitch numbers assigned: `00000000011100`–`011130`. `poll_fn.question_result` → GraphQL
 `QuestionResult`. Nav icon `i-lucide-vote` (verified present, lucide 1.2.102).
@@ -53,13 +58,16 @@ pattern, by subject URN); and a poll is shareable via the **same OTP deep-link l
 | D7 | **Answer model**: one `poll.response` per (poll, member) + one `poll.answer` row per selected value | Uniform across yes/no, single/multi-select, Other; unique `(poll_id, respondent)` = one response each; "change only your answers" = own-write RLS |
 | D8 | **Lifecycle** `draft → open → closed`; structure frozen after `draft` | Author builds in draft; answers only while `open`; freezing questions/options after open protects existing answers; optional `closes_at` |
 | D9 | **Discussion = reuse** the todo/subject-URN pattern (`usePollMsg`, `PollMsg` copies of the todo ones) | Zero new DDL/graphql — `msg.topic.subject_urn = poll.urn` (`stacking-v2`); requires `p:discussions` |
-| D10 | **OTP = reuse** otp-login (`createDeepLink`/`sendDeepLink` + a `poll` `resolveUrnRoute` entry) | "Same OTP options as todo"; the otp-login spec named polls as its next target. **Gated on otp-login shipping** |
+| D10 | **OTP = reuse** otp-login (`createDeepLink`/`sendDeepLink` + a `poll` `resolveUrnRoute` entry) | "Same OTP options as todo"; the otp-login spec named polls as its next target. ~~Gated on otp-login shipping~~ **Gate lifted 2026-07-28 — otp-login shipped in code** |
 | D11 | Lives under **Tools** at `/tenant/tools/poll` (parallel to todo); new sqitch package **`fnb-poll`** after `fnb-res`/`fnb-app` | Consistency with the todo module; promotable to a top-level nav module later |
 | D12 | **`date_yes_no` = a real question type** (user choice 2026-07-23): options are the dates (`candidate_at` required, `label` optional), answer = one row per date (`option_id` + `yes_no` + optional `note`) | Doodle-style availability poll as one compact question; results reuse the shipped `question_result` shape (per-option yes/no counts) — rejected the bulk-generated-yes/no-questions alternative (no marker that a poll IS a date poll; clunky N-question rendering) |
 | D13 | **`allow_note` generalized per question** (user choice 2026-07-23): `question.allow_note` + `answer.note`, any type; editor defaults it ON for `date_yes_no`. Notes are **attributed-only** — never in aggregate results | Same DDL cost as date-only, more mileage; free-text notes are identifying, so `get_poll_results` never returns them |
 | D14 | **Discussion hidden during `draft`** (user directive 2026-07-23) — panel + toggle not rendered until published | Discussion belongs to the published conversation, not authoring |
 | D15 | **Published layout = fixed two-column** (user directive 2026-07-23): left = questions/answers with per-question **collapsed, expandable** inline results; right = discussion (always visible, replaces the localStorage rail). Mobile stacks | Answers + results + discussion visible together without mode switching; results summary stays scannable |
 | D16 | **DB deltas via in-place edits** to the four `fnb-poll` deploy files + USER REBUILD GATE (no new sqitch changes) | Package shipped the same day, no production data; matches the house seed-edit pattern (`_shared.data.md` §2.1) |
+| D17 | **Share modal = promote `TodoShareModal.vue` → generic `ShareModal.vue`** (user choice 2026-07-28); todo's usages updated in the same change | The component is already 100% generic (props `subjectUrn`/`subjectLabel`/`residents`, zero todo content); poll is the "second module" the otp-login spec said would trigger generalization — a copy would just drift |
+| D18 | **Share cluster = any member, published only** (`status === 'OPEN' \| 'CLOSED'`) (user choice 2026-07-28) | Todo shows share to every viewer (tenant-scoped links, otp-login D13) — same openness here; but a draft poll can't be answered, so no share until it opens |
+| D19 | **Audience = exactly the tenant's active members** (user directive 2026-07-29): every active resident of the poll's tenant sees and may answer it, and **no one else** — no invite/audience lists, no residents from ancestor or descendant tenants, at any layer of the stack | The target audience of a poll is, *by definition*, the users in the tenant. Closes the subtree-deep-link follow-on for polls (the exact-tenant `jwt.tenant_id()` fence everywhere is the design) and forecloses per-resident targeting (contrast: todo multi-assignee, 0610) |
 
 ## Files in this spec
 
@@ -116,11 +124,23 @@ pattern, by subject URN); and a poll is shareable via the **same OTP deep-link l
       answer as two members → toggle each `results_visibility` and confirm hidden/aggregate/
       attributed behavior → lock-after-submit works → close → discussion works. `pnpm build` green.
 
-### Phase 6 — OTP deep-link share (**gated on `.claude/specs/otp-login/` shipping**)
-- [ ] Add `poll: (id) => '/tenant/tools/poll/${id}'` to
-      `apps/auth-app/server/utils/urn-route.ts` (safe one-liner; can land early).
-- [ ] Wire "Copy quick-login link" + "Send to residents" on the detail page via `useDeepLink`
-      (reuse the todo surface, subject URN = `poll.urn`).
+### Phase 6 — OTP deep-link share (Implemented 2026-07-28; D17/D18, `_shared.data.md` §9)
+- [x] Add `poll: (id) => \`/tenant/tools/poll/${id}\`` to
+      `apps/auth-app/server/utils/urn-route.ts` `ROUTES` (safe one-liner).
+- [x] `usePollDetail`: add a `residents` computed via `useActiveTenantResidentsQuery`
+      (`useTodoDetail` pattern) and return it.
+- [x] Promote `apps/tenant-app/app/components/TodoShareModal.vue` → `ShareModal.vue` (rename only —
+      props/behavior unchanged); update `tools/todo/[id].vue`'s usage in the same change (D17;
+      no spec named the component, so no todo-spec edit was needed).
+- [x] `tools/poll/[id].vue`: share cluster for any member when `status === 'OPEN' | 'CLOSED'`
+      (D18) — "Copy quick-login link" (`shareToLink(poll.urn, poll.title)` → clipboard + toast,
+      todo pattern) + `<ShareModal :subject-urn="poll.urn" :subject-label="poll.title"
+      :residents="residents" />` (`[id].ui.md` Header).
+- [x] Verify: published poll → copy link → open logged-out → self-identify → OTP → land on
+      `/tenant/tools/poll/<id>` in the right workspace (user-verified 2026-07-28); draft poll
+      shows no share cluster; `pnpm build` green. Note from verification: a **non-member (or
+      subtree-member) identifier silently no-ops by design** (enumeration-safe, otp-login D13) —
+      and the subtree no-op is likewise by design (D19: the audience is exactly the tenant).
 
 ### Phase 7 — improvements round: DB deltas (in-place edits, D16 — ⚠ USER REBUILD GATE)
 - [x] `00000000011100_poll.sql`: `question_type` enum + `'date_yes_no'`; `question.allow_note`;
@@ -152,7 +172,10 @@ pattern, by subject URN); and a poll is shareable via the **same OTP deep-link l
 ## Docs to update when this ships (R21)
 - `res.module_permission` list in `urn-registry/_shared.data.md` (add `poll`).
 - `otp-login` README — move "Group polls" from the deferred-ideas list to implemented; note the
-  `poll` `resolveUrnRoute` entry.
+  `poll` `resolveUrnRoute` entry; **also fix its stale `Draft` status line** (the feature shipped
+  in code — noticed 2026-07-28 while lifting this gate).
+- `tenant-app/tools/todo` specs — `TodoShareModal` → `ShareModal` rename (D17) in `[id].ui.md`
+  (do together with the code rename; the todo spec dir is mid-edit on the multi-assignee branch).
 - `.claude/skills/fnb-stack-spec/SKILL.md` "Implemented Modules" table — add `poll` when built.
 - CLAUDE.md db package list + `fnb-db-designer` package count (twelve → thirteen).
 
@@ -177,3 +200,10 @@ Consolidated in `_shared.data.md` §10:
   promotable later (D11).
 - **Editing questions after a poll opens** — rejected: freezes at `draft→open` to avoid
   invalidating submitted answers; clone-to-new-draft is the path to revise a live poll (future).
+- **Extending the audience to subtree (descendant-tenant) or ancestor-tenant residents** — the
+  never-filed `0620` follow-on idea — rejected by design (D19, user directive 2026-07-29): a
+  poll's audience is exactly its tenant's members; the admin user page's subtree rollup is an
+  admin reporting view, not an audience model.
+- **Per-resident audience / invite / assignee lists** (todo-multi-assignee-style targeting) —
+  rejected (D19): tenant membership *is* the audience; no targeting DDL, API params, or UI
+  anywhere in the stack.

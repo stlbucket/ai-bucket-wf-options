@@ -160,18 +160,24 @@ CREATE TABLE res.module_permission (
   permission_key citext NULL          -- NULL ⇒ tenant-membership check
 );
 INSERT INTO res.module_permission (module, permission_key) VALUES
-  ('app',     'p:app-user'),      -- support tickets + tenant + resident registry rows
+  ('app',     NULL),              -- tenant + resident registry rows: tenant membership — admins
+                                  -- hold app-admin only, no p:app-user (issue 0620)
   ('msg',     'p:discussions'),
   ('todo',    'p:todo'),
   ('poll',    'p:poll'),          -- tenant polls (tenant-app/tools/poll)
   ('loc',     NULL),              -- loc.location policy is jwt.tenant_id() = tenant_id
   ('wf',      NULL),              -- wf policies are membership-shaped (currently commented out)
-  ('storage', 'p:app-user');
+  ('storage', NULL);              -- tenant membership: admins hold app-admin only
+-- ('game', NULL) is seeded by fnb-game (00000000011300_game.sql) — its policies admit
+-- p:app-user OR p:app-admin, so the registry row must not be narrower (issue 0620).
 ```
 
-`app.tenant` / `app.resident` registry rows ride the `'app'` row: visible to any
-`p:app-user` of that tenant — the same population that can already SELECT the underlying
-`app.resident` rows (`view_all_for_tenant`).
+`app.tenant` / `app.resident` registry rows ride the `'app'` row: visible to any member of
+that tenant — the same population that can already SELECT the underlying `app.resident` rows
+(`view_all_for_tenant`, plain `jwt.tenant_id() = tenant_id`). A permission key here would be
+narrower than the base-table policy: admin license types carry no `p:app-user`, so the former
+`('app', 'p:app-user')` row hid every registry-resolved resident name from tenant admins
+(issue 0620, fixed 2026-07-29).
 
 ### 4.3 `res_fn` functions
 

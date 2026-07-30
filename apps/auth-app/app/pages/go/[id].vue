@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { parseUrn } from '@function-bucket/fnb-types'
+import { resolveUrnRoute } from '#shared/utils/urn-route'
 import { assumeResidency } from '~/composables/useLoginFlow'
 
 // OTP login deep-link landing / responder (spec .claude/specs/otp-login/ go.ui.md). A tenant-scoped
@@ -35,13 +36,6 @@ const codeSent = ref(false)
 const code = ref('')
 const busy = ref(false)
 const errorMsg = ref<string | null>(null)
-
-// v1 responder route map — mirrors the server-side resolveUrnRoute (todo only).
-function urnRoute(urn: string): string {
-  const p = parseUrn(urn)
-  if (p?.module === 'todo') return `/tenant/tools/todo/${p.id}`
-  return '/'
-}
 
 const itemLabel = computed(() =>
   deepLink.value?.module === 'todo'
@@ -79,7 +73,7 @@ onMounted(async () => {
     // Already logged in → switch to the item's workspace (or go straight there if same tenant).
     if (isLoggedIn.value && user.value) {
       if (user.value.tenantId === subjectTenantId.value) {
-        await navigateTo(urnRoute(dl.subjectUrn), { external: true })
+        await navigateTo(resolveUrnRoute(dl.subjectUrn), { external: true })
         return
       }
       state.value = targetResidentId.value ? 'switch' : 'no_access'
@@ -149,7 +143,7 @@ async function onSwitchAndView() {
   try {
     await assumeResidency($urqlClient, targetResidentId.value)
     await refreshClaims()
-    await navigateTo(urnRoute(deepLink.value.subjectUrn), { external: true })
+    await navigateTo(resolveUrnRoute(deepLink.value.subjectUrn), { external: true })
   } catch {
     toast.add({ title: 'Could not switch workspace', color: 'error' })
   } finally {

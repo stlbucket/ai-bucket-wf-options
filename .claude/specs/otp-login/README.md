@@ -5,11 +5,21 @@
 > executes it.
 
 ## Status
-**Draft — sequenced behind notifications SMS Phase 0/1** (implementor round, 2026-07-22). Design
-decisions locked; a few code-inspection `[FILL IN]`s remain (resolved at plan time). **Build order:
-`notifications` SMS Phase 0/1 ships first** (its own README/Execution Directive) so SMS delivery +
-the "verified phone" signal exist; *then* this spec is planned/built on top (channel = both, no
-email fallback needed).
+**Shipped in code** (noticed stale 2026-07-28 while building the poll share — this line previously
+still said Draft): `00000000010295_otp_login` (tenant-scoped `auth.deep_link` + `auth.otp_login`),
+the `/auth/go/[id]` landing + `otp/*` endpoints, `useDeepLink` (`shareToLink`/`sendDeepLink`), the
+`send-deep-link` n8n workflow, and the todo + **poll** (2026-07-28) share surfaces. The task list
+below has **not** been retro-checked against the shipped code — do that in a spec-reconcile pass.
+Note on subtree response: nested-tenant subtree members can't respond to org-level links
+(exact-tenant fence). For **polls** this is by design (poll spec D19, user directive 2026-07-29 —
+a poll's audience is exactly its tenant's members); the `0620` issue file once referenced here
+was never actually created. If subtree response ever matters for another module (e.g. todo
+links), file it fresh against that module.
+
+<details><summary>Pre-ship status (historical)</summary>
+Draft — sequenced behind notifications SMS Phase 0/1 (implementor round, 2026-07-22). Design
+decisions locked; a few code-inspection `[FILL IN]`s remained (resolved at plan time).
+</details>
 
 > **Revised 2026-07-22 (D13 — tenant-scoped links, no assigned user).** The recipient-bound model
 > (original D5) is replaced by a **tenant-scoped** link where the opener **self-identifies** by
@@ -220,7 +230,10 @@ Consolidated in the page files; the load-bearing ones:
 ## The "what else would help small-team collaboration" ideas (deferred — follow-on specs)
 Captured from the brief; each reuses this spec's URN-registry → `createDeepLink` → `/auth/go`
 responder shape verbatim (Q1 kept v1 to Todos):
-- **Group polls** — a `poll` URN module: vote on any subject from a texted link.
+- ~~**Group polls** — a `poll` URN module: vote on any subject from a texted link.~~
+  **Implemented 2026-07-28** (poll spec Phase 6, D17/D18): `poll` entry in `resolveUrnRoute`;
+  the share surface generalized — `TodoShareModal` was promoted to the generic `ShareModal`
+  (`apps/tenant-app/app/components/ShareModal.vue`), consumed by both todo and poll detail pages.
 - **Approvals** — an `approval` URN module: approve/reject from your phone.
 - **Quick reactions / acks** — 👍/👀/✅ on any URN, the lightest responder.
 - **@mentions → deep-link notification** — mention a resident on any URN; they get an SMS/email link

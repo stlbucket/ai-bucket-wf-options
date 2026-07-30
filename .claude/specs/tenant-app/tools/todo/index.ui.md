@@ -1,7 +1,10 @@
 # tools/todo/index — Todo List UI
 
+> **Multi-assignee refactor (2026-07-28, Draft):** the assignee column becomes an avatar
+> group and the header gains an "Assigned to me" toggle. Contract: `README.md` / `_shared.data.md`.
+
 ## Status
-Implemented — GraphQL (status trued up 2026-07-19 by the recurring spec/code reconciliation; no [FILL IN] markers remained and the pages/composables exist as specified).
+Implemented — GraphQL (status trued up 2026-07-19 by the recurring spec/code reconciliation; no [FILL IN] markers remained and the pages/composables exist as specified). **Multi-assignee sections: Draft (2026-07-28).**
 
 ## Route
 `/tenant/tools/todo` → `apps/tenant-app/app/pages/tenant/tools/todo/index.vue`
@@ -16,7 +19,7 @@ Single `UCard` with a header toolbar and a responsive list body.
 Three rows stacked:
 1. Title row: `"Todo"` (text-2xl) left, **New Todo** action button right
 2. Search row: label `"SEARCH TERM"` (text-xs) above a `UInput` bound to `searchTerm`
-3. Template toggle row: `UButton` — label toggles between `"Show Templates"` / `"Hide Templates"` based on `showTemplates` ref
+3. Template toggle row: `UButton` — label toggles between `"Show Templates"` / `"Hide Templates"` based on `showTemplates` ref; alongside it an **"Assigned to me"** toggle `UButton` (multi-assignee, 2026-07-28) bound to `assignedToMe` — on: `filterAssignedTo(myResidentUrn)`, off: `filterAssignedTo(null)`; fires immediately (no debounce); hidden while `showTemplates` is on (templates carry no assignees)
 
 ### Body
 | Breakpoint | Component |
@@ -32,7 +35,7 @@ Both components receive the `todos` array as a prop.
 Props: `todos: TodoSummary[]`
 
 - Table layout (responsive, `overflow-x-auto`)
-- Columns: name, status badge, type badge, assignee (displayName or "—"), updatedAt
+- Columns: name, status badge, type badge, assignees (multi-assignee 2026-07-28: initials-avatar group, first 3 + "+N" overflow, `displayName` tooltips; "—" when empty), updatedAt
 - Each row is clickable → navigate to `/tenant/tools/todo/{id}`
 - Pinned todos sorted to the top of the list; a pin icon (`i-lucide-pin`) shown inline on pinned rows
 
@@ -73,14 +76,16 @@ Props: `showTextButton: boolean` — when true renders a text `UButton`; otherwi
 ```ts
 const showTemplates = ref(false)
 const searchTerm = ref('')
+const assignedToMe = ref(false) // multi-assignee, 2026-07-28
 ```
-`showTemplates` and `searchTerm` feed the composable query variables.
+`showTemplates`, `searchTerm`, and `assignedToMe` feed the composable query variables.
 
 ## User Interactions
 | Action | Result |
 |---|---|
 | Type in search | 300ms debounce → `search(searchTerm, showTemplates)` |
 | Toggle Templates button | Flip `showTemplates`; immediately call `search(searchTerm, !showTemplates)` — switches to templates-only view |
+| Toggle "Assigned to me" | Flip `assignedToMe`; `filterAssignedTo(assignedToMe ? myResidentUrn : null)` — immediate, no debounce |
 | Click todo row | `navigateTo('/tenant/tools/todo/{id}')` |
 | Click New Todo → submit modal | `createTodo()` → `navigateTo('/tenant/tools/todo/{newId}')` |
 

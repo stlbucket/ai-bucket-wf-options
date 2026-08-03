@@ -14,3 +14,7 @@
 00000000010290_session [00000000010280_drop_auth_user] 2026-07-09T00:00:00Z Developer <dev@example.com> # Server-side sessions: auth.session table, create/claims_for/revoke session fns, revoke_my_sessions
 00000000010295_otp_login [00000000010290_session] 2026-07-22T00:00:00Z Developer <dev@example.com> # OTP login: auth.deep_link + auth.otp_login tables, pre-claims get/request/verify + residency activation + session_info, app_api.create_deep_link
 00000000010300_app_fn_initialize_anchor [00000000010290_session] 2026-07-21T00:00:00Z Developer <dev@example.com> # First-run setup: pre-claims app_fn.anchor_exists + gated app_fn.initialize_anchor
+
+@v0.0.6 2026-07-30T00:00:00Z Developer <dev@example.com> # Release v0.0.6 — state before the become_support support-email fallback fix
+
+00000000010243_app_fn_support [00000000010243_app_fn_support@v0.0.6] 2026-07-30T00:00:00Z Developer <dev@example.com> # Rework become_support: coalesce support-email/display-name over a missing app_settings row (empty-env resident.email NOT NULL fix)

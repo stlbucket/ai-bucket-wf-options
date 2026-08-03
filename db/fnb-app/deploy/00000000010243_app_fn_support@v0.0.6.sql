@@ -40,18 +40,8 @@ CREATE OR REPLACE FUNCTION app_fn.become_support(_tenant_id uuid, _profile_id uu
       where profile_id = _profile_id and status = 'active'
       returning * into _actual_resident;
 
-      -- coalesce must wrap the subquery, not `value`: SELECT INTO leaves the var NULL when
-      -- no row matches, so `coalesce(value, ...)` only rescues a present-but-null value. The
-      -- support-email/support-display-name settings are seeded by db/seed.sql (full dev seed)
-      -- but absent in an empty-bootstrapped env (env-build-empty), so the row is missing there.
-      _support_email := coalesce(
-        (select value from app.app_settings where key = 'support-email' and application_key = 'base'),
-        'support@example.com'
-      );
-      _support_display_name := coalesce(
-        (select value from app.app_settings where key = 'support-display-name' and application_key = 'base'),
-        'Site Support'
-      );
+      select coalesce(value, 'support@example.com') into _support_email from app.app_settings where key = 'support-email' and application_key = 'base';
+      select coalesce(value, 'Site Support') into _support_display_name from app.app_settings where key = 'support-display-name' and application_key = 'base';
 
       insert into app.resident(
         tenant_id

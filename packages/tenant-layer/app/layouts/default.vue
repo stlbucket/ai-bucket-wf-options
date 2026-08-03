@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRuntimeConfig } from 'nuxt/app'
 import { useAuth } from '@function-bucket/fnb-auth-layer/app/composables/useAuth'
 
-const { isLoggedIn } = useAuth()
+const { isLoggedIn, user, exitSupport } = useAuth()
 const { public: { authAppUrl } } = useRuntimeConfig()
+
+const isInSupportMode = computed(() => user.value?.permissions?.includes('p:exit-support'))
 </script>
 
 <template>
@@ -21,6 +24,16 @@ const { public: { authAppUrl } } = useRuntimeConfig()
           <span class="font-mono text-sm font-bold tracking-tight">function-bucket</span>
         </NuxtLink>
         <div class="ml-auto flex items-center gap-2">
+          <UButton
+            v-if="isInSupportMode"
+            size="xs"
+            color="warning"
+            variant="soft"
+            icon="i-lucide-log-out"
+            @click="exitSupport"
+          >
+            Exit Support
+          </UButton>
           <ClientOnly>
             <UColorModeButton class="text-white/70 hover:bg-white/10 hover:text-white" />
           </ClientOnly>

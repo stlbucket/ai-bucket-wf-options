@@ -19,10 +19,17 @@ const isInSupportMode = computed(
 
 ## Where the Exit Support Button Lives
 
-`UserProfileStatus.vue` (`packages/tenant-layer/app/components/UserProfileStatus.vue`) —
-rendered in the header of every page via the default layout in tenant-layer. This ensures
-the "Exit Support" affordance is always visible regardless of which page the support user
-navigates to.
+The affordance is rendered per **viewport** by the tenant-layer shell so it is always visible
+regardless of which page the support user navigates to:
+
+- **Desktop** — `AppNav.vue`'s user footer (`packages/tenant-layer/app/components/AppNav.vue`),
+  in both the expanded and icon-rail (`navCollapsed`) branches. The sidebar is `hidden lg:flex`.
+- **Mobile** — the slim brand header in the tenant-layer `default.vue` layout
+  (`packages/tenant-layer/app/layouts/default.vue`), `lg:hidden`. Added by
+  `docs/specs/mobile-exit-support/`.
+
+`UserProfileStatus.vue` also carries the same button, but it is not the shell's primary support
+affordance today (the nav components above are). The markup is identical across all sites:
 
 ```vue
 <UButton

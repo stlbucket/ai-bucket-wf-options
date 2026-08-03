@@ -14,4 +14,4 @@ ssh_key_fingerprints = ["75:14:12:e9:bd:f4:97:44:70:f1:64:1b:d1:6d:cc:22"] # fnb
 
 # CIDRs allowed to SSH (lock to your admin IPs). Empty = no inbound SSH rule.
 # T-Mobile CGNAT egress block (exact IP rotates); widen/re-apply if a rotation lands outside it.
-admin_ssh_cidrs = ["172.56.0.0/16", "108.66.164.183/32"]
+admin_ssh_cidrs = ["172.56.0.0/16", "47.213.158.75/32"]

@@ -1,8 +1,8 @@
 # mobile-exit-support — UI
 
 ## Status
-Implemented (code + build) — 2026-08-03. UI-only; single file touched (`default.vue`).
-`pnpm build` green; running-UI verification pending a user env rebuild.
+Implemented — 2026-08-03. UI-only; single file touched (`default.vue`). `pnpm build` green;
+verified in the running UI by the user after env rebuild.
 
 ## Component touched
 

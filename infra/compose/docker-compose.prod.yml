@@ -357,6 +357,11 @@ services:
       NUXT_ZITADEL_INTERNAL_URL: "${NUXT_ZITADEL_INTERNAL_URL:?}"
       NUXT_ZITADEL_SEED_FILE: "${NUXT_ZITADEL_SEED_FILE:?}"
       DATABASE_URL: "${DATABASE_URL:?}"
+      # onboard request-password + forgot-password + OTP-login routes POST the email to the
+      # send-notification n8n webhook (server-to-server, shared secret). Missing here → those
+      # routes 502 ("Could not send the link"). Present in the dev compose; was dropped from prod.
+      N8N_INTERNAL_URL: "${N8N_INTERNAL_URL:?}"
+      N8N_WEBHOOK_SECRET: "${N8N_WEBHOOK_SECRET:?}"
       # First-run /auth/setup gate (mirrors dev; production-runtime.md §9.1). The seeder PAT is
       # read from the zitadel-seed volume at the ZITADEL_PAT_FILE default (/zitadel-seed/admin.pat).
       SETUP_TOKEN: "${SETUP_TOKEN:?SETUP_TOKEN required — first-run /auth/setup gate}"

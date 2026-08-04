@@ -28,7 +28,10 @@ Body: `{ email }` (the admin-reset caller also sends `tenantId`/`profileId` — 
 Lifted from `invite-user.json`'s Code node **409 branch** (`invite-user.json:63`). Pseudocode:
 
 ```js
-const E = process.env || {}
+// Read n8n's $env, NOT process.env — the task runner strips the OS env; $env is fed from the main
+// n8n process (see zitadel-admin-client.md § "n8n Code node env access"). process.env.* here
+// silently falls back to the localhost dev defaults → prod sends Host: localhost:8200 → ZITADEL 404.
+const E = (typeof $env !== 'undefined' && $env) ? $env : {}
 const zOrigin  = E.NUXT_ZITADEL_INTERNAL_URL || 'http://zitadel:8080'
 const zHost    = (E.NUXT_ZITADEL_ISSUER || 'http://localhost:8200').replace(/^https?:\/\//, '')
 const authBase = E.NUXT_PUBLIC_AUTH_APP_URL || 'http://localhost:4000/auth'

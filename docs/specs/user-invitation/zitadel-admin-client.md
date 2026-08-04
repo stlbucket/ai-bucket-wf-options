@@ -80,6 +80,15 @@ Identical constraint to `apps/auth-app/server/utils/oidc.ts`
 
 `BASE = ${NUXT_ZITADEL_INTERNAL_URL}`, `HOST_HEADER = <external host>` for every call below.
 
+> **n8n Code-node env access (learned in prod, 2026-08).** In the n8n Code node read these values
+> via n8n's **`$env`**, never `process.env`. n8n 2.x runs Code nodes in a task-runner subprocess
+> that is denied the OS `process.env`; `$env` is populated from the *main* n8n process (gated by
+> `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`, which prod sets). Using `process.env` here silently falls
+> back to the `localhost` dev defaults → prod sends `Host: localhost:8200` → ZITADEL `orgs/me 404`,
+> and it's **masked in dev** because the fallback equals the dev issuer. Idiom:
+> `const E = (typeof $env !== 'undefined' && $env) ? $env : {}`. (auth-app is exempt — it reads
+> plain `process.env`, being a normal Node process, not a task runner.)
+
 ## Calls
 
 > Field names marked ⚠ are the ones to confirm against v4.15.3. The overall shapes are stable

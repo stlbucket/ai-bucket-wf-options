@@ -121,6 +121,15 @@ top-level **`infra/`** directory.
 - [ ] Provision → deploy → confirm: `db-migrate` deploys, `zitadel-seed` runs, `n8n-import` imports,
       Caddy serves TLS on `<domain>`/`id.<domain>`/`n8n.<domain>`, login ceremony works end-to-end,
       an upload scans+promotes (agent-app + ClamAV path), a game plays (n8n referee path)
+- [ ] **Invite + notification smoke (guards the 2026-08 prod break).** `health-verify.sh` only hits
+      health endpoints, so exercise the invite/onboarding chain by hand on a fresh instance:
+      invite a user from the tenant-admin UI → **invitation email arrives** (proves `RESEND_API_KEY`
+      → `fnb-smtp` credential AND the invite-user Code node's `$env` ZITADEL call) → open
+      `/auth/verify-email` → click "send me a link to set my password" → **succeeds** (proves auth-app
+      has `N8N_INTERNAL_URL` + `N8N_WEBHOOK_SECRET`) → set-password email arrives → set password →
+      log in. Also POST `/auth/api/forgot-password` for a known user and confirm the reset email
+      lands. Root causes if any step fails: `zitadel-admin-client.md` § "n8n Code-node env access"
+      (`$env` not `process.env`) and the auth-app compose env (`user-invitation/README.md`).
 
 ### Phase 8 — First-run identity bootstrap (D12/D13; `production-runtime.md` §9.1)
 - [x] Wire `SETUP_TOKEN` into prod: `infra/compose/docker-compose.prod.yml` auth-app env

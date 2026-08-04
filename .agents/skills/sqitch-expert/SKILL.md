@@ -12,9 +12,29 @@ You are a sqitch database change management expert for this specific project. Yo
 and understand how this project uses it. Always read the relevant `sqitch.plan` and deploy scripts
 before giving advice — the plan is the source of truth.
 
+> ## ⛔ Deployed changes are IMMUTABLE (do-prod is live — deploys are forward-only)
+>
+> Once a change has shipped to **do-prod** (merged to `main` and deployed), **never edit its
+> `deploy/` / `revert/` / `verify/` SQL in place, and never rename or reorder it in the plan.**
+> Sqitch tracks each change by its script hash: an edited-but-already-deployed change is **silently
+> skipped** on the next deploy (its name is already in the registry), and `verify` / `rebase` start
+> failing on hash mismatches. The forward-only prod migrate gate will *not* re-run it.
+>
+> **To change a deployed object, add a NEW change** — a fresh `deploy`/`revert`/`verify` trio plus a
+> new plan entry (e.g. an `ALTER TABLE`, `CREATE OR REPLACE FUNCTION`, new policy). That is the
+> default and correct path.
+>
+> **The only time you may edit a change's files in place** is while it has *never left your branch*
+> (never deployed to any shared/prod DB) — pre-merge iteration on a brand-new change.
+>
+> `sqitch rework` (which requires a tag) is the escape hatch for the rare case that genuinely must
+> redefine an existing change in place-of-name; it, too, writes NEW files (`deploy/<name>@<tag>.sql`)
+> and never mutates the deployed script. `pnpm db-rebuild` is dev-only — it is **not** a prod fix
+> (prod is never wiped to reapply an edited migration; see the deployment specs).
+
 ## Project Structure
 
-This project has nine sqitch packages under `db/`, deployed in the order set by the
+This project has thirteen sqitch packages under `db/`, deployed in the order set by the
 `DEPLOY_PACKAGES` variable in `.env` (the single source of truth, read by both
 `scripts/db-deploy.ts` and docker-compose's db-migrate service):
 
@@ -28,6 +48,7 @@ db/
   fnb-res/      ← URN registry — precedes every URN-registering module
   fnb-msg/      ← messaging domain
   fnb-todo/     ← todo domain
+  fnb-poll/     ← poll domain
   fnb-loc/      ← location domain
   fnb-storage/  ← asset storage domain
   fnb-location-datasets/ ← public datasets (breweries)
@@ -258,11 +279,19 @@ When conflicts do occur, manually resolve by ordering changes correctly (depende
 5. Deploy and verify
 
 ### Fix a bug in a deployed change (already in production)
+**Default: add a NEW change** — an `ALTER` / `CREATE OR REPLACE` / replacement policy in a fresh
+`deploy`/`revert`/`verify` trio + plan entry. Do **not** edit the deployed change's SQL in place
+(the ⛔ callout explains why: sqitch skips already-registered changes on a forward-only deploy).
+
+Only when a change genuinely must be *redefined in place-of-name* (rare — e.g. a
+`CREATE OR REPLACE` isn't expressible as a follow-on), use `rework`, which still writes new files:
 1. Tag the current state: `sqitch tag v1.x -n 'Before fix'`
-2. Rework the change: `sqitch rework <changename>`
-3. Edit the new deploy script
+2. Rework the change: `sqitch rework <changename>` (creates `deploy/<name>@v1.x.sql` — the old
+   script — plus a new `deploy/<name>.sql`; it never mutates the deployed script)
+3. Edit the **new** deploy script
 4. Write a new verify; the old deploy becomes the revert automatically
-5. Rebase to apply: `sqitch rebase -y`
+5. Deploy forward to apply — do **not** `rebase`/revert in prod (that would drop data); `rebase` is
+   a dev-only convenience
 
 ### Check what's deployed vs planned
 ```bash
@@ -285,6 +314,9 @@ docker run --rm --network fnb-network \
 ## Rules
 
 - **Never run `git` commands** when working with sqitch in this project (per CLAUDE.md)
+- **Deployed changes are immutable** — never edit the `deploy`/`revert`/`verify` SQL of a change
+  that has shipped to do-prod; add a NEW change instead (see the ⛔ callout at the top). In-place
+  edits are allowed only on changes that have never left your branch.
 - Always read the current `sqitch.plan` before modifying it
 - Never reorder existing plan entries — only insert new ones in the correct position
 - Use `Developer <dev@example.com>` as the author in plan entries (matches existing entries)

@@ -195,4 +195,7 @@ For the full stack above the DB (PostGraphile exposure, codegen, composables), h
 - Never expose `<module>_fn.*` functions directly — all public access goes through `<module>_api.*`
 - Never design against `auth.user` — it is dropped; identity is `app.profile.idp_user_id` + `auth.session`
 - Never hardcode tenant IDs or permission keys as string literals in application code
+- **Never edit a migration that has shipped to do-prod in place** — do-prod deploys are forward-only,
+  so a schema change to a deployed object is always a NEW sqitch change (`ALTER`/`CREATE OR REPLACE`),
+  never an edit to the original `deploy/` script. See the ⛔ immutability callout in **sqitch-expert**.
 - Never run `git` during a sqitch session, and never rebuild/restart the env yourself (CLAUDE.md)

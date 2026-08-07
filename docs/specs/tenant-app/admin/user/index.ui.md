@@ -16,9 +16,11 @@ See `README.md` + `_shared.data.md`.
   — tenant count = distinct `tenantId`s in the loaded rows; omit the suffix when it is 1)
 - `#actions` (stacked column, right-aligned): `InviteUserModal` (shown when `canInvite`), and
   `WorkspaceResidentsModal` (shown when `canInvite && claims.tenantType ∈ {WORKSPACE, CLIENT,
-  ORGANIZATION}`); below the buttons, a **color legend** — one sample `UBadge` per color —
+  ORGANIZATION}`); below the buttons, a **color legend** — one sample `UBadge` per category —
   `Active / Supporting` (success), `Invited` (warning), `Blocked` (error),
-  `Declined / Inactive` (neutral). Mirrors the shared resident color map (UC1).
+  `Inactive` (**info — blue**), `Declined` (neutral). Mirrors the shared resident color map
+  (UC1). **`Inactive` is its own blue category** (2026-08-04) — split out from the old combined
+  `Declined / Inactive` neutral entry.
 - **`SubtreeResidentList.vue` table (replaces `ResidentList.vue` on this page)**
 
 ## Component: `SubtreeResidentList.vue` — NEW (roll-up)
@@ -66,13 +68,20 @@ Props: `residents: Resident[]`
 - Columns: name (link to `/admin/user/{id}`), email, status badge, type
 - Keep the component only if another page still consumes it; otherwise delete at implementation time.
 
-**Status badge colors** (shared by `SubtreeResidentList` status + tenancy badges):
+**Status badge colors** (shared by `SubtreeResidentList` status + tenancy badges; canonical map is
+the `resident` entry in `packages/auth-layer/app/utils/status.ts` — UC1):
 | Status | Color |
 |---|---|
 | active, supporting | success (green) |
 | blocked_individual, blocked_tenant | error (red) |
 | invited | warning (yellow) |
-| other | neutral |
+| inactive | **info (blue)** — 2026-08-04, own category |
+| declined, other | neutral |
+
+> **Shared-map change (2026-08-04):** `resident.inactive` moves `neutral → info` in
+> `packages/auth-layer/app/utils/status.ts`. `resident.declined` stays `neutral`. Because
+> `SubtreeResidentList` and every other resident badge read this shared map, `inactive` residents
+> render blue everywhere resident status is shown — intended, keeps the legend and the table in sync.
 
 ## User Interactions
 - Click person's name → navigate to `/admin/user/{linkResidentId}` (current-tenant residency when

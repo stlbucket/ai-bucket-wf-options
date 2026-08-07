@@ -21,6 +21,11 @@ DB deployed + functionally verified in a rolled-back claims txn (scoping, 30000 
 In-flight corrections: `app.resident.email` is `text` → the list fn casts it `::citext`;
 `ResidentList.vue` had no remaining consumers and was deleted.
 
+**Legend tweak (2026-08-04) — spec updated, not yet built.** `Inactive` becomes its **own blue
+(`info`) legend category**, split from the old combined `Declined / Inactive` neutral entry. The
+change lives in the shared resident color map (`packages/auth-layer/app/utils/status.ts`), so
+inactive residents render blue in every resident badge — see Phase 9 + `index.ui.md`.
+
 ## Purpose
 
 The `/tenant/admin/user` page lists the current tenant's residents (implemented). This spec
@@ -130,6 +135,15 @@ or enters a tenant via support mode.
 
 ### Phase 8 — spec upkeep
 - [x] README status → Implemented for the roll-up extension; boxes checked; corrections recorded
+
+### Phase 9 — legend: `Inactive` is its own blue category (2026-08-04)
+- [ ] `packages/auth-layer/app/utils/status.ts`: in the `resident` map, change `inactive` from
+  `neutral` → `info` (blue). Leave `declined` at `neutral`. (StatusColor already includes `info`.)
+- [ ] `pages/admin/user/index.vue`: split the legend `Active / Supporting`, `Invited`, `Blocked`,
+  `Declined / Inactive` (neutral) → add a separate `Inactive` (info) entry and a `Declined`
+  (neutral) entry; the legend must reflect one sample badge **per color/category**.
+- [ ] `pnpm build` gate green (repo-wide `pnpm lint` is known-broken — build is the gate).
+- [ ] Contract: `index.ui.md` legend + status-badge-color table (already updated in this spec).
 
 ## Implementation notes (2026-07-22 — code is source of truth)
 - Only `app_fn.current_profile_claims` builds `app_fn.profile_claims` (field-by-field assignment, so

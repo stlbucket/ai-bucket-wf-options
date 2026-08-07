@@ -17,24 +17,38 @@ Webhook Trigger (respond-immediately), header-auth `x-fnb-webhook-secret` = `N8N
 (the existing invariant). Body from the `triggerWorkflow` plugin:
 
 ```jsonc
-{ "displayName": "Ada Lovelace", "email": "ada@example.com",
+{ "email": "ada@example.com",                         // REQUIRED
+  "firstName": "Ada", "lastName": "Lovelace",          // NEW (U10) — optional
+  "displayName": "Ada Lovelace", "phone": "+1…",       // displayName now optional (U10), phone new
   "tenantId": "<inviting tenant>", "profileId": "<inviting admin>" }
 ```
 
-Respond `200 { accepted: true }` immediately; the rest runs async (fire-and-forget, U5).
+Respond `200 { accepted: true }` immediately; the rest runs async (fire-and-forget, U5). Only
+`email` (+ the plugin-injected `tenantId`) is required; the four profile-detail fields are
+optional and may be blank/omitted.
 
 ## Nodes (happy path)
 
 1. **Webhook** — validate secret; parse payload.
 2. **Read PAT** (Code node) — `fs.readFileSync(<seed-volume PAT file>)` → the `fnb-seeder` bearer
    (Phase 0 wiring). Resolve `orgId` once if needed.
-3. **Postgres — create resident** (`n8n_worker` credential):
+3. **Postgres — create resident** (`n8n_worker` credential). **Extended U10** to thread the four
+   optional profile fields. Because scope is a positional arg, the `'user'` default must be passed
+   explicitly to reach args 4–7:
    ```sql
-   select * from app_fn.invite_user(:tenantId::uuid, :email::citext);  -- default scope 'user'
+   select id from app_fn.invite_user(
+       $1::uuid, $2::citext, 'user',
+       $3::citext, $4::citext, $5::citext, $6::citext);   -- tenantId,email, first,last,display,phone
    ```
-   Idempotent; returns the `resident` row. (Grant check: `_shared.data.md` Open Question.)
+   `queryReplacement` = `[tenantId, email, firstName, lastName, displayName, phone]` from the
+   webhook body (blank → empty string; `app_fn.invite_user` normalizes `'' → null`). Idempotent;
+   returns the `resident` id. An explicit-display-name collision surfaces as `31020` from this node
+   → the workflow error branch (README Phase-4 UX). (Grant check: `_shared.data.md` Open Question.)
 4. **ZITADEL — create human user** (HTTP Request, split-horizon + `Host` header —
    `zitadel-admin-client.md` call 1): `POST /v2/users/human`, `email.returnCode`, **no password**.
+   `profile.givenName/familyName` = `firstName`/`lastName` when present, else the `displayName`
+   split, else `email` (U10 — see `_shared.data.md` state machine); email greeting var falls back
+   `displayName → firstName → email`.
    - On **2xx** → `{ userId, emailCode }`.
    - On **409 already-exists** → branch to **4b**.
 5. **Build link** (Set/Code): `verifyUrl = ${APP_ORIGIN}/auth/verify-email?userId=<userId>&code=<emailCode>`.

@@ -12,9 +12,15 @@ import { useTriggerWorkflow } from './useTriggerWorkflow'
 // `mode` (default 'email'): 'email' sends the invitation mail; 'link' skips it — the workflow
 // responds synchronously (responseMode lastNode) with the single-use onboarding ceremony URL,
 // surfaced here as `InviteUserResult.link`.
+// U10 (user-invitation spec): the Invite-User popup collects these profile details. Only `email`
+// is required; first/last/display name + phone are optional and seed the invitee's app.profile via
+// app_fn.invite_user's appended params. Blank fields are dropped from the payload (→ null server-side).
 export interface InviteUserInput {
-  displayName: string
   email: string
+  firstName?: string
+  lastName?: string
+  displayName?: string
+  phone?: string
   mode?: 'email' | 'link'
 }
 
@@ -28,9 +34,16 @@ export function useInviteUser() {
   const { triggerWorkflow, fetching } = useTriggerWorkflow()
 
   async function invite(input: InviteUserInput): Promise<InviteUserResult> {
+    const trimmed = (v: string | undefined) => {
+      const t = (v ?? '').trim()
+      return t.length ? t : undefined
+    }
     const res = await triggerWorkflow('invite-user', {
-      displayName: input.displayName,
       email: input.email,
+      ...(trimmed(input.firstName) ? { firstName: trimmed(input.firstName) } : {}),
+      ...(trimmed(input.lastName) ? { lastName: trimmed(input.lastName) } : {}),
+      ...(trimmed(input.displayName) ? { displayName: trimmed(input.displayName) } : {}),
+      ...(trimmed(input.phone) ? { phone: trimmed(input.phone) } : {}),
       ...(input.mode ? { mode: input.mode } : {}),
     })
     if (!res.accepted) throw new Error('Invitation was not accepted')

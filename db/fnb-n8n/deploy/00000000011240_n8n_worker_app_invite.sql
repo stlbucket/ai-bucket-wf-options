@@ -12,8 +12,10 @@ begin;
 -- role and the function). Least-privilege: usage on app_fn + execute on exactly this one function
 -- (app_fn's default privileges grant only anon/authenticated/service_role, so nothing else leaks).
 grant usage on schema app_fn to n8n_worker;
+-- U10 (user-invitation): invite_user gained four optional profile params (first/last/display/phone);
+-- the grant must name the current 7-arg signature.
 grant execute on function
-  app_fn.invite_user(uuid, citext, app.license_type_assignment_scope)
+  app_fn.invite_user(uuid, citext, app.license_type_assignment_scope, citext, citext, citext, citext)
   to n8n_worker;
 
 commit;

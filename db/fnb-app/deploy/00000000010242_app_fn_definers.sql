@@ -266,10 +266,23 @@ CREATE OR REPLACE FUNCTION app_fn.update_profile(
 --   $function$
 --   ;
 
+-- U10 changed invite_user's SIGNATURE (added _first_name/_last_name/_display_name_in/_phone).
+-- `CREATE OR REPLACE` only replaces a same-signature function, so on a live DB that already has the
+-- old 3-arg version (a prod hot-fix replay via `pnpm do-db-exec`) the CREATE below would ADD a 7-arg
+-- overload alongside it → every 3-arg call raises "function ... is not unique". Drop the stale
+-- signature first. On a fresh rebuild this is a harmless no-op (the function doesn't exist yet).
+drop function if exists app_fn.invite_user(uuid, citext, app.license_type_assignment_scope);
+
 CREATE OR REPLACE FUNCTION app_fn.invite_user(
     _tenant_id uuid
     ,_email citext
     ,_assignment_scope app.license_type_assignment_scope default 'user'
+    -- U10 (user-invitation spec): the Invite-User popup collects these optional profile details;
+    -- all default null so every existing 3-arg caller stays valid. Appended, not reordered.
+    ,_first_name citext default null
+    ,_last_name citext default null
+    ,_display_name_in citext default null
+    ,_phone citext default null
   )
   RETURNS app.resident
   LANGUAGE plpgsql
@@ -289,6 +302,12 @@ CREATE OR REPLACE FUNCTION app_fn.invite_user(
     _tenant_subscription_id uuid;
     _display_name citext;
   BEGIN
+    -- U10: normalize blank optional inputs to null (the popup / workflow may send empty strings).
+    _first_name     := nullif(trim(_first_name), '')::citext;
+    _last_name      := nullif(trim(_last_name), '')::citext;
+    _display_name_in := nullif(trim(_display_name_in), '')::citext;
+    _phone          := nullif(trim(_phone), '')::citext;
+
     -- find existing records for profile and resident
     select * into _profile from app.profile where email = _email;
     select * into _resident from app.resident where email = _email and tenant_id = _tenant_id;
@@ -305,16 +324,42 @@ CREATE OR REPLACE FUNCTION app_fn.invite_user(
     -- (create_app_tenant/create_workspace pre-create the admin's profile so _profile.id is already
     -- set here and this branch is skipped).
     if _profile.id is null then
-      -- display_name is UNIQUE: try the email local part, else null — an invite must never fail on a
-      -- display-name collision (john@a.com / john@b.com share a local part). Views coalesce a name
-      -- from the resident row + email, and the person sets their own on first profile edit.
-      _display_name := lower(split_part(_email, '@', 1))::citext;
-      if _display_name is null or exists (select 1 from app.profile where display_name = _display_name) then
-        _display_name := null;
+      -- U10 display_name resolution (display_name is UNIQUE):
+      --  * caller supplied one → it is EXPLICIT input, so a collision is a hard error (31020) rather
+      --    than a silent fallback — the admin picked it and deserves to know.
+      --  * none supplied → keep the collision-safe auto-derivation (email local part, else null);
+      --    an unattended invite must never fail on a display-name clash.
+      if _display_name_in is not null then
+        if exists (select 1 from app.profile where display_name = _display_name_in) then
+          raise exception '31020: DISPLAY NAME ALREADY TAKEN';
+        end if;
+        _display_name := _display_name_in;
+      else
+        _display_name := lower(split_part(_email, '@', 1))::citext;
+        if _display_name is null or exists (select 1 from app.profile where display_name = _display_name) then
+          _display_name := null;
+        end if;
       end if;
-      insert into app.profile (email, display_name)
-      values (_email, _display_name)
+      insert into app.profile (email, display_name, first_name, last_name, phone)
+      values (_email, _display_name, _first_name, _last_name, _phone)
       returning * into _profile;
+    else
+      -- U10 re-invite: FILL ONLY BLANKS on the existing profile — never overwrite a value the
+      -- person already has. display_name is set only when currently null AND supplied, with the
+      -- same explicit-collision guard as the new-profile path.
+      if _display_name_in is not null and _profile.display_name is null then
+        if exists (select 1 from app.profile where display_name = _display_name_in) then
+          raise exception '31020: DISPLAY NAME ALREADY TAKEN';
+        end if;
+        update app.profile set display_name = _display_name_in where id = _profile.id;
+      end if;
+      update app.profile
+        set first_name = coalesce(first_name, _first_name)
+           ,last_name  = coalesce(last_name, _last_name)
+           ,phone      = coalesce(phone, _phone)
+           ,updated_at = current_timestamp
+        where id = _profile.id
+        returning * into _profile;
     end if;
 
     if _resident.id is null then

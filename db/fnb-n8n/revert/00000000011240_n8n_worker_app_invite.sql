@@ -3,7 +3,7 @@
 begin;
 
 revoke execute on function
-  app_fn.invite_user(uuid, citext, app.license_type_assignment_scope)
+  app_fn.invite_user(uuid, citext, app.license_type_assignment_scope, citext, citext, citext, citext)
   from n8n_worker;
 revoke usage on schema app_fn from n8n_worker;
 

@@ -17,7 +17,8 @@ drop function if exists app_fn.tenant_tree_root(uuid) cascade;
 drop function if exists app_api.get_ab_listings(uuid) cascade;
 drop function if exists app_fn.demo_profile_residencies() cascade;
 drop function if exists app_api.demo_profile_residencies() cascade;
-drop function if exists app_fn.invite_user(uuid, citext, app.license_type_assignment_scope) cascade;
+-- U10: signature extended with four optional profile params (first/last/display/phone).
+drop function if exists app_fn.invite_user(uuid, citext, app.license_type_assignment_scope, citext, citext, citext, citext) cascade;
 drop function if exists app_fn.update_profile(uuid, citext, citext, citext, citext) cascade;
 drop function if exists app_api.update_profile(citext, citext, citext, citext) cascade;
 drop function if exists app_fn.decline_residency(uuid, citext) cascade;

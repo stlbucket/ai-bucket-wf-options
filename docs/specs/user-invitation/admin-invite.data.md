@@ -25,9 +25,15 @@ work — build them first or together.
 ## Send path — `triggerWorkflow` carve-out
 
 ```
-triggerWorkflow(workflowKey: "invite-user", inputData: { displayName, email })
-  → { accepted, runId }        // fire-and-forget; the email + resident row are the evidence
+triggerWorkflow(workflowKey: "invite-user",
+  inputData: { email, firstName?, lastName?, displayName?, phone?, mode? })   // U10: +4 optional fields
+  → { accepted, runId }        // fire-and-forget (email mode); the email + resident row are the evidence
 ```
+
+The four new optional fields (`firstName`, `lastName`, `displayName`, `phone`) ride the **same
+`inputData` bag** — the `triggerWorkflow` plugin forwards arbitrary keys, so **no plugin/registry
+change** is needed (only the existing `invite-user` → `p:app-admin` gate applies). They feed
+`app_fn.invite_user`'s new profile params (`_shared.data.md` U10).
 
 - The plugin injects `tenantId`/`profileId` from the caller's claims and enforces `p:app-admin`
   (registry entry, `_shared.data.md`). No client-side tenant/profile is sent.
@@ -41,26 +47,24 @@ Real implementation in `packages/graphql-client-api/src/composables/useInviteUse
 re-export at `apps/tenant-app/app/composables/useInviteUser.ts`.
 
 ```ts
-// packages/graphql-client-api/src/composables/useInviteUser.ts (shape)
-import { useTriggerWorkflowMutation } from '../generated/fnb-graphql-api'
-
-export interface InviteUserInput { displayName: string; email: string }
-
-export function useInviteUser() {
-  const { executeMutation } = useTriggerWorkflowMutation()   // the same generated hook useSendTest uses
-
-  async function invite(input: InviteUserInput) {
-    const res = await executeMutation({
-      workflowKey: 'invite-user',
-      inputData: input,
-    })
-    if (res.error) throw res.error
-    if (!res.data?.triggerWorkflow?.accepted) throw new Error('Invitation was not accepted')
-  }
-
-  return { invite }
+// packages/graphql-client-api/src/composables/useInviteUser.ts (shape — U10)
+// email required; firstName/lastName/displayName/phone optional; mode optional (link/email).
+export interface InviteUserInput {
+  email: string
+  firstName?: string
+  lastName?: string
+  displayName?: string
+  phone?: string
+  mode?: 'email' | 'link'
 }
 ```
+
+The live implementation builds the `inputData` bag from the supplied fields (dropping/blanking
+empties) and returns `InviteUserResult` (`{ accepted, link, template }`) — see the current file
+`packages/graphql-client-api/src/composables/useInviteUser.ts`. U10 only widens `InviteUserInput`
+(makes `displayName` optional, adds `firstName`/`lastName`/`phone`) and forwards the four new keys
+into the existing `triggerWorkflow('invite-user', …)` call; the result-shaping (link/email mode) is
+unchanged.
 
 ```ts
 // apps/tenant-app/app/composables/useInviteUser.ts
@@ -72,7 +76,11 @@ export { useInviteUser } from '@function-bucket/graphql-client-api'
 - Return shape: just `{ invite }` (an imperative action). No query/`fetching` here.
 - Error mapping for the toast (`admin-invite.ui.md`): urql `CombinedError` →
   `res.error.graphQLErrors[0]?.message`; the plugin throws `30000: NOT AUTHORIZED` (missing
-  `p:app-admin`) and `401: not authenticated` — map both to friendly copy.
+  `p:app-admin`) and `401: not authenticated` — map both to friendly copy. **U10:** a `31020` match
+  → *"That display name is already taken — pick another."* is included **defensively**, but note
+  (verified 2026-08-07) n8n masks node errors behind a generic webhook 500, so `31020` does **not**
+  reach the client today — a link-mode collision surfaces as `workflow trigger failed: 500`, mapped
+  to copy that names both a bad email and a taken display name. See the caveat in `admin-invite.ui.md`.
 
 ## Requirements
 - `invite-user` registered in `WORKFLOW_REGISTRY` (`p:app-admin`) — `_shared.data.md`.

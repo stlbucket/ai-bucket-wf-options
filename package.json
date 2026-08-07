@@ -29,6 +29,7 @@
     "do-env-teardown": "bash infra/scripts/do-env-teardown.sh",
     "do-db-rebuild": "bash infra/scripts/do-db-rebuild.sh",
     "do-db-psql": "bash infra/scripts/do-db-psql.sh",
+    "do-db-exec": "bash infra/scripts/do-db-exec.sh",
     "do-ssh-allow": "bash infra/scripts/do-ssh-allow.sh",
     "do-ssh-revoke": "bash infra/scripts/do-ssh-revoke.sh"
   },

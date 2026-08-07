@@ -10,7 +10,10 @@
 No `[FILL IN]` blockers remain except the two confirm-against-running-ZITADEL items (endpoint
 field names, PAT delivery to n8n) called out in Open Questions. Phases 1–3 built + verified
 live 2026-07-22. **U9 (send-immediately checkbox, Phase 5) built 2026-07-27 via plan 0160 —
-build gate passed, manual e2e pending.**
+build gate passed, manual e2e pending.** **U10 (invite popup collects first/last/display/email/
+phone — email required, rest optional; Phase 6) Implemented + verified 2026-08-07 (env rebuilt; DB
++ live-webhook checks passed; build 13/13). One documented caveat: n8n masks the `31020`
+display-name-collision error → the admin sees a generic failure toast, not the specific reason.**
 
 > **Extended by `docs/specs/tenant-app/site-admin/tenant/[id].data.md`** (2026-07-27): a
 > synchronous **link mode** on the `invite-user` workflow (returns the ceremony URL instead of
@@ -48,7 +51,7 @@ the lazy one.
 
 ```
 Admin  (tenant-app /tenant/admin/user)
-  └─ "Invite User" → modal (display name + email) → triggerWorkflow('invite-user', {...})
+  └─ "Invite User" → modal (email req.; first/last/display/phone optional — U10) → triggerWorkflow('invite-user', {...})
                                                         │  (p:app-admin gate, claims injected)
 n8n  invite-user workflow
   ├─ app_fn.invite_user(tenantId, email)               → resident row 'invited' (idempotent)
@@ -86,6 +89,7 @@ Invitee signs in (ZITADEL hosted login) → provision_idp_user email-matches the
 | U7 | Invite gate | **`p:app-admin`** on the `invite-user` registry entry | Mirrors the held-out `app_api.invite_user`'s `jwt.has_permission('p:app-admin')`; tenant admins invite into their own tenant. |
 | U8 | ZITADEL admin auth | Both n8n and auth-app authenticate to the ZITADEL **management/v2 API** with the **`fnb-seeder` PAT** from the shared `zitadel-seed` volume, over the internal URL + external-Host split-horizon | Reuses the existing service account + transport; no new machine user. Delivery of the PAT into n8n is the one infra Open Question. |
 | U9 | Send-immediately checkbox | `InviteUserModal` gains a **"Send invite immediately"** `UCheckbox`: checked → email mode (today's behavior); unchecked → **link mode** — no email, the modal shows the ceremony URL with a copy button. Default = the value used on the admin's **previous successful invite** (localStorage `invite-user-send-immediately`; first use → checked) | (User pick 2026-07-27.) Link mode reuses the site-admin sync contract (`tenant-app/site-admin/tenant/[id].data.md` Delta 2) — zero new workflow/DB surface; localStorage over a DB preference (per-browser is acceptable, no backend for one checkbox). |
+| U10 | Invite popup collects profile details | The `InviteUserModal` collects **first name, last name, display name, email, phone**. **Email is the only required field**; the other four are optional. They thread modal → `useInviteUser` → `invite-user` workflow → four new optional `app_fn.invite_user` params that seed `app.profile`. Sub-decisions (user, 2026-08-07): **(1)** email stays required (it is the profile's NOT NULL UNIQUE key, the ZITADEL username, and the delivery address); **(2)** on re-invite of an existing profile, **fill only blanks** — never overwrite a value the person already has; **(3)** an **explicitly-typed** display name that collides is **rejected** (`31020`, new errcode), not silently dropped. | User request 2026-08-07 ("collect first_name, last_name, display_name, email and phone — all optional"), refined by the three forks above. Reuses the existing `triggerWorkflow` bag (no plugin/registry change) and appends defaulted DB params (every existing `invite_user` caller stays valid). display_name is a UNIQUE column, so explicit input earns an explicit error while the auto-derived path keeps its collision→null fallback. |
 
 ## Files in this spec
 
@@ -173,6 +177,41 @@ workflow `lastNode` + `mode` payload + `TriggerWorkflowResult.result` + `useInvi
 - [ ] Verify (manual, user-run env): invite with the box unchecked → no Mailpit mail, working
       ceremony link in-modal; re-open the modal → checkbox remembers; email mode unchanged.
       (`pnpm build` gate ✅ 13/13, 2026-07-27.)
+
+### Phase 6 — Invite popup profile details (U10, 2026-08-07) — Implemented + verified 2026-08-07
+Threads first/last/display/phone through the whole invite path. Built via plan
+`docs/issues/in-flight/0670__app_______invite-user-profile-details_____MED__.plan.md`.
+Build order (DB → workflow → client → UI):
+- [x] **DB** — `app_fn.invite_user` (`db/fnb-app/deploy/00000000010242_app_fn_definers.sql`, in-place):
+      appended `_first_name`/`_last_name`/`_display_name_in`/`_phone citext default null`; inputs
+      normalized `nullif(trim(·),'')`; new-profile insert seeds them, display_name uniqueness check
+      → `raise '31020'`; re-invite `else` branch fills only blanks (`coalesce`), display_name only
+      when existing is null (same `31020` guard). Revert drops the 7-arg sig; verify asserts it via
+      `pg_get_function_identity_arguments`.
+- [x] **Workflow** — `n8n/workflows/invite-user.json`: Create-Resident node → 7-arg call +
+      `[tenantId,email,firstName,lastName,displayName,phone]` replacement (`|| null`); ZITADEL Code
+      node derives `givenName/familyName` from `firstName`/`lastName` (→ displayName split → email)
+      and greeting from `displayName → firstName → email`. JSON validated (7 nodes). **Re-import on rebuild.**
+- [x] **Client** — widened `InviteUserInput` (`packages/graphql-client-api/src/composables/useInviteUser.ts`):
+      `displayName` optional, added `firstName`/`lastName`/`phone`; forwards the four keys (blank →
+      dropped) in the `triggerWorkflow` `inputData`.
+- [x] **UI** — `apps/tenant-app/app/components/InviteUserModal.vue`: First/Last two-col row,
+      Display name (optional, `i-lucide-id-card`), Phone (`i-lucide-phone`); `canSubmit` = email
+      validity only; `reset()` clears all five; submit passes the new fields; `31020` → friendly toast.
+- [x] **DB grant fix** — `fnb-n8n:00000000011240_n8n_worker_app_invite` (deploy/revert/verify)
+      grants/revokes the **7-arg** `invite_user` signature (the old 3-arg grant broke the first
+      rebuild deploy — deploy-order dependency `fnb-app` → `fnb-n8n`).
+- [x] `pnpm build` gate green — **13/13, 2026-08-07** (repo-wide `pnpm lint` is known-broken).
+- [x] **Rebuilt + verified 2026-08-07** — DB (rolled-back txn): new profile seeds all five fields
+      (`full_name` generated); re-invite fills blanks only (existing values kept); explicit dup
+      display_name raises `31020`; legacy 3-arg call resolves; 7-arg signature + `n8n_worker` grant
+      live. Workflow (live webhook, link mode): all five fields flow through `queryReplacement` →
+      profile seeded, ZITADEL user created, `{ link, template, sent:false }` returned. pgTAP
+      `032-invite-eager-profile` passes.
+- [x] **Finding (2026-08-07):** a link-mode collision fails with a generic webhook **500** — n8n
+      masks the `31020` node error, so the specific reason does **not** reach the client; the admin
+      sees a generic "could not be processed (bad email / display name taken)" toast. No bad data is
+      written. Documented in `admin-invite.ui.md` caveat; specific-message surfacing is a follow-up.
 
 ## Remaining Open Questions
 

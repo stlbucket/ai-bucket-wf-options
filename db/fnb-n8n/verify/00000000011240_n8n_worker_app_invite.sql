@@ -6,7 +6,7 @@ begin;
 select case
   when has_function_privilege(
     'n8n_worker',
-    'app_fn.invite_user(uuid, citext, app.license_type_assignment_scope)',
+    'app_fn.invite_user(uuid, citext, app.license_type_assignment_scope, citext, citext, citext, citext)',
     'execute'
   ) then 1
   else 1 / 0

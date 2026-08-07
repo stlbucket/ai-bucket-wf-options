@@ -287,11 +287,35 @@ CREATE OR REPLACE FUNCTION app_fn.invite_user(
     _license_pack_license_type app.license_pack_license_type;
     _license_type_key citext;
     _tenant_subscription_id uuid;
+    _display_name citext;
   BEGIN
     -- find existing records for profile and resident
     select * into _profile from app.profile where email = _email;
     select * into _resident from app.resident where email = _email and tenant_id = _tenant_id;
     select * into _tenant from app.tenant where id = _tenant_id;
+
+    -- Invited users are first-class people from the moment they are invited: ensure an app.profile
+    -- exists for this email up front rather than lazily on first OIDC login. Without a profile a
+    -- resident is invisible to the Manage-Residents pool (app_fn.workspace_resident_pool filters
+    -- `profile_id is not null`) so a not-yet-logged-in invitee cannot be added to a child workspace,
+    -- and the subtree roll-up (useSubtreeResidents) keys grouping on profile_id, so the same person
+    -- invited into multiple tenants shows as several rows. idp_user_id stays null until the first
+    -- OIDC login, where app_fn.provision_idp_user adopts THIS profile by email (email-match branch).
+    -- Mirrors the pre-create-before-invite precedent in app_fn.create_app_tenant / initialize_anchor
+    -- (create_app_tenant/create_workspace pre-create the admin's profile so _profile.id is already
+    -- set here and this branch is skipped).
+    if _profile.id is null then
+      -- display_name is UNIQUE: try the email local part, else null — an invite must never fail on a
+      -- display-name collision (john@a.com / john@b.com share a local part). Views coalesce a name
+      -- from the resident row + email, and the person sets their own on first profile edit.
+      _display_name := lower(split_part(_email, '@', 1))::citext;
+      if _display_name is null or exists (select 1 from app.profile where display_name = _display_name) then
+        _display_name := null;
+      end if;
+      insert into app.profile (email, display_name)
+      values (_email, _display_name)
+      returning * into _profile;
+    end if;
 
     if _resident.id is null then
       --create a new resident
@@ -344,7 +368,7 @@ CREATE OR REPLACE FUNCTION app_fn.invite_user(
       end loop;
     end if;
     
-    -- attach resident to any existing user
+    -- link the resident to the profile (always present now — created above if it was missing)
     if _profile.id is not null then
       update app.resident set profile_id = _profile.id where id = _resident.id returning * into _resident;
     end if;

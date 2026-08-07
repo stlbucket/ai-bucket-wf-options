@@ -45,11 +45,14 @@ raw pg, granted to `authenticator`):
 
 1. profile with `idp_user_id = _idp_user_id` exists → return it.
 2. else profile with `email = _email` exists → set its `idp_user_id`, return it
-   (covers every pre-existing/seeded user on their first ZITADEL login).
+   (covers every pre-existing/seeded user **and every invited user** on their first ZITADEL login —
+   `app_fn.invite_user` now creates the profile eagerly at invite time, so an invitee always adopts
+   an existing row here rather than minting a new one).
 3. else create a new profile (`gen_random_uuid()`, display_name defaulting to
    `split_part(email,'@',1)`) with `idp_user_id`, and link pending invitations:
    `update app.resident set profile_id = ... where email = _email and status not in
-   ('blocked_individual','blocked_tenant')` — the retired `handle_new_user` behavior.
+   ('blocked_individual','blocked_tenant')` — the retired `handle_new_user` behavior. Now a
+   fallback: reachable only for a ZITADEL identity that was never invited/seeded into `app.profile`.
 
 Email-match provisioning trusts ZITADEL's `email_verified`; the callback rejects unverified emails.
 
@@ -194,8 +197,9 @@ auth-table content).
       keep v1 (`LOGINV2_REQUIRED: "false"`). Revisit a login-v2 migration before any upgrade past
       the v5 line; v2 later if brand fidelity demands it.
 - [x] **Login-only — self-registration disabled**, mirroring the invite-only posture. Invite
-      emails stay lazy (resident row `invited`; person logs in via ZITADEL; email match links).
-      A profile with no residency lands in the existing "no active residency" flow.
+      creates the `app.profile` + `resident` (row `invited`) up front; the person logs in via
+      ZITADEL and the email match *adopts* that profile (sets `idp_user_id`). A profile with no
+      residency lands in the existing "no active residency" flow.
 - [x] **Session-cookie signing** (`0010`) landed **with** the stage-3 callback work — the
       callback never shipped the unsigned-cookie weakness. (0010 is closed/addressed.)
 - [x] **Image pin: `ghcr.io/zitadel/zitadel:v4.15.3`** (current stable, released 2026-06-22).

@@ -19,18 +19,26 @@ app_fn.invite_user(_tenant_id uuid, _email citext,
   returns app.resident   -- SECURITY DEFINER
 ```
 
-- Idempotent per `(email, tenant_id)`: creates the `resident` row (`status = 'invited'`, type
-  `home`/`guest` by prior existence), registers it in `res.resource`, and grants the tenant's
-  subscribed licenses at `_assignment_scope`.
+- Idempotent per `(email, tenant_id)`: **ensures an `app.profile` exists for the email**
+  (creates one with `idp_user_id = null` if absent — collision-safe `display_name` from the email
+  local part, else null), creates the `resident` row (`status = 'invited'`, type `home`/`guest` by
+  prior existence) **already linked to that profile**, registers it in `res.resource`, and grants
+  the tenant's subscribed licenses at `_assignment_scope`.
 - Called by the **`invite-user` workflow** as `n8n_worker` (the role already has execute on
   `app_fn.*`? — **confirm** the grant; if absent, add an `n8n_worker` execute grant in a new
   `fnb-app` change, mirroring the `fnb-notify`/`fnb-storage` worker-grant lesson).
 - `_tenant_id` comes from the inviting admin's claims (`triggerWorkflow` injects `tenantId`).
 - The held-out `app_api.invite_user` GraphQL stub stays commented out — the workflow is the surface.
 
-The resident stays `invited` until the invitee's first successful OIDC login, where
-`app_fn.provision_idp_user` email-matches and links `profile_id` (unchanged behavior,
-`zitadel-login-pattern.md:46`). This spec does not touch that linker.
+The resident stays `invited` until the invitee's first successful OIDC login. Because the profile
+is created **eagerly at invite time** (matching the `create_app_tenant` / `initialize_anchor`
+precedent), the invitee is a first-class person immediately: visible in the Manage-Residents pool
+(`app_fn.workspace_resident_pool` requires `profile_id is not null`) and de-dupable in the subtree
+roll-up (which groups on `profile_id`). At first OIDC login `app_fn.provision_idp_user`
+**email-matches and adopts** this existing profile (sets its `idp_user_id`;
+`zitadel-login-pattern.md:47`) — it does not create a second one. Before this change the profile
+was created lazily on first login, which left not-yet-logged-in invitees invisible to the pool and
+un-groupable in the roll-up (duplicate rows across a tenant tree).
 
 ## Dispatch — `triggerWorkflow` registry entry (new)
 

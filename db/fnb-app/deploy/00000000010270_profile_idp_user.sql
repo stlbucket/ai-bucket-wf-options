@@ -31,6 +31,7 @@ create or replace function app_fn.provision_idp_user(
   as $$
   declare
     _profile app.profile;
+    _resolved_display_name citext;
   begin
     if _idp_user_id is null or _email is null then
       raise exception 'provision_idp_user: _idp_user_id and _email are required';
@@ -50,8 +51,19 @@ create or replace function app_fn.provision_idp_user(
       return _profile;
     end if;
 
+    -- Brand-new identity that was never invited or seeded into app.profile (the fallback path now
+    -- that app_fn.invite_user creates profiles eagerly). display_name is UNIQUE: prefer the supplied
+    -- name, else the email local part, else null — login must never fail on a display-name collision
+    -- between two un-invited users who share a local part (mirrors app_fn.invite_user /
+    -- app_fn.create_app_tenant). The resident row still carries a display name for the UI.
+    _resolved_display_name := coalesce(_display_name, split_part(_email, '@', 1)::citext);
+    if _resolved_display_name is null
+       or exists (select 1 from app.profile where display_name = _resolved_display_name) then
+      _resolved_display_name := null;
+    end if;
+
     insert into app.profile (email, display_name, idp_user_id)
-    values (_email, coalesce(_display_name, split_part(_email, '@', 1)::citext), _idp_user_id)
+    values (_email, _resolved_display_name, _idp_user_id)
     returning * into _profile;
 
     -- same pending-invitation linking as app_fn.handle_new_user

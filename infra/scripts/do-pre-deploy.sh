@@ -8,7 +8,7 @@ set -euo pipefail
 #   fetch + guards (on main, clean tree, not behind origin) → next version from the latest
 #   v* tag → y/N confirm → pnpm install --frozen-lockfile → pnpm build (SKIP_BUILD=1 skips)
 #   → true up every workspace package.json version → commit vX.Y.Z → LIGHTWEIGHT tag vX.Y.Z
-#   → print the atomic push command
+#   → atomic push (branch + tag) that sets off the deploy pipeline
 #
 # USER-RUN ONLY — runs git (and a full build); the assistant never executes this.
 # Ahead-of-origin is fine (unpushed commits ride the same atomic push); behind-origin aborts.
@@ -19,7 +19,7 @@ set -euo pipefail
 #   $1            bump kind: patch (default) | minor | major
 #   SKIP_BUILD=1  skip the `pnpm build` gate (docs-only releases)
 #
-# After it succeeds, YOU run the printed push — nothing is pushed by this script:
+# The final step pushes for you (one atomic push — branch + tag together):
 #   git push --atomic origin main vX.Y.Z
 # → build-images.yml (v* tag) → main-ancestry guard → deploy.yml (mode=deploy-only,
 #   exit-code-gated db-migrate) → health-verify. See deploy.README.md.
@@ -111,12 +111,14 @@ git -C "$ROOT" commit -m "$NEW_TAG"
 git -C "$ROOT" tag "$NEW_TAG"
 
 echo ""
-echo "==> $NEW_TAG stamped ($(git -C "$ROOT" rev-parse --short=12 HEAD)). Nothing pushed yet."
+echo "==> $NEW_TAG stamped ($(git -C "$ROOT" rev-parse --short=12 HEAD))."
 echo ""
-echo "    Run this to release (one atomic push — branch + tag together):"
+
+# ── release (one atomic push — branch + tag together) ────────────────────────
+echo "==> git push --atomic origin main $NEW_TAG"
+git -C "$ROOT" push --atomic origin main "$NEW_TAG"
+
 echo ""
-echo "        git push --atomic origin main $NEW_TAG"
-echo ""
-echo "    Expected: build-images.yml builds 8 images (~12 min) → guard confirms the commit is"
+echo "==> pushed. build-images.yml builds 8 images (~12 min) → guard confirms the commit is"
 echo "    on main → deploy.yml (mode=deploy-only) migrates the DB (exit-code gated) and cuts"
 echo "    over do-prod → health-verify green. Watch with: gh run watch"

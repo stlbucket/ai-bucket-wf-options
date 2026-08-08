@@ -39,35 +39,17 @@
     </div>
   </div>
 
-  <!-- logged in: desktop = narrative tabs + workspace column side by side;
-       mobile = one tab strip with Workspaces folded in as the first, default tab -->
+  <!-- logged in: one column at every width — greeting on top, then a single tab strip
+       with Workspaces folded in as the first, default-selected tab -->
   <div
     v-else
-    class="mx-auto max-w-6xl p-9 sm:px-12 sm:py-11"
+    class="mx-auto max-w-3xl p-9 sm:px-12 sm:py-11"
   >
     <h1 class="mb-6 font-mono text-[28px] font-bold tracking-tight">
       hey, {{ firstName }}.
     </h1>
 
-    <!-- desktop: narrative tabs (left) + workspaces column (right) -->
-    <div
-      v-if="isDesktop"
-      class="grid grid-cols-2 gap-12"
-    >
-      <HomeNarrative />
-      <div class="space-y-4">
-        <p class="text-sm text-muted">
-          your workspaces
-        </p>
-        <WorkspaceCards />
-      </div>
-    </div>
-
-    <!-- mobile: workspaces become the first, default-selected tab -->
-    <HomeNarrative
-      v-else
-      with-workspaces
-    >
+    <HomeNarrative with-workspaces>
       <template #workspaces>
         <WorkspaceCards />
       </template>
@@ -76,16 +58,8 @@
 </template>
 
 <script setup lang="ts">
-import { useMediaQuery } from '@vueuse/core'
-
 const { isLoggedIn, user } = useAuth()
 const { public: { authAppUrl } } = useRuntimeConfig()
-
-// lg breakpoint: desktop lays the narrative and workspaces out side by side; below it they
-// share one tab strip (workspaces first). Rendering only the active branch keeps WorkspaceCards
-// mounted once. The logged-in view is client-only (isLoggedIn hydrates from localStorage), so
-// evaluating matchMedia here carries no SSR hydration mismatch.
-const isDesktop = useMediaQuery('(min-width: 1024px)')
 
 const firstName = computed(() => (user.value?.displayName ?? 'there').split(/\s+/)[0])
 

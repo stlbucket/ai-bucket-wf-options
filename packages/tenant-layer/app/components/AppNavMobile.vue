@@ -8,7 +8,16 @@ import { useAppNav } from '../composables/useAppNav'
 
 const route = useRoute()
 const { availableSections, navOpen, openNav, closeNav, hydrateSectionState } = useAppNav()
-const { isLoggedIn } = useAuth()
+const { isLoggedIn, user, logout } = useAuth()
+
+// Mirrors AppNav.vue's footer initials — keep the two in sync (shared helper only if a third
+// call site appears; over-abstraction for two today).
+const initials = computed(() => {
+  const name = user.value?.displayName?.trim() ?? ''
+  if (!name) return '?'
+  const parts = name.split(/\s+/)
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?'
+})
 
 onMounted(() => hydrateSectionState())
 
@@ -109,6 +118,30 @@ function isActive(itemRoute: string) {
           <p v-if="availableSections.length === 0" class="px-2.5 py-4 text-sm text-white/50">
             No menu sections available.
           </p>
+        </div>
+
+        <!-- User footer — mirrors the desktop sidebar footer (AppNav.vue): identity + sign out -->
+        <div class="mt-auto flex items-center gap-2.5 border-t border-white/10 pt-3">
+          <NuxtLink
+            href="/auth/profile"
+            :external="true"
+            class="flex min-w-0 flex-1 items-center gap-2.5"
+            @click="closeNav"
+          >
+            <div
+              class="flex size-7 shrink-0 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-blue-900"
+            >
+              {{ initials }}
+            </div>
+            <span class="flex-1 truncate text-sm text-white/85">{{ user?.displayName }}</span>
+          </NuxtLink>
+          <UButton
+            icon="i-lucide-log-out"
+            variant="ghost"
+            aria-label="Sign out"
+            class="shrink-0 text-white/70 hover:bg-white/10 hover:text-white"
+            @click="logout"
+          />
         </div>
       </div>
     </template>

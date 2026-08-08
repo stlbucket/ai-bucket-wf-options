@@ -39,16 +39,12 @@
     </div>
   </div>
 
-  <!-- logged in: one column at every width — greeting on top, then a single tab strip
-       with Workspaces folded in as the first, default-selected tab -->
+  <!-- logged in: one column at every width — a single tab strip with Workspaces folded in as
+       the first, default-selected tab (no greeting, both breakpoints) -->
   <div
     v-else
     class="mx-auto max-w-3xl p-9 sm:px-12 sm:py-11"
   >
-    <h1 class="mb-6 font-mono text-[28px] font-bold tracking-tight">
-      hey, {{ firstName }}.
-    </h1>
-
     <HomeNarrative with-workspaces>
       <template #workspaces>
         <WorkspaceCards />
@@ -58,10 +54,8 @@
 </template>
 
 <script setup lang="ts">
-const { isLoggedIn, user } = useAuth()
+const { isLoggedIn } = useAuth()
 const { public: { authAppUrl } } = useRuntimeConfig()
-
-const firstName = computed(() => (user.value?.displayName ?? 'there').split(/\s+/)[0])
 
 // Stale-claims recovery landing (claims-revalidation-pattern.md): the hydrate-claims plugin
 // redirects here with ?session=expired after clearing dead localStorage claims. One-shot toast

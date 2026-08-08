@@ -1,8 +1,10 @@
 # home-app/index — Landing Page UI
 
 ## Status
-Implemented — workspace-cards redesign 2026-07-27. (Previous module-grid landing replaced;
-hero view unchanged.)
+Implemented — greeting removed 2026-08-07 (tabs-only logged-in view, both breakpoints; built via
+plan `0690`, `pnpm build` green). Superseding history: workspace-cards redesign 2026-07-27
+(module-grid landing replaced), then the single-column `HomeNarrative` tab layout (`WorkspaceCards`
+folded in as the leading tab). Hero (logged-out) view unchanged throughout.
 
 ## Route
 `/` → `apps/home-app/app/pages/index.vue`
@@ -32,19 +34,26 @@ The one-shot `?session=expired` toast (claims-revalidation-pattern.md) also stay
 
 ---
 
-### Logged-In: Workspace Cards View (`v-else`)
+### Logged-In: `HomeNarrative` Tab View (`v-else`)
 
-**Replaces** the module/tools grid (`useAppNav` sections) entirely. The landing page no longer
-shows available tools — the sidebar nav remains the tools surface. The tenant/workspace context
-chips are **dropped** (the Current badge on the cards supersedes them).
+Single-column, one layout at **every** width (no mobile/desktop split): a constrained
+`mx-auto max-w-3xl` padding shell holding **only** `<HomeNarrative with-workspaces>` — a `UTabs`
+strip. There is **no greeting** and no subheading above it (see "Removed from this page").
 
-Constrained container (keep the current `mx-auto max-w-*` + padding shell):
+The tools grid was already dropped in the 2026-07-27 redesign (the sidebar nav is the tools
+surface); the tenant/workspace context chips are likewise gone (the Current badge on the cards
+supersedes them).
 
-**Header row (kept, chips removed):**
-- Greeting: `hey, {firstName}.` (monospace, bold — unchanged)
-- Subheading changes: `your workspaces` (muted, small)
+**Tabs (`HomeNarrative.vue`, `variant="link"`, `list: overflow-x-auto` so they scroll rather
+than wrap on narrow screens):**
+- **Workspaces** (`i-lucide-building-2`) — leading, default-selected; `#workspaces` slot renders
+  `<WorkspaceCards />`. Folded in via the `with-workspaces` prop so the desktop right-hand
+  workspace column and the mobile view share one strip.
+- **What it is** (`i-lucide-box`), **How it's built** (`i-lucide-wand-sparkles`),
+  **For developers** (`i-lucide-terminal`) — the static narrative prose.
 
-**Tenant cards — the workspace switcher popup, laid out as cards:**
+**`WorkspaceCards.vue` (`apps/home-app/app/components/`) — the workspace switcher tree laid out
+as tenant cards** (self-contained: own `refreshClaims` on mount + switch state):
 
 - One `UCard` (UC4) per **root tenant** node from `useResidencySwitcher().roots` (the same
   claims-derived tree the sidebar `WorkspaceSwitcher` modal renders), keyed by `tenantId`
@@ -112,7 +121,14 @@ SVG logo using `var(--ui-primary)` for color — no hardcoded colors.
 | Ghost/blocked node | Not clickable; lock icon or status badge explains why |
 | Support mode | Nothing clickable; tooltip `Exit support to switch` |
 
-## Removed from this page (2026-07-27 redesign)
+## Removed from this page
+**2026-08-07:**
+- The `hey, {firstName}.` greeting heading — dropped on **both** breakpoints (user directive).
+  The logged-in view is now tabs-only; the `firstName` computed and its `user` dependency are no
+  longer needed on the page. (Rationale: on mobile the greeting + tab strip rendered awkwardly;
+  the greeting carried no navigation value, so it goes at all widths, not just mobile.)
+
+**2026-07-27 redesign:**
 - Module/tools grid (`useAppNav().availableSections`, `ModuleNavSection`-style rows, accent
   cycling) — tools live in the sidebar nav only
 - Tenant/workspace context chips under the greeting

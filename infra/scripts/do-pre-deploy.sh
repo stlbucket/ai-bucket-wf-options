@@ -121,4 +121,24 @@ git -C "$ROOT" push --atomic origin main "$NEW_TAG"
 echo ""
 echo "==> pushed. build-images.yml builds 8 images (~12 min) → guard confirms the commit is"
 echo "    on main → deploy.yml (mode=deploy-only) migrates the DB (exit-code gated) and cuts"
-echo "    over do-prod → health-verify green. Watch with: gh run watch"
+echo "    over do-prod → health-verify green."
+
+# ── watch the pipeline ───────────────────────────────────────────────────────
+if command -v gh >/dev/null; then
+  echo ""
+  echo "==> waiting for the workflow run to register, then: gh run watch"
+  run_id=""
+  for _ in 1 2 3 4 5 6; do
+    sleep 5
+    run_id="$(cd "$ROOT" && gh run list --workflow build-images.yml \
+      --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null || true)"
+    [ -n "$run_id" ] && break
+  done
+  if [ -n "$run_id" ]; then
+    (cd "$ROOT" && gh run watch "$run_id" --exit-status)
+  else
+    echo "    run not found yet — watch manually with: gh run watch"
+  fi
+else
+  echo "    (gh not installed — watch manually with: gh run watch)"
+fi

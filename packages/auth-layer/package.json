@@ -1,6 +1,6 @@
 {
   "name": "@function-bucket/fnb-auth-layer",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "private": true,
   "main": "./nuxt.config.ts",
   "scripts": {

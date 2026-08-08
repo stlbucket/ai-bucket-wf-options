@@ -1,61 +1,37 @@
 <template>
-  <!-- logged out: two-column — description (left) + hero/sign-in (right) -->
-  <div
-    v-if="!isLoggedIn"
-    class="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center p-8"
-  >
-    <div class="grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
-      <!-- left: what function-bucket is / how it's built / for developers -->
-      <!-- mobile shows the sign-in first (order-2 here); lg restores text-left/hero-right -->
-      <div class="order-2 space-y-5 lg:order-1">
-        <h1 class="font-mono text-4xl font-bold tracking-tight">
-          function-bucket
-        </h1>
-        <HomeNarrative />
-      </div>
-
-      <!-- right: brand mark + sign-in -->
-      <div class="order-1 flex flex-col items-center gap-8 lg:order-2">
-        <FunctionBucketMark size="lg" />
-        <p class="text-lg text-muted">
-          your tools. in a bucket.
-        </p>
-        <div class="flex flex-col items-center gap-3">
-          <UButton
-            :href="`${authAppUrl}/login`"
-            :external="true"
-            size="xl"
-            label="sign in"
-          />
-          <ULink
-            :href="`${authAppUrl}/forgot-password`"
-            :external="true"
-            class="text-sm text-muted hover:text-default"
-          >
-            forgot password?
-          </ULink>
-        </div>
-      </div>
+  <!-- Auth-aware branch is CLIENT-ONLY: `isLoggedIn` derives from claims in localStorage, which
+       is unreadable during SSR, so a top-level v-if here would render the signed-out shell on the
+       server and the signed-in view on the client → hydration mismatch. Vue then reconciles the
+       two divergent trees in place, stranding the signed-in UTabs list + panels as the two direct
+       children of the signed-out lg:grid-cols-2 grid — the "tabs and content in two columns on
+       wide screens" bug. `<ClientOnly>` renders the signed-out landing on the server (and until
+       hydration) via #fallback, then mounts the real branch fresh on the client. -->
+  <ClientOnly>
+    <!-- logged in: one column at every width — a single tab strip with Workspaces folded in as
+         the first, default-selected tab (no greeting, both breakpoints) -->
+    <div
+      v-if="isLoggedIn"
+      class="mx-auto max-w-3xl p-9 sm:px-12 sm:py-11"
+    >
+      <HomeNarrative with-workspaces>
+        <template #workspaces>
+          <WorkspaceCards />
+        </template>
+      </HomeNarrative>
     </div>
-  </div>
 
-  <!-- logged in: one column at every width — a single tab strip with Workspaces folded in as
-       the first, default-selected tab (no greeting, both breakpoints) -->
-  <div
-    v-else
-    class="mx-auto max-w-3xl p-9 sm:px-12 sm:py-11"
-  >
-    <HomeNarrative with-workspaces>
-      <template #workspaces>
-        <WorkspaceCards />
-      </template>
-    </HomeNarrative>
-  </div>
+    <!-- logged out (client): two-column — description (left) + hero/sign-in (right) -->
+    <HomeSignedOut v-else />
+
+    <!-- server + pre-hydration: the public landing stays SSR'd -->
+    <template #fallback>
+      <HomeSignedOut />
+    </template>
+  </ClientOnly>
 </template>
 
 <script setup lang="ts">
 const { isLoggedIn } = useAuth()
-const { public: { authAppUrl } } = useRuntimeConfig()
 
 // Stale-claims recovery landing (claims-revalidation-pattern.md): the hydrate-claims plugin
 // redirects here with ?session=expired after clearing dead localStorage claims. One-shot toast

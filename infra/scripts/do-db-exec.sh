@@ -14,14 +14,17 @@ set -euo pipefail
 # (fresh sqitch deploy — DESTROYS all app data) or (b) this script, replaying the corrected SQL
 # against the live DB with no data loss.
 #
-# !!! OVERLOAD GOTCHA — READ BEFORE REPLAYING A FUNCTION CHANGE:
-# `CREATE OR REPLACE FUNCTION` only replaces a function of the SAME argument signature. If your edit
-# CHANGED the signature (added/removed/retyped a parameter), replaying the deploy file creates a
-# NEW overload ALONGSIDE the old one — and any call that matches both raises
-# "function ... is not unique". You MUST drop the OLD signature first, e.g.:
-#     pnpm do-db-exec -c "drop function if exists app_fn.invite_user(uuid, citext, app.license_type_assignment_scope);"
-# then replay the deploy file (which now creates only the new signature), then replay any grant file
-# that names the new signature. (Same-signature replacements — the common case — need no drop.)
+# !!! DO NOT REPLAY A WHOLE HISTORICAL DEPLOY FILE against a fully-migrated DB. A deploy file was
+# written for the schema state AT ITS position in the sqitch order; LATER changes may have removed
+# objects it references (e.g. 00000000010242 still selects `auth.user`, which 00000000010280 drops),
+# so a wholesale replay fails partway with "relation ... does not exist". Instead write a SURGICAL,
+# idempotent hot-fix that carries ONLY your delta and references only objects that still exist — see
+# db/hotfixes/ for the pattern (e.g. db/hotfixes/2026-08-07_u10_invite_user_profile_fields.sql).
+#
+# !!! OVERLOAD GOTCHA (function signature changes): `CREATE OR REPLACE FUNCTION` only replaces a
+# function of the SAME argument signature. If your edit CHANGED the signature, the hot-fix must DROP
+# the old signature first (drop function if exists app_fn.foo(<old-args>);) or a call matching both
+# the old and new raises "function ... is not unique". Same-signature replacements need no drop.
 #
 # Connects FROM the box (postgres:16-alpine on fnb-network, over ssh) because the managed cluster's
 # firewall admits only the droplet. The SQL is streamed over ssh stdin → `docker run -i … psql -f -`,

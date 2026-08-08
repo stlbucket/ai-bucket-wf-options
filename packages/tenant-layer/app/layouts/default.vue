@@ -49,7 +49,10 @@ const isInSupportMode = computed(() => user.value?.permissions?.includes('p:exit
         </div>
       </header>
 
-      <main class="flex-1 pb-16 lg:pb-0">
+      <main
+        class="flex-1 lg:pb-0"
+        :class="isLoggedIn ? 'pb-16' : ''"
+      >
         <OtpSessionBanner />
         <slot />
       </main>

@@ -1,148 +1,93 @@
 <template>
-  <!-- logged out: hero -->
+  <!-- logged out: two-column — description (left) + hero/sign-in (right) -->
   <div
     v-if="!isLoggedIn"
-    class="flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center gap-8 p-8"
+    class="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center p-8"
   >
-    <FunctionBucketMark size="lg" />
-    <div class="text-center space-y-2">
-      <h1 class="text-5xl font-bold font-mono tracking-tight">
-        function-bucket
-      </h1>
-      <p class="text-muted text-lg">
-        your tools. in a bucket.
-      </p>
-    </div>
-    <div class="flex flex-col items-center gap-3">
-      <UButton
-        :href="`${authAppUrl}/login`"
-        :external="true"
-        size="xl"
-        label="sign in"
-      />
-      <ULink
-        :href="`${authAppUrl}/forgot-password`"
-        :external="true"
-        class="text-sm text-muted hover:text-default"
-      >
-        forgot password?
-      </ULink>
+    <div class="grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
+      <!-- left: what function-bucket is / how it's built / for developers -->
+      <!-- mobile shows the sign-in first (order-2 here); lg restores text-left/hero-right -->
+      <div class="order-2 space-y-5 lg:order-1">
+        <h1 class="font-mono text-4xl font-bold tracking-tight">
+          function-bucket
+        </h1>
+        <HomeNarrative />
+      </div>
+
+      <!-- right: brand mark + sign-in -->
+      <div class="order-1 flex flex-col items-center gap-8 lg:order-2">
+        <FunctionBucketMark size="lg" />
+        <p class="text-lg text-muted">
+          your tools. in a bucket.
+        </p>
+        <div class="flex flex-col items-center gap-3">
+          <UButton
+            :href="`${authAppUrl}/login`"
+            :external="true"
+            size="xl"
+            label="sign in"
+          />
+          <ULink
+            :href="`${authAppUrl}/forgot-password`"
+            :external="true"
+            class="text-sm text-muted hover:text-default"
+          >
+            forgot password?
+          </ULink>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- logged in: workspace cards (the sidebar switcher's tree, laid out as tenant cards) -->
+  <!-- logged in: desktop = narrative tabs + workspace column side by side;
+       mobile = one tab strip with Workspaces folded in as the first, default tab -->
   <div
     v-else
-    class="mx-auto max-w-5xl space-y-7 p-9 sm:px-12 sm:py-11"
+    class="mx-auto max-w-6xl p-9 sm:px-12 sm:py-11"
   >
-    <div>
-      <h1 class="font-mono text-[28px] font-bold tracking-tight">
-        hey, {{ firstName }}.
-      </h1>
-      <p class="mt-1 text-sm text-muted">
-        your workspaces
-      </p>
-    </div>
+    <h1 class="mb-6 font-mono text-[28px] font-bold tracking-tight">
+      hey, {{ firstName }}.
+    </h1>
 
-    <!-- cards render instantly from localStorage claims; the background refresh rides on top -->
-    <UProgress v-if="refreshing" size="xs" />
-
+    <!-- desktop: narrative tabs (left) + workspaces column (right) -->
     <div
-      v-if="roots.length === 0 && refreshing"
-      class="flex flex-wrap items-start gap-4"
+      v-if="isDesktop"
+      class="grid grid-cols-2 gap-12"
     >
-      <USkeleton
-        v-for="i in 3"
-        :key="i"
-        class="h-28 basis-full sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33.333%-0.75rem)]"
-      />
+      <HomeNarrative />
+      <div class="space-y-4">
+        <p class="text-sm text-muted">
+          your workspaces
+        </p>
+        <WorkspaceCards />
+      </div>
     </div>
 
-    <UEmpty
-      v-else-if="roots.length === 0"
-      icon="i-lucide-building-2"
-      label="no workspaces yet"
-      description="ask your admin for an invitation"
-    />
-
-    <div
+    <!-- mobile: workspaces become the first, default-selected tab -->
+    <HomeNarrative
       v-else
-      class="flex flex-wrap items-start gap-4"
+      with-workspaces
     >
-      <UCard
-        v-for="node in roots"
-        :key="node.tenantId"
-        class="min-w-0 basis-full sm:basis-[calc(50%-0.5rem)] lg:basis-[calc(33.333%-0.75rem)]"
-        :title="isInSupportMode ? 'Exit support to switch' : undefined"
-      >
-        <!-- header = the root tenant itself (a selectable node) -->
-        <template #header>
-          <component
-            :is="headerClickable(node) ? 'button' : 'div'"
-            :type="headerClickable(node) ? 'button' : undefined"
-            class="flex w-full min-w-0 items-center gap-2"
-            :class="headerClickable(node) ? 'cursor-pointer text-left hover:text-primary' : ''"
-            @click="onSelect(node)"
-          >
-            <UIcon name="i-lucide-building-2" class="size-4 shrink-0" />
-            <span
-              class="truncate font-medium"
-              :class="node.canEnter || node.isCurrent ? '' : 'text-muted'"
-            >
-              {{ node.tenantName }}
-            </span>
-            <UBadge
-              v-if="node.isCurrent"
-              color="primary"
-              variant="subtle"
-              size="sm"
-            >
-              Current
-            </UBadge>
-            <UBadge
-              v-else-if="statusBadge(node)"
-              :color="statusBadge(node)!.color"
-              variant="subtle"
-              size="sm"
-            >
-              {{ statusBadge(node)!.label }}
-            </UBadge>
-            <span class="ml-auto flex shrink-0 items-center">
-              <UIcon
-                v-if="switchingTenantId === node.tenantId"
-                name="i-lucide-loader-circle"
-                class="size-4 animate-spin"
-              />
-              <UIcon
-                v-else-if="node.residentId === null"
-                name="i-lucide-lock"
-                class="size-4 text-muted"
-                title="No residency in this workspace"
-              />
-            </span>
-          </component>
-        </template>
-
-        <!-- body = the workspace tree under this tenant; header-only card when childless -->
-        <template v-if="node.children.length > 0" #default>
-          <ResidencyTree
-            :nodes="node.children"
-            :disabled="switching || isInSupportMode"
-            :switching-tenant-id="switchingTenantId"
-            @select="onSelect"
-          />
-        </template>
-      </UCard>
-    </div>
+      <template #workspaces>
+        <WorkspaceCards />
+      </template>
+    </HomeNarrative>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { ResidencySwitchNode } from '@function-bucket/fnb-auth-layer/app/composables/useResidencySwitcher'
+import { useMediaQuery } from '@vueuse/core'
 
-const { isLoggedIn, user, refreshClaims } = useAuth()
-const { roots, switchResidency } = useResidencySwitcher()
+const { isLoggedIn, user } = useAuth()
 const { public: { authAppUrl } } = useRuntimeConfig()
+
+// lg breakpoint: desktop lays the narrative and workspaces out side by side; below it they
+// share one tab strip (workspaces first). Rendering only the active branch keeps WorkspaceCards
+// mounted once. The logged-in view is client-only (isLoggedIn hydrates from localStorage), so
+// evaluating matchMedia here carries no SSR hydration mismatch.
+const isDesktop = useMediaQuery('(min-width: 1024px)')
+
+const firstName = computed(() => (user.value?.displayName ?? 'there').split(/\s+/)[0])
 
 // Stale-claims recovery landing (claims-revalidation-pattern.md): the hydrate-claims plugin
 // redirects here with ?session=expired after clearing dead localStorage claims. One-shot toast
@@ -155,63 +100,8 @@ onMounted(() => {
   toast.add({
     title: 'signed out',
     description: 'your session ended — sign in to continue',
-    color: 'warning',
+    color: 'warning'
   })
   router.replace({ query: { ...route.query, session: undefined } })
 })
-
-const firstName = computed(() => (user.value?.displayName ?? 'there').split(/\s+/)[0])
-
-// Support mode: cards are display-only — switching would silently drop the support session
-// (same rule as the sidebar switcher's static trigger).
-const isInSupportMode = computed(() => user.value?.permissions?.includes('p:exit-support') ?? false)
-
-const refreshing = ref(false) // on-mount refreshClaims in flight → UProgress
-const switching = ref(false) // a switch is in flight — the full reload ends it
-const switchingTenantId = ref<string | null>(null)
-
-// Cards render from current claims immediately; the background refresh updates the tree if
-// changed. Refresh failure keeps the last-known tree (claims are still valid locally) and toasts.
-onMounted(() => {
-  if (!isLoggedIn.value) return
-  refreshing.value = true
-  refreshClaims()
-    .catch(() => {
-      toast.add({ title: 'Could not refresh workspaces', color: 'error' })
-    })
-    .finally(() => {
-      refreshing.value = false
-    })
-})
-
-function headerClickable(node: ResidencySwitchNode) {
-  return node.canEnter && node.residentId !== null && !isInSupportMode.value
-}
-
-// Same disabled/muted priority as ResidencyTree.vue: ghosts show a lock; non-enterable
-// residencies show why as a status badge (UC1 shared tenant/resident maps).
-function statusBadge(node: ResidencySwitchNode) {
-  if (node.isCurrent || node.canEnter || node.residentId === null) return null
-  if (node.tenantStatus !== 'ACTIVE') {
-    return { color: statusColor('tenant', node.tenantStatus), label: statusLabel(node.tenantStatus) }
-  }
-  return {
-    color: statusColor('resident', node.residentStatus),
-    label: statusLabel(node.residentStatus),
-  }
-}
-
-async function onSelect(node: ResidencySwitchNode) {
-  if (!node.canEnter || node.residentId === null || switching.value || isInSupportMode.value) return
-  switching.value = true
-  switchingTenantId.value = node.tenantId
-  try {
-    // assumeResidency → refreshClaims → full reload home; the reload ends the interaction.
-    await switchResidency(node.residentId)
-  } catch {
-    toast.add({ title: 'Failed to switch workspace', color: 'error' })
-    switching.value = false
-    switchingTenantId.value = null
-  }
-}
 </script>

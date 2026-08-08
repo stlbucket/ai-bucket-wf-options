@@ -22,8 +22,9 @@ function isActive(itemRoute: string) {
 </script>
 
 <template>
-  <!-- Bottom tab bar -->
+  <!-- Bottom tab bar — logged-in only (matches the desktop nav; no nav when signed out) -->
   <nav
+    v-if="isLoggedIn"
     class="fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-default bg-default lg:hidden"
   >
     <NuxtLink
@@ -71,6 +72,7 @@ function isActive(itemRoute: string) {
 
   <!-- Full-nav drawer (dark, reuses the sidebar sections) -->
   <USlideover
+    v-if="isLoggedIn"
     v-model:open="navOpen"
     side="left"
     :ui="{ content: 'max-w-[280px] bg-blue-900 text-white divide-white/10' }"

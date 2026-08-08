@@ -32,6 +32,7 @@ watch(navCollapsed, (v) => localStorage.setItem(NAV_COLLAPSED_KEY, v ? '1' : '0'
 
 <template>
   <nav
+    v-if="isLoggedIn"
     class="hidden lg:flex sticky top-0 h-screen shrink-0 flex-col gap-4 bg-blue-900 py-5 text-white transition-[width] duration-200"
     :class="navCollapsed ? 'w-16 px-2' : 'w-[232px] px-3.5'"
   >

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { parseUrn } from '@function-bucket/fnb-types'
-import { resolveUrnRoute } from '#shared/utils/urn-route'
+import { resolveUrnRoute, buildPreview } from '#shared/utils/urn-route'
 import { assumeResidency } from '~/composables/useLoginFlow'
 
 // OTP login deep-link landing / responder (spec docs/specs/otp-login/ go.ui.md). A tenant-scoped
@@ -30,7 +30,40 @@ const toast = useToast()
 
 type State = 'loading' | 'dead' | 'choose' | 'switch' | 'no_access'
 const state = ref<State>('loading')
-const deepLink = ref<DeepLinkPublic | null>(null)
+
+// SSR-fetch the PUBLIC projection so the <head> og tags (below) are in the server-rendered HTML —
+// unfurl crawlers (iMessage / Slack / …) run no JS (spec docs/specs/link-previews/ go-preview.data.md).
+// On the server we hit the in-process nitro route (base ''); in the browser we go through Caddy
+// (authAppUrl carries the /auth prefix) exactly as the old onMounted fetch did. A dead/unknown link
+// resolves to null → State A below + the generic fallback preview.
+const { data: deepLink } = await useAsyncData(`deep-link:${linkId.value}`, () => {
+  const base = import.meta.server ? '' : authAppUrl
+  return $fetch<{ deepLink: DeepLinkPublic }>(`${base}/api/otp/link`, {
+    query: { id: linkId.value }
+  })
+    .then((r) => r.deepLink)
+    .catch(() => null)
+})
+
+// Unfurl preview (link-previews L2/L4/L5/L7): "Poll: <title>" / "Todo: <title>" from the shared
+// per-module registry; NO tenant name (enumeration safety). useSeoMeta runs during SSR so the tags
+// land in the initial <head>; a dead link falls back to the generic "Item" card (never leaks more
+// than the landing already shows).
+const preview = computed(() =>
+  buildPreview({ module: deepLink.value?.module, subjectLabel: deepLink.value?.subjectLabel })
+)
+useSeoMeta({
+  title: () => preview.value.title,
+  ogTitle: () => preview.value.title,
+  description: () => preview.value.description,
+  ogDescription: () => preview.value.description,
+  ogImage: `${new URL(authAppUrl).origin}/logo-light.png`,
+  ogType: 'website',
+  twitterCard: 'summary',
+  twitterTitle: () => preview.value.title,
+  twitterDescription: () => preview.value.description
+})
+
 const identifier = ref('') // the opener's own phone/email (D13 self-identify)
 const codeSent = ref(false)
 const code = ref('')
@@ -58,31 +91,25 @@ const targetTenantName = computed(
     'that workspace',
 )
 
+// The projection is already fetched (useAsyncData, SSR). Here we only decide the INTERACTIVE state,
+// which depends on client-only auth claims (localStorage) — so it stays in onMounted.
 onMounted(async () => {
-  try {
-    const { deepLink: dl } = await $fetch<{ deepLink: DeepLinkPublic }>(
-      `${authAppUrl}/api/otp/link`,
-      { query: { id: linkId.value } },
-    )
-    deepLink.value = dl
-    if (dl.expired || dl.revoked || !dl.subjectUrn) {
-      state.value = 'dead'
-      return
-    }
-
-    // Already logged in → switch to the item's workspace (or go straight there if same tenant).
-    if (isLoggedIn.value && user.value) {
-      if (user.value.tenantId === subjectTenantId.value) {
-        await navigateTo(resolveUrnRoute(dl.subjectUrn), { external: true })
-        return
-      }
-      state.value = targetResidentId.value ? 'switch' : 'no_access'
-      return
-    }
-    state.value = 'choose'
-  } catch {
+  const dl = deepLink.value
+  if (!dl || dl.expired || dl.revoked || !dl.subjectUrn) {
     state.value = 'dead'
+    return
   }
+
+  // Already logged in → switch to the item's workspace (or go straight there if same tenant).
+  if (isLoggedIn.value && user.value) {
+    if (user.value.tenantId === subjectTenantId.value) {
+      await navigateTo(resolveUrnRoute(dl.subjectUrn), { external: true })
+      return
+    }
+    state.value = targetResidentId.value ? 'switch' : 'no_access'
+    return
+  }
+  state.value = 'choose'
 })
 
 async function onSendCode() {

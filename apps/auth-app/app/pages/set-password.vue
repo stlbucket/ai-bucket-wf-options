@@ -11,6 +11,19 @@ const toast = useToast()
 const colorMode = useColorMode()
 const logoSrc = computed(() => (colorMode.value === 'dark' ? '/logo-dark.png' : '/logo-light.png'))
 
+// Static unfurl preview (spec docs/specs/link-previews/ invite-preview.data.md, L6): a branded card
+// so a texted invite link previews as the invitation, not the generic "function bucket". Constants
+// only — no ?userId&code read, no token consumption (the ceremony consumes its code on POST only).
+useSeoMeta({
+  title: 'Set up your Function Bucket account',
+  ogTitle: "You've been invited to Function Bucket",
+  description: 'Set your password to finish creating your account.',
+  ogDescription: 'Set your password to finish creating your account.',
+  ogImage: `${new URL(authAppUrl).origin}/logo-light.png`,
+  ogType: 'website',
+  twitterCard: 'summary'
+})
+
 const userId = (route.query.userId as string | undefined)?.trim()
 const code = (route.query.code as string | undefined)?.trim()
 

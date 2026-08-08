@@ -11,6 +11,18 @@ const toast = useToast()
 const colorMode = useColorMode()
 const logoSrc = computed(() => (colorMode.value === 'dark' ? '/logo-dark.png' : '/logo-light.png'))
 
+// Static unfurl preview (spec docs/specs/link-previews/ invite-preview.data.md, L6): a branded card
+// for the texted verify-email link. Constants only — no ?userId&code read, no token consumption.
+useSeoMeta({
+  title: 'Verify your email — Function Bucket',
+  ogTitle: 'Verify your email for Function Bucket',
+  description: 'Confirm your email address to continue.',
+  ogDescription: 'Confirm your email address to continue.',
+  ogImage: `${new URL(authAppUrl).origin}/logo-light.png`,
+  ogType: 'website',
+  twitterCard: 'summary'
+})
+
 const userId = (route.query.userId as string | undefined)?.trim()
 const code = (route.query.code as string | undefined)?.trim()
 
